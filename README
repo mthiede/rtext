@@ -1,0 +1,29 @@
+== RText - Ruby Textual Modelling 
+
+RText can be used to derive textual languages from an RGen metamodel with very little effort. 
+
+RText features include:
+* Generic textual syntax
+* Generic instantiator (parser) and serializer
+* Consistency checks derived from the metamodel
+* Designed to work with lightweight editor plugins providing
+  - Syntax Highlighting
+  - Auto Completion on language commands and model references
+  - Error Annotations 
+  - Model Navigation
+
+
+= Installation
+
+> gem install rtext
+
+
+= Documentation
+
+
+= Examples
+
+	
+= License
+
+RGen is released under the MIT license.
