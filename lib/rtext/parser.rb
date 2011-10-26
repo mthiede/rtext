@@ -22,8 +22,9 @@ class Parser
     parse_argument_list(arg_list)
     element_list = []
     if next_token == "{"
-      parse_statement_block(element_list)
+      parse_statement_block(element_list, comment)
     end
+    comment += parse_single_line_comment
     consume(:newline)
     @visitor.call(command, arg_list, element_list, comment, is_root)
   end
@@ -37,41 +38,53 @@ class Parser
     result
   end
 
-  def parse_statement_block(element_list)
+  def parse_single_line_comment
+    result = []
+    if next_token == :comment
+      result << consume(:comment)
+    end
+    result
+  end
+
+  def parse_statement_block(element_list, comment)
     consume("{")
+    comment.concat(parse_single_line_comment)
     consume(:newline)
     while next_token != "}"
-      parse_block_element(element_list)
+      parse_block_element(element_list, comment)
     end
     consume("}")
   end
 
-  def parse_block_element(element_list)
+  def parse_block_element(element_list, comment)
     if next_token == :label
       label = consume(:label)
-      element_list << [label, parse_labeled_block_element]
+      element_list << [label, parse_labeled_block_element(comment)]
     else
       element_list << parse_statement
     end
   end
 
-  def parse_labeled_block_element
+  def parse_labeled_block_element(comment)
     if next_token == "["
-      parse_element_list
+      parse_element_list(comment)
     else
+      comment.concat(parse_single_line_comment)
       consume(:newline)
       parse_statement
     end
   end
 
-  def parse_element_list
+  def parse_element_list(comment)
     consume("[")
+    comment.concat(parse_single_line_comment)
     consume(:newline)
     result = []
     while next_token != "]"
       result << parse_statement
     end
     consume("]")
+    comment.concat(parse_single_line_comment)
     consume(:newline)
     result
   end
@@ -193,6 +206,9 @@ class Parser
           when /\A[\{\}\[\]:,]/
             str = $'
             result << Token.new($&, nil, idx)
+          when /\A#(.*)/
+            str = ""
+            result << Token.new(:comment, $1, idx)
           when /\A\s+/
             str = $'
             # ignore

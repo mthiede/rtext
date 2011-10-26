@@ -103,14 +103,19 @@ class RTextInstantiatorTest < Test::Unit::TestCase
   def test_comment
     env, problems = instantiate(%Q(
       # comment 1
-      TestNode text: "some text" {
-        childs: [
+      TestNode text: "some text" {# comment 1.1
+        childs: [ # comment 1.2
           # comment 2
-          TestNode text: "child"
+          TestNode text: "child" # comment 2.1
           # comment 3
-          TestNode text: "child2"
-        ]
-      }
+          TestNode text: "child2" #comment 3.1
+        ] # comment 1.3
+      } # comment 1.4
+      #comment 1
+      TestNode { #comment 1.1
+        childs: # comment 1.2
+          TestNode text: "child" #comment2
+      }# comment 1.3
       ), TestMM)
     assert_no_problems(problems)
     assert_model_simple(env)
@@ -607,19 +612,37 @@ class RTextInstantiatorTest < Test::Unit::TestCase
       #comment
       #  multiline
       TestNode text: "node2"
+      TestNode text: "node3" #comment
+      #above
+      TestNode text: "node4" {#right1
+        childs: [ #right2
+        ] #right3
+      } #below
+      #above1
+      #above2
+      TestNode text: "node5" { #right1
+        childs: #right2
+          TestNode
+      }#below
     ), TestMM, :comment_handler => proc {|e,c,env|
       proc_calls += 1
       if e.text == "node1"
         assert_equal "comment", c
       elsif e.text == "node2"
         assert_equal "comment\n  multiline", c
+      elsif e.text == "node3"
+        assert_equal "comment", c
+      elsif e.text == "node4"
+        assert_equal "above\nright1\nright2\nright3\nbelow", c
+      elsif e.text == "node5"
+        assert_equal "above1\nabove2\nright1\nright2\nbelow", c
       else
         assert false, "unexpected element in comment handler"
       end
       true
     })
     assert_no_problems(problems)
-    assert_equal 2, proc_calls
+    assert_equal 5, proc_calls
   end
 
   def test_comment_handler_comment_not_allowed
