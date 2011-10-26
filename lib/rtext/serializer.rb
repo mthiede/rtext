@@ -107,9 +107,14 @@ class Serializer
   def serialize_values(element, feature)
     values = element.getGenericAsArray(feature.name).compact
     result = []
+    arg_format = @lang.argument_format(feature)
     values.each do |v|
       if feature.eType.instanceClass == Integer
-        result << v.to_s
+        if arg_format 
+          result << sprintf(arg_format, v)
+        else
+          result << v.to_s
+        end
       elsif feature.eType.instanceClass == String
         if @lang.unquoted?(feature) && v.to_s =~ /^[a-zA-Z_]\w*$/ && v.to_s != "true" && v.to_s != "false"
           result << v.to_s
@@ -120,7 +125,11 @@ class Serializer
       elsif feature.eType.instanceClass == RGen::MetamodelBuilder::DataTypes::Boolean
         result << v.to_s
       elsif feature.eType.instanceClass == Float
-        result << v.to_s
+        if arg_format 
+          result << sprintf(arg_format, v)
+        else
+          result << v.to_s
+        end
       elsif feature.eType.is_a?(RGen::ECore::EEnum)
         result << v.to_s  
       elsif feature.is_a?(RGen::ECore::EReference)

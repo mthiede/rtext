@@ -29,6 +29,11 @@ class Language
   #     the serializer will take care to insert quotes if the data is not a valid identifier
   #     the features must also occur in :feature_provider if :feature_provider is provided
   #     default: no unquoted arguments
+  #  
+  #  :argument_format_provider
+  #     a Proc which receives an EAttribute and should return a format specification string
+  #     (in sprintf syntax) which will be used by the serializer for integers and floats.
+  #     default: if not present or the proc returns nil, then #to_s is used
   #
   #  :short_class_names
   #     if true, the metamodel is searched for classes by unqualified class name recursively
@@ -98,6 +103,7 @@ class Language
       proc { |c| RGen::Serializer::OppositeReferenceFilter.call(c.eAllStructuralFeatures) }
     @unlabled_arguments = options[:unlabled_arguments]
     @unquoted_arguments = options[:unquoted_arguments]
+    @argument_format_provider = options[:argument_format_provider]
     @command_classes = {}
     ((!options.has_key?(:short_class_names) || options[:short_class_names]) ?
       root_epackage.eAllClasses : root_epackage.eClasses).each do |c|
@@ -156,6 +162,10 @@ class Language
     @unquoted_arguments.call(feature.eContainingClass).include?(feature.name)
   end
 
+  def argument_format(feature)
+    @argument_format_provider && @argument_format_provider.call(feature)
+  end
+
   def concrete_types(clazz)
     ([clazz] + clazz.eAllSubTypes).select{|c| !c.abstract}
   end
@@ -204,6 +214,7 @@ class Language
     :unlabled_arguments,
     :labled_arguments,
     :unquoted?,
+    :argument_format,
     :concrete_types,
     :containments_by_target_type,
     :feature_by_name

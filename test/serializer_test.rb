@@ -307,6 +307,18 @@ TestNode {
     assert_equal %q(TestNode integer: 7)+"\n", output
   end
 
+  def test_integer_format_spec
+    testModel = TestMM::TestNode.new(:integer => 10)
+    output = StringWriter.new
+    serialize(testModel, output, :argument_format_provider => proc {|a|
+      if a.name == "integer"
+        "0x%02X"
+      else
+        nil
+      end}) 
+    assert_equal %q(TestNode integer: 0x0A)+"\n", output
+  end
+
   def test_float
     testModel = TestMM::TestNode.new(:float => 1.23)
     output = StringWriter.new
@@ -319,6 +331,18 @@ TestNode {
     output = StringWriter.new
     serialize(testModel, output) 
     assert output =~ /TestNode float: 1.23e-0?08\n/ 
+  end
+
+  def test_float_format_spec
+    testModel = TestMM::TestNode.new(:float => 1.23)
+    output = StringWriter.new
+    serialize(testModel, output, :argument_format_provider => proc {|a|
+      if a.name == "float"
+        "%1.1f"
+      else
+        nil
+      end}) 
+    assert_equal %q(TestNode float: 1.2)+"\n", output
   end
 
   module TestMMData
