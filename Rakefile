@@ -3,7 +3,7 @@ require 'rake/rdoctask'
 
 RTextGemSpec = Gem::Specification.new do |s|
   s.name = %q{rtext}
-  s.version = "0.1.0"
+  s.version = "0.1.0.pre1"
   s.date = Time.now.strftime("%Y-%m-%d")
   s.summary = %q{Ruby Textual Modelling}
   s.email = %q{martin dot thiede at gmx de}
