@@ -48,7 +48,11 @@ class Instantiator
     begin
       @root_elements.clear
       parser.parse(str) do |*args|
-        create_element(*args)
+        if args[0]
+          create_element(*args)
+        else
+          unassociated_comments(args[3])
+        end
       end
     rescue Parser::Error => e
       problem(e.message, e.line)
@@ -63,6 +67,12 @@ class Instantiator
   end
 
   private
+
+  def unassociated_comments(comments)
+    comments.each do |c|
+      handle_comment(c, nil)
+    end
+  end
 
   def create_element(command, arg_list, element_list, comments, is_root)
     clazz = @lang.class_by_command(command.value)  
@@ -102,8 +112,8 @@ class Instantiator
     set_line_number(element, command.line)
     set_file_name(element)
     set_fragment_ref(element)
-    if comments.size > 0
-      add_comment(element, comments.collect{|c| c.value}.join("\n"))
+    comments.each do |c|
+      handle_comment(c, element)
     end
     element
   end
@@ -202,9 +212,22 @@ class Instantiator
     defined_args[name] = true
   end
 
-  def add_comment(element, comment)
-    if @lang.comment_handler && !@lang.comment_handler.call(element, comment, @env)
-      problem("This kind of element can not take a comment", line_number(element))
+  def handle_comment(comment_desc, element)
+    if @lang.comment_handler
+      kind = comment_desc[1]
+      if kind == :eol
+        comment = comment_desc[0].value
+      else
+        comment = comment_desc[0].collect{|c| c.value}.join("\n")
+      end
+      success = @lang.comment_handler.call(comment, kind, element, @env)
+      if !success 
+        if element.nil? 
+          problem("Unassociated comment not allowed", comment_desc[0][0].line)
+        else
+          problem("This kind of element can not take this comment", line_number(element))
+        end
+      end
     end
   end
 

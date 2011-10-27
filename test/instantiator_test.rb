@@ -109,16 +109,27 @@ class RTextInstantiatorTest < Test::Unit::TestCase
           TestNode text: "child" # comment 2.1
           # comment 3
           TestNode text: "child2" #comment 3.1
+          # unassociated
         ] # comment 1.3
+        # unassociated
       } # comment 1.4
       #comment 1
       TestNode { #comment 1.1
         childs: # comment 1.2
           TestNode text: "child" #comment2
+        # unassociated
       }# comment 1.3
+      # unassociated
       ), TestMM)
     assert_no_problems(problems)
     assert_model_simple(env)
+  end
+
+  def test_comment_only
+    env, problems = instantiate(%Q(
+      # comment 1
+      ), TestMM)
+    assert_no_problems(problems)
   end
 
   def test_empty
@@ -408,7 +419,7 @@ class RTextInstantiatorTest < Test::Unit::TestCase
     env, problems = instantiate(%Q(
       TestNode text: "some text" {
     ), TestMM)
-    assert_problems([/unexpected end of file, expected identifier/i], problems)
+    assert_problems([/unexpected end of file, expected \}/i], problems)
   end
 
   def test_unknown_command
@@ -616,7 +627,9 @@ class RTextInstantiatorTest < Test::Unit::TestCase
       #above
       TestNode text: "node4" {#right1
         childs: [ #right2
+          #unassociated1
         ] #right3
+        #unassociated2
       } #below
       #above1
       #above2
@@ -624,35 +637,90 @@ class RTextInstantiatorTest < Test::Unit::TestCase
         childs: #right2
           TestNode
       }#below
-    ), TestMM, :comment_handler => proc {|e,c,env|
+      #comment without
+      #an element following
+    ), TestMM, :comment_handler => proc {|c,k,e,env|
       proc_calls += 1
-      if e.text == "node1"
+      if e.nil?
+        case proc_calls
+        when 4
+          assert_equal "unassociated1", c
+          assert_equal :unassociated, k
+        when 5
+          assert_equal "unassociated2", c
+          assert_equal :unassociated, k
+        when 15
+          assert_equal "comment without\nan element following", c
+          assert_equal :unassociated, k
+        end
+      elsif e.text == "node1"
         assert_equal "comment", c
+        assert_equal :above, k
       elsif e.text == "node2"
         assert_equal "comment\n  multiline", c
+        assert_equal :above, k
       elsif e.text == "node3"
         assert_equal "comment", c
-      elsif e.text == "node4"
-        assert_equal "above\nright1\nright2\nright3\nbelow", c
+        assert_equal :eol, k
+      elsif e.text == "node4" 
+        case proc_calls
+        when 6
+          assert_equal "above", c
+          assert_equal :above, k
+        when 7
+          assert_equal "right1", c
+          assert_equal :eol, k
+        when 8
+          assert_equal "right2", c
+          assert_equal :eol, k
+        when 9
+          assert_equal "right3", c
+          assert_equal :eol, k
+        when 10 
+          assert_equal "below", c
+          assert_equal :eol, k
+        end
       elsif e.text == "node5"
-        assert_equal "above1\nabove2\nright1\nright2\nbelow", c
+        case proc_calls
+        when 11 
+          assert_equal "above1\nabove2", c
+          assert_equal :above, k
+        when 12
+          assert_equal "right1", c
+          assert_equal :eol, k
+        when 13
+          assert_equal "right2", c
+          assert_equal :eol, k
+        when 14
+          assert_equal "below", c
+          assert_equal :eol, k
+        end
       else
         assert false, "unexpected element in comment handler"
       end
       true
     })
     assert_no_problems(problems)
-    assert_equal 5, proc_calls
+    assert_equal 15, proc_calls
   end
 
   def test_comment_handler_comment_not_allowed
     env, problems = instantiate(%Q(
       #comment
       TestNode
-    ), TestMM, :comment_handler => proc {|e,c,env|
+    ), TestMM, :comment_handler => proc {|c,k,e,env|
       false
     })
-    assert_problems([/element can not take a comment/], problems)
+    assert_problems([/element can not take this comment/], problems)
+  end
+
+  def test_comment_handler_comment_not_allowed_unassociated
+    env, problems = instantiate(%Q(
+      #comment
+    ), TestMM, :comment_handler => proc {|c,k,e,env|
+      false
+    })
+    assert_problems([/Unassociated comment not allowed/], problems)
   end
 
   #

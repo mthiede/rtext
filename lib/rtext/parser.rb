@@ -11,80 +11,96 @@ class Parser
     @tokens = tokenize(str, @reference_regexp)
     @last_line = @tokens.last && @tokens.last.line 
     while next_token
-      parse_statement(true)
+      parse_statement(true, true)
     end
   end
 
-  def parse_statement(is_root=false)
+  def parse_statement(is_root=false, allow_unassociated_comment=false)
+    comments = [] 
     comment = parse_comment 
-    command = consume(:identifier)
-    arg_list = []
-    parse_argument_list(arg_list)
-    element_list = []
-    if next_token == "{"
-      parse_statement_block(element_list, comment)
+    if (next_token && next_token != "}" && next_token != "]") || !allow_unassociated_comment
+      comments << [ comment, :above] if comment
+      command = consume(:identifier)
+      arg_list = []
+      parse_argument_list(arg_list)
+      element_list = []
+      if next_token == "{"
+        parse_statement_block(element_list, comments)
+      end
+      eol_comment = parse_eol_comment
+      comments << [ eol_comment, :eol ] if eol_comment
+      consume(:newline)
+      @visitor.call(command, arg_list, element_list, comments, is_root)
+    else
+      comments << [ comment, :unassociated ] if comment
+      @visitor.call(nil, nil, nil, comments, nil)
+      nil
     end
-    comment += parse_single_line_comment
-    consume(:newline)
-    @visitor.call(command, arg_list, element_list, comment, is_root)
   end
 
   def parse_comment
-    result = []
+    result = nil 
     while next_token == :comment
+      result ||= []
       result << consume(:comment)
       consume(:newline)
     end
     result
   end
 
-  def parse_single_line_comment
-    result = []
+  def parse_eol_comment
     if next_token == :comment
-      result << consume(:comment)
+      consume(:comment)
+    else
+      nil
     end
-    result
   end
 
-  def parse_statement_block(element_list, comment)
+  def parse_statement_block(element_list, comments)
     consume("{")
-    comment.concat(parse_single_line_comment)
+    eol_comment = parse_eol_comment
+    comments << [ eol_comment, :eol ] if eol_comment
     consume(:newline)
-    while next_token != "}"
-      parse_block_element(element_list, comment)
+    while next_token && next_token != "}"
+      parse_block_element(element_list, comments)
     end
     consume("}")
   end
 
-  def parse_block_element(element_list, comment)
+  def parse_block_element(element_list, comments)
     if next_token == :label
       label = consume(:label)
-      element_list << [label, parse_labeled_block_element(comment)]
+      element_list << [label, parse_labeled_block_element(comments)]
     else
-      element_list << parse_statement
+      statement = parse_statement(false, true)
+      element_list << statement if statement 
     end
   end
 
-  def parse_labeled_block_element(comment)
+  def parse_labeled_block_element(comments)
     if next_token == "["
-      parse_element_list(comment)
+      parse_element_list(comments)
     else
-      comment.concat(parse_single_line_comment)
+      eol_comment = parse_eol_comment
+      comments << [ eol_comment, :eol ] if eol_comment
       consume(:newline)
       parse_statement
     end
   end
 
-  def parse_element_list(comment)
+  def parse_element_list(comments)
     consume("[")
-    comment.concat(parse_single_line_comment)
+    eol_comment = parse_eol_comment
+    comments << [ eol_comment, :eol ] if eol_comment
     consume(:newline)
     result = []
-    while next_token != "]"
-      result << parse_statement
+    while next_token && next_token != "]"
+      statement = parse_statement(false, true)
+      result << statement if statement 
     end
     consume("]")
-    comment.concat(parse_single_line_comment)
+    eol_comment = parse_eol_comment
+    comments << [ eol_comment, :eol ] if eol_comment
     consume(:newline)
     result
   end
