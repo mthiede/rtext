@@ -1,9 +1,22 @@
 module RText
 
+# ContextElementBuilder build a partial model from a set of context lines.
+#
+# Context lines are lines from an RText file which contain a (context) command and all 
+# the parent commands wrapped around it. Any sibling commands can be omitted as well as
+# any lines containing closing braces and brackets.
+#
+# The resulting partial model contains a (context) model element and all its parent
+# elements. Further references are not resolved.
+#
 module ContextElementBuilder
 
   class << self
 
+  # Instantiates the context element based on a set of +content_lines+. Content lines
+  # are the RText lines containing the nested command headers in the original order.
+  # The last line of +context_lines+ is the one which will create the context element.
+  # +position_in_line+ is the cursor column position within the last line
   def build_context_element(language, context_lines, position_in_line)
     context_info = fix_context(context_lines)
     return nil unless context_info
@@ -43,6 +56,11 @@ module ContextElementBuilder
 
   ContextInfo = Struct.new(:lines, :num_elements, :pos_leaf_element)
 
+  # extend +context_lines+ into a set of lines which can be processed by the RText
+  # instantiator: cut of curly brace from current line if present and add missing
+  # closing curly braces and square brackets
+  # returns a ContextInfo containing the new set of lines, the number of model elements
+  # contained in this model snipped and the number of the line containing the leaf element
   def fix_context(context_lines)
     context_lines = context_lines.dup
     line = context_lines.last
