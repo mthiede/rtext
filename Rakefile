@@ -1,6 +1,11 @@
 require 'rake/gempackagetask'
 require 'rake/rdoctask'
 
+DocFiles = [
+  "README", "CHANGELOG", "MIT-LICENSE", 
+  "RText_Users_Guide", 
+  "RText_Plugin_Implementation_Guide"]
+
 RTextGemSpec = Gem::Specification.new do |s|
   s.name = %q{rtext}
   s.version = "0.1.0.pre1"
@@ -13,16 +18,18 @@ RTextGemSpec = Gem::Specification.new do |s|
   s.authors = ["Martin Thiede"]
   gemfiles = Rake::FileList.new
   gemfiles.include("{lib,test}/**/*")
-  gemfiles.include("README", "CHANGELOG", "MIT-LICENSE", "Rakefile") 
+  gemfiles.include(DocFiles)
+  gemfiles.include("Rakefile") 
   gemfiles.exclude(/\b\.bak\b/)
   s.files = gemfiles
   s.rdoc_options = ["--main", "README", "-x", "test"]
-  s.extra_rdoc_files = ["README", "CHANGELOG", "MIT-LICENSE"]
+  s.extra_rdoc_files = DocFiles
 end
 
 Rake::RDocTask.new do |rd|
   rd.main = "README"
-  rd.rdoc_files.include("README", "CHANGELOG", "MIT-LICENSE", "lib/**/*.rb")
+  rd.rdoc_files.include(DocFiles)
+  rd.rdoc_files.include("lib/**/*.rb")
   rd.rdoc_dir = "doc"
 end
 

@@ -1,0 +1,31 @@
+=RText Users Guide
+
+== The .rtext config file
+
+A .rtext config file is used to specify which backend service is to be started for a given
+RText model file.
+
+In order to be found by an RText plugin, the .rtext file must be located in the same directory
+as the RText model file being edited or in any of its parent directories. 
+
+Here is the grammar for the config file syntax:
+
+  rtext_config      ::= <service_spec>+
+  service_spec      ::= <file_pattern_list>:\n<command line string>\n
+  file_pattern_list ::= <file_pattern> | <file_pattern>, <file_pattern_list>
+  file_pattern      ::= <filename without path> | *.<extension>
+
+Here is an example:
+
+  *.ext1:
+  ruby service1.rb 
+  *.ext2, *.ext3:
+  ruby service2.rb *.ext2 *.ext3
+  noext:
+  service3.sh
+
+This example contains specifications for three different backend services. service1.rb is started
+when a model file with the extension "ext1" is being edited. service2.rb is started when a 
+model file with extension "ext2" or "ext3" is edited. service2.rb also receives additional command
+line parameters. service3.sh is started whenever a file named "noext" is edited.
+

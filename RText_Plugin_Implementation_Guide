@@ -1,0 +1,239 @@
+=RText Plugin Implementation Guide
+
+RText editors consist of a frontend and a backend. Most of the logic is implemented
+within the backend while the frontend is kept as thin as possible. This should simplify
+the task of writing a frontend and promote development of RText frontends for different
+editing environments.
+
+This guide explains how to build a RText plugin.
+
+
+==Plugin Responsibilies
+
+This is a rough overview of what a RText plugin has to do:
+
+* find the .rtext config file for a given RText model file
+* start the corresponding backend process if not started already
+* provide a way to reload the model and issue the refresh command to the backend
+* implement syntax highlighting for the generic RText syntax
+* forward auto completion requests to the backend, let the user choose from the returned options and insert the option chosen
+* forward element search requests to the backend, let the user choose from the matched elements and jump to the element chosen
+* forward reference target requests to the backend, let the user choose from the targets found and jump to the target chosen 
+* query the backend for model problems and display them to the user
+* stop the backend process when it's no longer needed
+
+
+==Plugin Implementation Hints
+
+The plugin implementation could consist of the following parts:
+
+===Command
+
+A command issued by the plugin and sent to the backend service. See the section about the
+Frontend/Backend Communication Protocol below for details about available commands.
+
+
+===Connector
+
+A connector represents the connection to a running backend process.
+Each connector/process is associated with a specific .rtext file and a specific service specification
+within this file. See the RText Users Guide for details about the .rtext config file.
+
+When the backend service is started, it outputs the UDP port it is listening on. The connector
+should use this port to send commands to the backend.
+
+The connector should send commands to the backend. It should assign invocation ids and keep the
+invocation until a response is received or a timeout has occured.
+
+When the backend responds, the connector should associate the response packages with the previous
+request using the invocation id. It should also join fragmented response packages and send an
+internal notification when a response has been fully received.
+
+
+===Connector Manager
+
+The connector manager is able to return a connector for a given RText model file. 
+
+It needs to identify the backend process to which to connect by means of the .rtext config file and
+a contained service specification (one .rtext files may contain service specifications for starting
+different backend services depending on the model file name).
+
+For this, it needs to find the first .rtext config file containing a service specification matching 
+the given RText model file name. See the RText Users guide for details about the .rtext config file
+and the way how they are found in the filesystem.
+
+Once the .rtext file/service specification is found it can be used as a key for a lookup for 
+already established connections. The plugin should avoid starting the same process twice. All 
+RText model files with the same file extension and the same .rtext file should use the same process.
+
+The process should be kept running as long as editing is in process. This will greatly 
+reduce response times as the model can be kept in memory and only the changed parts need
+to be reloaded.
+
+When the plugin lifecycle ends, the connector manager should send the "stop" command to the 
+backend processes.
+
+
+==Frontend/Backend Communication Protocol
+
+Communication takes place via plain text transmitted via UDP. There are requests by
+the frontend and responses by the backend. In both cases the text is interpreted as
+a set of lines (separated by \n or \r\n).
+
+
+===Request
+
+The request consists of a command id, an invocation id and the command parameters.
+The invocation id is repeated within the response to allow proper association with the
+request. Command parameters are command specific (see below).
+
+Requests can not span more than one UDP package and thus are limited to the UDP payload size.
+
+  line 1:    <command id>
+  line 2:    <invocation id>
+  line 3..n: <command parameters>
+
+
+===Response
+
+Each response contains the invocation id of the request in the first line.
+Since it could be splitted over several UDP packages it contains an indication 
+in the second line if more packages are following ("more") or this is the last package 
+("last"). The rest of the response is a fragment of the command result data. All fragments
+of a set of response packages with the same invocation id need to be joined.
+
+Note that there are no mechanisms to protect agains package loss or reordering since
+this protocol is intended to be used on local socket connections only.
+
+  line 1:    <invocation id>
+  line 2:    "more" | "last"
+  line 3..n: <command result data>
+
+
+===Command: Refresh
+
+The refresh command tells the backend to reload the model from the file system. Frontends
+could issue this command after a model file has been changed in the file system or on
+an explicit user request.
+
+  Request Format:
+    command id:          "refresh"
+    no parameters 
+
+  Response Format:
+    no result data
+
+===Command: Complete
+
+This command is a request by the frontend to show auto completion options at a given
+location within a file. The location is expressed using a set of context lines and the cursor
+column position in the current line.
+
+Context lines are lines from an RText file which contain a (context) command and all 
+the parent commands wrapped around it. Any sibling commands can be omitted as well as
+any lines containing closing braces and brackets. The order of lines is the same as in the RText file.
+
+Here is an example. Consider the following RText file with the cursor in the line of "Command3" at 
+the time when the auto completion command is issued.
+
+  Command1 {
+    Command2 {
+      role1: [
+        Command3          <== cursor in this line
+        Command4
+      ]
+    }
+    Command5
+  }
+
+The context lines in this case would be the following.
+
+  Command1 {
+    Command2 {
+      role1: [
+        Command3
+
+Note that all siblings of the command and parent commands have been stripped off, as well as
+any closing braces or brackets.
+
+The purpose of this special context line format is to keep the task of extracting the
+context in the frontend simple and the amount of data transmitted to the backend low.
+It's also a way to keep the parsing time of the context low in the backend and thus to minimize
+the user noticable delay.
+
+  Request Format:
+    command id:          "complete"
+    param line 1:        cursor column position in the current line 
+    param line 2..n:     context lines
+
+  Response Format:
+    result line 1..n:    <completion string>;<extra info string>
+
+
+===Command: Show Problems
+
+This command is a request by the frontend to determine and return all problems present in the current model.
+The command implicitly reloads the model from the filesystem before checking for problems.
+
+  Request Format:
+    command id:          "show_problems"
+    no parameters 
+
+  Response Format:
+    result line n:       <file name>
+    result line n+1..n+m <line number>;<message>
+
+Note that the file name is repeated only once for all problems within a file to reduce the amout of
+result data which needs to be transmitted.
+
+
+===Command: Reference Targets
+
+This command is used to retrieve the targets of a given reference. The reference location is expressed
+by means of a set of context lines and the cursor column position in the current line. The cursor 
+column position must be within the string representing the reference. The format of the context lines
+is the same as the one described with the "Complete" command (see above).
+
+Note that the service provider is free to define how a reference is represented. In particular it
+can interpret the command identifier as a reference and use this mechanism to show incoming references
+(reverse references).
+
+As references can be ambiguous, the result is a list of possible targets. Each target consists of the
+filename and line number of the target element as well as the text to be displayed to the user in case
+there are more than one targets to choose from.
+
+  Request Format:
+    command id:          "get_reference_targets" 
+    param line 1:        cursor column position in the current line 
+    param line 2..n:     context lines
+
+  Response Format:
+    result line 1..n:    <file name>;<line number>;<display name>
+
+
+===Command: Find Elements
+
+This command returns a set of model elements matching a search pattern. The format of the
+pattern depends on the service provider. In a simple case, the pattern is the beginning of
+the element names.
+
+  Request Format:
+    command id:          "get_elements"
+    param line 1:        <seach pattern>
+
+  Response Format:
+    result line 1..n:    <display name>;<file name>;<line number>
+
+
+===Command: Stop
+
+This command is normally invoked when the frontend terminates or otherwise needs to terminate
+the backend service. When receiving this command, the backend will terminate.
+
+  Request Format:
+    command id:          "stop"
+    no parameters
+
+  Response Format:
+    no result data
+
