@@ -8,15 +8,14 @@ module RText
 # Loads RText files into a FragmentedModel.
 #
 # A glob pattern or file provider specifies the files which should be loaded. The load method
-# can be called to load and to reload the model. If files have not changed, the model will not 
-# be changed.
+# can be called to load and to reload the model. Only changed files will be reloaded. 
 #
 # Optionally, the loader can use a fragment cache to speed up loading.
 #
 class DefaultLoader
 
   # Create a default loader for +language+, loading into +fragmented_model+.
-  # It will find files by either by evaluating the glob pattern given with +:pattern+ 
+  # It will find files either by evaluating the glob pattern given with +:pattern+ 
   # (see Dir.glob) or by means of a +file_provider+. Options:
   #
   #  :pattern
