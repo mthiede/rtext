@@ -5,27 +5,31 @@ within the backend while the frontend is kept as thin as possible. This should s
 the task of writing a frontend and promote development of RText frontends for different
 editing environments.
 
-This guide explains how to build a RText plugin.
+This guide explains how to build a RText frontend which will typically be a plugin for an 
+existing editor.
 
 
 ==Plugin Responsibilies
 
-This is a rough overview of what a RText plugin has to do:
+Here is a rough overview of what a RText plugin has to do:
 
 * find the .rtext config file for a given RText model file
 * start the corresponding backend process if not started already
 * provide a way to reload the model and issue the refresh command to the backend
 * implement syntax highlighting for the generic RText syntax
-* forward auto completion requests to the backend, let the user choose from the returned options and insert the option chosen
-* forward element search requests to the backend, let the user choose from the matched elements and jump to the element chosen
-* forward reference target requests to the backend, let the user choose from the targets found and jump to the target chosen 
+* forward auto completion requests to the backend, let the user choose from the returned options 
+  and insert the option chosen
+* forward element search requests to the backend, let the user choose from the matched elements 
+  and jump to the element chosen
+* forward reference target requests to the backend, let the user choose from the targets found 
+  and jump to the target chosen 
 * query the backend for model problems and display them to the user
 * stop the backend process when it's no longer needed
 
 
 ==Plugin Implementation Hints
 
-The plugin implementation could consist of the following parts:
+The plugin implementation could include the following entities.
 
 ===Command
 
@@ -52,7 +56,7 @@ internal notification when a response has been fully received.
 
 ===Connector Manager
 
-The connector manager is able to return a connector for a given RText model file. 
+The connector manager should be able to return a connector for a given RText model file. 
 
 It needs to identify the backend process to which to connect by means of the .rtext config file and
 a contained service specification (one .rtext files may contain service specifications for starting
@@ -64,9 +68,10 @@ and the way how they are found in the filesystem.
 
 Once the .rtext file/service specification is found it can be used as a key for a lookup for 
 already established connections. The plugin should avoid starting the same process twice. All 
-RText model files with the same file extension and the same .rtext file should use the same process.
+RText model files with the same file extension and belonging to the same .rtext file should 
+use the same process.
 
-The process should be kept running as long as editing is in process. This will greatly 
+The process should be kept running as long as editing is in progress. This will greatly 
 reduce response times as the model can be kept in memory and only the changed parts need
 to be reloaded.
 
@@ -123,6 +128,7 @@ an explicit user request.
   Response Format:
     no result data
 
+
 ===Command: Complete
 
 This command is a request by the frontend to show auto completion options at a given
@@ -152,6 +158,8 @@ The context lines in this case would be the following.
     Command2 {
       role1: [
         Command3
+
+The current line is always the last of the context lines.
 
 Note that all siblings of the command and parent commands have been stripped off, as well as
 any closing braces or brackets.
@@ -214,8 +222,8 @@ there are more than one targets to choose from.
 ===Command: Find Elements
 
 This command returns a set of model elements matching a search pattern. The format of the
-pattern depends on the service provider. In a simple case, the pattern is the beginning of
-the element names.
+pattern depends on the service provider. In a simple case, for example, the pattern could be the 
+beginning of the element names.
 
   Request Format:
     command id:          "get_elements"
