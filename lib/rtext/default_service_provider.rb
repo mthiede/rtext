@@ -25,9 +25,13 @@ class DefaultServiceProvider
       targets = @model.index.values.flatten.select{|e| e.is_a?(clazz)}
     end
     targets.collect{|t| 
-      ReferenceCompletionOption.new(
-        @lang.identifier_provider.call(t, context), t.class.ecore.name)}.
-      sort{|a,b| a.identifier <=> b.identifier}
+      ident = @lang.identifier_provider.call(t, context)
+      if ident
+        ReferenceCompletionOption.new(ident, t.class.ecore.name)
+      else
+        nil
+      end
+    }.compact.sort{|a,b| a.identifier <=> b.identifier}
   end
 
   ReferenceTarget = Struct.new(:file, :line, :display_name)
