@@ -60,7 +60,8 @@ class DefaultLoader
   private
 
   def file_added(file)
-    fragment = RGen::Fragment::ModelFragment.new(file)
+    fragment = RGen::Fragment::ModelFragment.new(file, 
+      :identifier_provider => @lang.identifier_provider)
     load_fragment_cached(fragment)
     @model.add_fragment(fragment)
     @fragment_by_file[file] = fragment
@@ -115,7 +116,7 @@ class DefaultLoader
     fragment.set_root_elements(root_elements,
       :unresolved_refs => urefs, 
       :elements => env.elements)
-    fragment.build_index(@lang.identifier_provider)
+    fragment.build_index
     fragment.resolve_local
   end
 
