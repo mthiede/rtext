@@ -1,5 +1,5 @@
 # coding: binary
-$:.unshift File.join(File.dirname(__FILE__),"..","..","lib")
+$:.unshift File.join(File.dirname(__FILE__),"..","lib")
 
 require 'test/unit'
 require 'rgen/environment'
@@ -609,6 +609,14 @@ class RTextInstantiatorTest < Test::Unit::TestCase
       /argument 'enum' can not take value x, expected A, B/i,
       /argument 'related' can not take a integer, expected reference, identifier/i
     ], problems)
+  end
+
+  def test_missing_opening_brace
+    env, problems = instantiate(%Q(
+      TestNode 
+      }
+    ), TestMM)
+    assert_problems([/unexpected \}, expected identifier/i], problems)
   end
 
   #

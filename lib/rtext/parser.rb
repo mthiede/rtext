@@ -15,10 +15,11 @@ class Parser
     end
   end
 
+  # parse a statement with optional leading comment or an unassociated comment
   def parse_statement(is_root=false, allow_unassociated_comment=false)
     comments = [] 
     comment = parse_comment 
-    if (next_token && next_token != "}" && next_token != "]") || !allow_unassociated_comment
+    if (next_token && next_token == :identifier) || !allow_unassociated_comment
       comments << [ comment, :above] if comment
       command = consume(:identifier)
       arg_list = []
@@ -31,10 +32,14 @@ class Parser
       comments << [ eol_comment, :eol ] if eol_comment
       consume(:newline)
       @visitor.call(command, arg_list, element_list, comments, is_root)
-    else
-      comments << [ comment, :unassociated ] if comment
+    elsif comment
+      # if there is no statement, the comment is non-optional
+      comments << [ comment, :unassociated ]
       @visitor.call(nil, nil, nil, comments, nil)
       nil
+    else
+      # die expecting an identifier (next token is not an identifier)
+      consume(:identifier)
     end
   end
 
