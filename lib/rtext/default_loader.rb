@@ -84,7 +84,17 @@ class DefaultLoader
 
   def load_fragment_cached(fragment)
     if @cache
-      if @cache.load(fragment) == :invalid
+      begin
+        result = @cache.load(fragment)
+      rescue ArgumentError => e
+        # Marshal#load raises an ArgumentError if required classes are not present
+        if e.message =~ /undefined class\/module/
+          result = :invalid
+        else
+          raise
+        end
+      end
+      if result == :invalid
         @before_load_proc && @before_load_proc.call(fragment, :load_update_cache)
         load_fragment(fragment)
         @cache.store(fragment)
