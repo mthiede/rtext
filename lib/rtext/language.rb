@@ -97,6 +97,10 @@ class Language
   #     the string representing one indent, could be a tab or spaces
   #     default: 2 spaces
   #
+  #  :command_name_provider
+  #     a Proc which receives an EClass object and should return an RText command name
+  #     default: class name
+  #
   def initialize(root_epackage, options={})
     @root_epackage = root_epackage
     @feature_provider = options[:feature_provider] || 
@@ -105,10 +109,13 @@ class Language
     @unquoted_arguments = options[:unquoted_arguments]
     @argument_format_provider = options[:argument_format_provider]
     @command_classes = {}
+    command_name_provider = options[:command_name_provider] || proc{|c| c.name}
     ((!options.has_key?(:short_class_names) || options[:short_class_names]) ?
       root_epackage.eAllClasses : root_epackage.eClasses).each do |c|
-        raise "ambiguous class name #{c.name}" if @command_classes[c.name]
-        @command_classes[c.name] = c.instanceClass
+        next if c.abstract
+        command_name = command_name_provider.call(c)
+        raise "ambiguous command name #{command_name}" if @command_classes[command_name]
+        @command_classes[command_name] = c.instanceClass
       end
     @reference_regexp = options[:reference_regexp] || /\A\w*(\/\w*)+/
     @identifier_provider = options[:identifier_provider] || 
