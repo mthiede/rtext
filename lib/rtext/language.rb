@@ -108,15 +108,18 @@ class Language
     @unlabled_arguments = options[:unlabled_arguments]
     @unquoted_arguments = options[:unquoted_arguments]
     @argument_format_provider = options[:argument_format_provider]
-    @command_classes = {}
+    @class_by_command = {}
     command_name_provider = options[:command_name_provider] || proc{|c| c.name}
     ((!options.has_key?(:short_class_names) || options[:short_class_names]) ?
       root_epackage.eAllClasses : root_epackage.eClasses).each do |c|
         next if c.abstract
         command_name = command_name_provider.call(c)
-        raise "ambiguous command name #{command_name}" if @command_classes[command_name]
-        @command_classes[command_name] = c.instanceClass
+        raise "ambiguous command name #{command_name}" if @class_by_command[command_name]
+        @class_by_command[command_name] = c.instanceClass
       end
+    # there can't be multiple commands for the same class as the command name provider
+    # can only return one command per class
+    @command_by_class = @class_by_command.invert 
     @reference_regexp = options[:reference_regexp] || /\A\w*(\/\w*)+/
     @identifier_provider = options[:identifier_provider] || 
       proc { |element, context|
@@ -143,7 +146,11 @@ class Language
   attr_reader :indent_string
 
   def class_by_command(command)
-    @command_classes[command]
+    @class_by_command[command]
+  end
+
+  def command_by_class(clazz)
+    @command_by_class[clazz]
   end
 
   def containments(clazz)

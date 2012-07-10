@@ -57,7 +57,8 @@ class Serializer
         write("##{l}")
       end
     end
-    headline = clazz.name
+    headline = @lang.command_by_class(clazz.instanceClass)
+    raise "no command name for class #{clazz.instanceClass.to_s}" unless headline
     args = []
     @lang.unlabled_arguments(clazz).each do |f|
       values = serialize_values(element, f)

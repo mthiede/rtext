@@ -27,7 +27,7 @@ class RTextSerializerTest < Test::Unit::TestCase
       TestMM::TestNode.new(:text => "child")])
 
     output = StringWriter.new
-    serialize(testModel, output)
+    serialize(testModel, TestMM, output)
 
     assert_equal %Q(\
 TestNode text: "some text" {
@@ -58,7 +58,7 @@ TestNode text: "some text" {
       :childs3 => [TestMMFeatureProvider::TestNode.new(:attr1 => "child3")])
 
     output = StringWriter.new
-    serialize(testModel, output,
+    serialize(testModel, TestMMFeatureProvider, output,
       :feature_provider => proc {|clazz| 
         clazz.eAllStructuralFeatures.reject{|f| f.name =~ /parent|2$/}.reverse})
 
@@ -94,7 +94,7 @@ TestNode attr3: "attr3", attr1: "attr1" {
     ]
 
     output = StringWriter.new
-    serialize(testModel, output,
+    serialize(testModel, TestMMUnlabledUnquoted, output,
       :unlabled_arguments => proc {|clazz| ["unlabled", "both"]},
       :unquoted_arguments => proc {|clazz| ["unquoted", "both"]}
     )
@@ -126,7 +126,7 @@ TestNode unquoted: "//"
         TestMMComment::TestNode.new(:comment => "don't show")])
 
     output = StringWriter.new
-    serialize(testModel, output,
+    serialize(testModel, TestMMComment, output,
       :comment_provider => proc { |e| 
         if e.comment != "don't show"
           c = e.comment
@@ -153,7 +153,7 @@ TestNode {
       TestMM::TestNode.new(:text => "child")])
 
     output = StringWriter.new
-    serialize(testModel, output, :indent_string => "____")
+    serialize(testModel, TestMM, output, :indent_string => "____")
 
     assert_equal %Q(\
 TestNode {
@@ -182,7 +182,7 @@ ____TestNode text: "child"
     testModel[0].refOne = testModel[1]
 
     output = StringWriter.new
-    serialize(testModel, output,
+    serialize(testModel, TestMMRef, output,
       :identifier_provider => proc{|e, context| 
         assert_equal testModel[0], context
         "/target/ref"
@@ -215,7 +215,7 @@ TestNode name: "Target"
     testModel[0].addRefMany(RGen::MetamodelBuilder::MMProxy.new("/some/ref"))
 
     output = StringWriter.new
-    serialize(testModel, output)
+    serialize(testModel, TestMMRef, output)
 
     assert_equal %Q(\
 TestNode name: "Source", refMany: [/Target/A, /Target/B, /some/ref], refOne: /Target/A/A1, refOneBi: /Target/A/A1
@@ -272,7 +272,7 @@ TestNode name: "Target" {
       )
 
     output = StringWriter.new
-    serialize(testModel, output)
+    serialize(testModel, TestMMChildRole, output)
 
     assert_equal %Q(\
 TestNode {
@@ -295,7 +295,7 @@ TestNode {
   def test_escapes
     testModel = TestMM::TestNode.new(:text => %Q(some " \\ \\" text \r xx \n xx \r\n xx \t xx \b xx \f))
     output = StringWriter.new
-    serialize(testModel, output) 
+    serialize(testModel, TestMM, output) 
 
     assert_equal %q(TestNode text: "some \" \\\\ \\\\\" text \r xx \n xx \r\n xx \t xx \b xx \f")+"\n", output
   end
@@ -303,14 +303,14 @@ TestNode {
   def test_integer
     testModel = TestMM::TestNode.new(:integer => 7)
     output = StringWriter.new
-    serialize(testModel, output) 
+    serialize(testModel, TestMM, output) 
     assert_equal %q(TestNode integer: 7)+"\n", output
   end
 
   def test_integer_format_spec
     testModel = TestMM::TestNode.new(:integer => 10)
     output = StringWriter.new
-    serialize(testModel, output, :argument_format_provider => proc {|a|
+    serialize(testModel, TestMM, output, :argument_format_provider => proc {|a|
       if a.name == "integer"
         "0x%02X"
       else
@@ -322,21 +322,21 @@ TestNode {
   def test_float
     testModel = TestMM::TestNode.new(:float => 1.23)
     output = StringWriter.new
-    serialize(testModel, output) 
+    serialize(testModel, TestMM, output) 
     assert_equal %q(TestNode float: 1.23)+"\n", output 
   end
 
   def test_float2
     testModel = TestMM::TestNode.new(:float => 1.23e-08)
     output = StringWriter.new
-    serialize(testModel, output) 
+    serialize(testModel, TestMM, output) 
     assert output =~ /TestNode float: 1.23e-0?08\n/ 
   end
 
   def test_float_format_spec
     testModel = TestMM::TestNode.new(:float => 1.23)
     output = StringWriter.new
-    serialize(testModel, output, :argument_format_provider => proc {|a|
+    serialize(testModel, TestMM, output, :argument_format_provider => proc {|a|
       if a.name == "float"
         "%1.1f"
       else
@@ -369,13 +369,27 @@ TestNode {
   def test_subpackage
     testModel = TestMMSubpackage::SubPackage::Data2.new(:data2 => "xxx")
     output = StringWriter.new
-    serialize(testModel, output) 
+    serialize(testModel, TestMMSubpackage, output) 
     assert_equal %q(Data2 data2: "xxx")+"\n", output
   end
 
-  def serialize(model, output, options={})
-    # metamodel is just a dummy, it is not used for serialization
-    mm = TestMM
+  def test_command_name_provider
+    testModel = TestMM::TestNode.new(:text => "some text", :childs => [
+      TestMM::TestNode.new(:text => "child")])
+
+    output = StringWriter.new
+    serialize(testModel, TestMM, output, :command_name_provider => proc do |c|
+      c.name + "X"
+    end)
+
+    assert_equal %Q(\
+TestNodeX text: "some text" {
+  TestNodeX text: "child"
+}
+), output 
+  end
+
+  def serialize(model, mm, output, options={})
     lang = RText::Language.new(mm.ecore, options)
     ser = RText::Serializer.new(lang)
     ser.serialize(model, output)

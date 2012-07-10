@@ -433,7 +433,7 @@ class RTextInstantiatorTest < Test::Unit::TestCase
     env, problems = instantiate(%Q(
       TestNode
     ), TestMMAbstract)
-    assert_problems([/unknown command 'TestNode'.*abstract/i], problems)
+    assert_problems([/unknown command 'TestNode'/i], problems)
   end
 
   def test_unexpected_unlabled_argument
@@ -617,6 +617,36 @@ class RTextInstantiatorTest < Test::Unit::TestCase
       }
     ), TestMM)
     assert_problems([/unexpected \}, expected identifier/i], problems)
+  end
+
+  #
+  # command name provider
+  #
+
+  def test_command_name_provider
+    env, problems = instantiate(%Q(
+      TestNodeX text: "some text", nums: [1,2] {
+        TestNodeX text: "child"
+        TestNodeX text: "child2"
+      }
+      ), TestMM, :command_name_provider => proc do |c|
+        c.name + "X"
+      end)
+    assert_no_problems(problems)
+    assert_model_simple(env, :with_nums)
+  end
+
+  def test_command_name_provider_ambiguous
+    begin
+      env, problems = instantiate(%Q(
+        TestNode
+      ), TestMM, :command_name_provider => proc do |c|
+        "Fixed"
+      end)
+      assert false
+    rescue RuntimeError => e
+      assert e.message =~ /ambiguous command name/
+    end
   end
 
   #
