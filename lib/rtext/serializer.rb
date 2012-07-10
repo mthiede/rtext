@@ -132,7 +132,12 @@ class Serializer
           result << v.to_s
         end
       elsif feature.eType.is_a?(RGen::ECore::EEnum)
-        result << v.to_s  
+        if v.to_s =~ /\W/
+          result << "\"#{v.to_s.gsub("\\","\\\\\\\\").gsub("\"","\\\"").gsub("\n","\\n").
+            gsub("\r","\\r").gsub("\t","\\t").gsub("\f","\\f").gsub("\b","\\b")}\""
+        else
+          result << v.to_s  
+        end
       elsif feature.is_a?(RGen::ECore::EReference)
         result << @lang.identifier_provider.call(v, element) 
       end

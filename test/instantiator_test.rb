@@ -12,7 +12,7 @@ class RTextInstantiatorTest < Test::Unit::TestCase
   module TestMM
     extend RGen::MetamodelBuilder::ModuleExtension
     class TestNode < RGen::MetamodelBuilder::MMBase
-      SomeEnum = RGen::MetamodelBuilder::DataTypes::Enum.new([:A, :B])
+      SomeEnum = RGen::MetamodelBuilder::DataTypes::Enum.new([:A, :B, :'non-word*chars'])
       has_attr 'text', String
       has_attr 'integer', Integer
       has_attr 'boolean', Boolean
@@ -858,10 +858,11 @@ class RTextInstantiatorTest < Test::Unit::TestCase
       TestNode text: root {
         TestNode enum: A 
         TestNode enum: B 
+        TestNode enum: "non-word*chars"
       }
     ), TestMM)
     assert_no_problems(problems)
-    assert_equal [:A, :B], env.find(:text => "root").first.childs.collect{|c| c.enum}
+    assert_equal [:A, :B, :'non-word*chars'], env.find(:text => "root").first.childs.collect{|c| c.enum}
   end
 
   #

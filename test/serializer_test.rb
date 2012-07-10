@@ -14,10 +14,13 @@ class RTextSerializerTest < Test::Unit::TestCase
 
   module TestMM
     extend RGen::MetamodelBuilder::ModuleExtension
+    SomeEnum = RGen::MetamodelBuilder::DataTypes::Enum.new(
+      :name => "SomeEnum", :literals => [:A, :B, :'non-word*chars'])
     class TestNode < RGen::MetamodelBuilder::MMBase
       has_attr 'text', String
       has_attr 'integer', Integer
       has_attr 'float', Float
+      has_attr 'enum', SomeEnum
       contains_many 'childs', TestNode, 'parent'
     end
   end
@@ -343,6 +346,21 @@ TestNode {
         nil
       end}) 
     assert_equal %q(TestNode float: 1.2)+"\n", output
+  end
+
+  def test_enum
+    testModel = [
+      TestMM::TestNode.new(:enum => :A),
+      TestMM::TestNode.new(:enum => :B),
+      TestMM::TestNode.new(:enum => :'non-word*chars')
+    ]
+    output = StringWriter.new
+    serialize(testModel, TestMM, output) 
+    assert_equal %Q(\
+TestNode enum: A
+TestNode enum: B
+TestNode enum: "non-word*chars"
+), output
   end
 
   module TestMMData

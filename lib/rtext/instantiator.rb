@@ -239,7 +239,7 @@ class Instantiator
     if feature.is_a?(RGen::ECore::EReference)
       [:reference, :identifier]
     elsif feature.eType.is_a?(RGen::ECore::EEnum)
-      [:identifier]
+      [:identifier, :string]
     else
       { String => [:string, :identifier],
         Integer => [:integer],
