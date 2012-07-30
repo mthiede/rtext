@@ -54,7 +54,8 @@ class DefaultLoader
     @before_load_proc = options[:before_load]
     files = @file_provider.call 
     @change_detector.check_files(files)
-    @model.resolve(method(:fragment_provider))
+    @model.resolve(:fragment_provider => method(:fragment_provider),
+      :use_target_type => @lang.per_type_identifier)
   end
 
   private
@@ -127,7 +128,7 @@ class DefaultLoader
       :unresolved_refs => urefs, 
       :elements => env.elements)
     fragment.build_index
-    fragment.resolve_local
+    fragment.resolve_local(:use_target_type => @lang.per_type_identifier)
   end
 
 end

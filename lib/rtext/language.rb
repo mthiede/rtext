@@ -51,12 +51,17 @@ class Language
   #  :identifier_provider
   #     a Proc which receives an element and its containing element or nil and should return 
   #     the element's identifier as a string
-  #     the identifier must be unique for the element, however it my by relative to the given
-  #     containing element. in this case a globally unique identifer must be resonstructed by
-  #     the proc specified using the :reference_qualifier option.
+  #     the identifier must be unique for the element unless "per_type_identifier" is set to true,
+  #     in which case they must be unique for each element of the same type
+  #     identifiers may be relative to the given containing element. in this case a globally unique 
+  #     identifer must be resonstructed by the proc specified using the :reference_qualifier option.
   #     if the containing element is nil, the identifier returned must be globally unique.
   #     default: identifiers calculated by QualifiedNameProvider
   #              in this case options to QualifiedNameProvider may be provided and will be passed through
+  #
+  #  :per_type_identifier
+  #     if set to true, identifiers may be reused for elements of different type
+  #     default: false
   #
   #  :reference_qualifier
   #     a Proc which receives an element identifier as returned by the identifier provider and 
@@ -133,6 +138,7 @@ class Language
     @comment_handler = options[:comment_handler]
     @comment_provider = options[:comment_provider]
     @indent_string = options[:indent_string] || "  "
+    @per_type_identifier = options[:per_type_identifier]
   end
 
   attr_reader :root_epackage
@@ -144,6 +150,7 @@ class Language
   attr_reader :comment_handler
   attr_reader :comment_provider
   attr_reader :indent_string
+  attr_reader :per_type_identifier
 
   def class_by_command(command)
     @class_by_command[command]

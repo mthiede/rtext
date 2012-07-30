@@ -161,7 +161,7 @@ class Service
           result << "#{t.file};#{t.line};#{t.display_name}\n"
         end
       else
-        @service_provider.get_reference_targets(ident, context).each do |t|
+        @service_provider.get_reference_targets(ident, context, lines, linepos).each do |t|
           result << "#{t.file};#{t.line};#{t.display_name}\n"
         end
       end

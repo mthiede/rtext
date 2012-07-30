@@ -35,10 +35,22 @@ class DefaultServiceProvider
   end
 
   ReferenceTarget = Struct.new(:file, :line, :display_name)
-  def get_reference_targets(identifier, context)
+  def get_reference_targets(identifier, context, lines, linepos)
     result = []
     identifier = @lang.qualify_reference(identifier, context)
     targets = @model.index[identifier]
+    if targets && @lang.per_type_identifier
+      current_line = lines.last
+      linestart = current_line[0..linepos-1]
+      if linestart =~ /\s*(\w+)\s+(?:[^,]+,)*\s*(\w+):\s*(\S*)$/
+        command, fn, prefix = $1, $2, $3
+        clazz = @lang.class_by_command(command)
+        feature = clazz && @lang.non_containments(clazz.ecore).find{|f| f.name == fn}
+        if feature
+          targets = targets.select{|t| t.is_a?(feature.eType.instanceClass)}
+        end
+      end
+    end 
     targets && targets.each do |t|
       if @lang.fragment_ref(t)
         path = File.expand_path(@lang.fragment_ref(t).fragment.location)
@@ -51,6 +63,9 @@ class DefaultServiceProvider
   def get_referencing_elements(identifier, context)
     result = []
     targets = @model.index[@lang.identifier_provider.call(context, nil)]
+    if targets && @lang.per_type_identifier
+      targets = targets.select{|t| t.class == context.class}
+    end
     if targets && targets.size == 1
       target = targets.first
       elements = target.class.ecore.eAllReferences.select{|r|
@@ -75,17 +90,6 @@ class DefaultServiceProvider
   def get_problems
     load_model
     result = []
-    duplicates_by_fragment = {}
-    @model.index.each_pair do |ident, elements|
-      if elements.size > 1
-        elements.each do |e|
-          next if e.class.ecore.name == "ARPackage"
-          frag = @lang.fragment_ref(e).fragment
-          duplicates_by_fragment[frag] ||= []
-          duplicates_by_fragment[frag] << e
-        end
-      end
-    end
     @model.fragments.sort{|a,b| a.location <=> b.location}.each do |fragment|
       problems = []
       if fragment.data && fragment.data[:problems]
@@ -97,11 +101,6 @@ class DefaultServiceProvider
         # TODO: where do these proxies come from?
         next unless ur.proxy.targetIdentifier
         problems << Problem.new("Error", @lang.line_number(ur.element), "unresolved reference #{ur.proxy.targetIdentifier}")
-      end
-      dups = duplicates_by_fragment[fragment]
-      dups && dups.each do |e|
-        ident = @lang.identifier_provider.call(e, nil)
-        problems << Problem.new("Error", @lang.line_number(e), "duplicate identifier #{ident}")
       end
       if problems.size > 0
         result << FileProblems.new(File.expand_path(fragment.location), problems)
