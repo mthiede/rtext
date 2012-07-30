@@ -138,6 +138,13 @@ class Serializer
         else
           result << v.to_s  
         end
+      elsif feature.eType.instanceClass == Object
+        if v.to_s =~ /^\d+(\.\d+)?$|^\w+$|^true$|^false$/ 
+          result << v.to_s  
+        else
+          result << "\"#{v.to_s.gsub("\\","\\\\\\\\").gsub("\"","\\\"").gsub("\n","\\n").
+            gsub("\r","\\r").gsub("\t","\\t").gsub("\f","\\f").gsub("\b","\\b")}\""
+        end
       elsif feature.is_a?(RGen::ECore::EReference)
         result << @lang.identifier_provider.call(v, element) 
       end
