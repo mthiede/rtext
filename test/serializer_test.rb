@@ -243,7 +243,7 @@ TestNode name: "Target" {
       has_attr 'text', String
     end
     class TestNodeD < RGen::MetamodelBuilder::MMBase
-      has_attr 'text', String
+      has_attr 'text3', String
     end
     class TestNodeE < RGen::MetamodelBuilder::MMMultiple(TestNodeC, TestNodeD)
       has_attr 'text2', String
@@ -270,7 +270,7 @@ TestNode name: "Target" {
       :child3 => TestMMChildRole::TestNodeA.new(:text => "child3"),
       :childs4 => [TestMMChildRole::TestNodeB.new(:text => "child4")],
       :child5 => TestMMChildRole::TestNodeC.new(:text => "child5"),
-      :childs6 => [TestMMChildRole::TestNodeD.new(:text => "child6")],
+      :childs6 => [TestMMChildRole::TestNodeD.new(:text3 => "child6"), TestMMChildRole::TestNodeE.new(:text => "child6.1")],
       :child7 => TestMMChildRole::TestNodeE.new(:text2 => "child7")
       )
 
@@ -288,7 +288,10 @@ TestNode {
   TestNodeA text: "child3"
   TestNodeB text: "child4"
   TestNodeC text: "child5"
-  TestNodeD text: "child6"
+  childs6: [
+    TestNodeD text3: "child6"
+    TestNodeE text: "child6.1"
+  ]
   child7:
     TestNodeE text2: "child7"
 }
