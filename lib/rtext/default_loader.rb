@@ -50,8 +50,13 @@ class DefaultLoader
   #    into and a symbol indicating the kind of loading: :load, :load_cached, :load_update_cache
   #    default: no before load proc
   # 
+  #  :after_load
+  #    a proc which is called after a file has been loaded, receives the fragment loaded
+  #    default: no after load proc
+  #
   def load(options={})
     @before_load_proc = options[:before_load]
+    @after_load_proc = options[:after_load]
     files = @file_provider.call 
     @change_detector.check_files(files)
     @model.resolve(:fragment_provider => method(:fragment_provider),
@@ -99,12 +104,15 @@ class DefaultLoader
         @before_load_proc && @before_load_proc.call(fragment, :load_update_cache)
         load_fragment(fragment)
         @cache.store(fragment)
+      @after_load_proc && @after_load_proc.call(fragment)
       else
         @before_load_proc && @before_load_proc.call(fragment, :load_cached)
+      @after_load_proc && @after_load_proc.call(fragment)
       end
     else
       @before_load_proc && @before_load_proc.call(fragment, :load)
       load_fragment(fragment)
+    @after_load_proc && @after_load_proc.call(fragment)
     end
   end
 

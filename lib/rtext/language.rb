@@ -87,9 +87,10 @@ class Language
   #     the name of the attribute which will be used to associate a model fragment with a model element
   #
   #  :comment_handler 
-  #     a Proc which will be invoked when a new element has been instantiated. receives an 
-  #     element, the comment as a string, and the environment to which the element has been
-  #     added to. then environment may be nil.  it should add the comment to the element and 
+  #     a Proc which will be invoked when a new element has been instantiated. receives  
+  #     the comment as a string, the comment kind (one of [:above, :eol, :unassociated]), the
+  #     element and the environment to which the element has been added to.
+  #     the environment may be nil.  it should add the comment to the element and 
   #     return true. if the element can take no comment, it should return false.
   #     default: no handling of comments 
   #  

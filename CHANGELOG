@@ -5,4 +5,5 @@
 =0.2.1
 
 * Fixed generation of child role labels in serializer
+* Added :after_load hook to DefaultLoader
 
