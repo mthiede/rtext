@@ -44,16 +44,25 @@ class Instantiator
     @root_elements = options[:root_elements] || []
     @file_name = options[:file_name]
     @fragment_ref = options[:fragment_ref]
+    @context_class_stack = []
     parser = Parser.new(@lang.reference_regexp)
     begin
       @root_elements.clear
-      parser.parse(str) do |*args|
-        if args[0]
-          create_element(*args)
-        else
-          unassociated_comments(args[3])
-        end
-      end
+      parser.parse(str, 
+        :descent_visitor => lambda do |command|
+          clazz = @lang.class_by_command(command.value, @context_class_stack.last)
+          # in case no class is found, nil will be pushed, this will case the next command
+          # lookup to act as if called from toplevel
+          @context_class_stack.push(clazz)
+        end,
+        :ascent_visitor => lambda do |*args|
+          if args[0]
+            create_element(*args)
+            @context_class_stack.pop
+          else
+            unassociated_comments(args[3])
+          end
+        end)
     rescue Parser::Error => e
       problem(e.message, e.line)
       @unresolved_refs.clear if @unresolved_refs
@@ -75,7 +84,7 @@ class Instantiator
   end
 
   def create_element(command, arg_list, element_list, comments, is_root)
-    clazz = @lang.class_by_command(command.value)  
+    clazz = @context_class_stack.last 
     if !clazz 
       problem("Unknown command '#{command.value}'", command.line)
       return

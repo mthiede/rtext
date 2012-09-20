@@ -45,8 +45,7 @@ class DefaultServiceProvider
       linestart = current_line[0..linepos-1]
       if linestart =~ /\s*(\w+)\s+(?:[^,]+,)*\s*(\w+):\s*(\S*)$/
         command, fn, prefix = $1, $2, $3
-        clazz = @lang.class_by_command(command)
-        feature = clazz && @lang.non_containments(clazz.ecore).find{|f| f.name == fn}
+        feature = @lang.non_containments(context.class.ecore).find{|f| f.name == fn}
         if feature
           targets = targets.select{|t| t.is_a?(feature.eType.instanceClass)}
         end

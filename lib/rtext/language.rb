@@ -153,7 +153,7 @@ class Language
   attr_reader :indent_string
   attr_reader :per_type_identifier
 
-  def class_by_command(command)
+  def class_by_command(command, context)
     @class_by_command[command]
   end
 

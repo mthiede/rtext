@@ -6,8 +6,9 @@ class Parser
     @reference_regexp = reference_regexp
   end
 
-  def parse(str, &visitor)
-    @visitor = visitor
+  def parse(str, options)
+    @dsc_visitor = options[:descent_visitor]
+    @asc_visitor = options[:ascent_visitor]
     @tokens = tokenize(str, @reference_regexp)
     @last_line = @tokens.last && @tokens.last.line 
     while next_token
@@ -22,6 +23,7 @@ class Parser
     if (next_token && next_token == :identifier) || !allow_unassociated_comment
       comments << [ comment, :above] if comment
       command = consume(:identifier)
+      @dsc_visitor.call(command)
       arg_list = []
       parse_argument_list(arg_list)
       element_list = []
@@ -31,11 +33,11 @@ class Parser
       eol_comment = parse_eol_comment
       comments << [ eol_comment, :eol ] if eol_comment
       consume(:newline)
-      @visitor.call(command, arg_list, element_list, comments, is_root)
+      @asc_visitor.call(command, arg_list, element_list, comments, is_root)
     elsif comment
       # if there is no statement, the comment is non-optional
       comments << [ comment, :unassociated ]
-      @visitor.call(nil, nil, nil, comments, nil)
+      @asc_visitor.call(nil, nil, nil, comments, nil)
       nil
     else
       # die expecting an identifier (next token is not an identifier)
