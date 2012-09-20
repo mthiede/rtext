@@ -2,11 +2,12 @@ module RText
 
 class DefaultServiceProvider
 
-  def initialize(language, fragmented_model, model_loader)
+  def initialize(language, fragmented_model, model_loader, options={})
     @lang = language
     @model = fragmented_model
     @loader = model_loader 
     @element_name_index = nil
+    @result_limit = options[:result_limit]
     @model.add_fragment_change_listener(proc {|fragment, kind|
       @element_name_index = nil
     })
@@ -114,8 +115,9 @@ class DefaultServiceProvider
     result = []
     return result unless pattern
     sub_index = element_name_index[pattern[0..0].downcase]
+    truncate_result = false
     sub_index && sub_index.each_pair do |ident, elements|
-      if ident.split(/\W/).last.downcase.index(pattern.downcase) == 0
+      if !truncate_result && ident.split(/\W/).last.downcase.index(pattern.downcase) == 0
         elements.each do |e|
           if @lang.fragment_ref(e)
             non_word_index = ident.rindex(/\W/)
@@ -129,12 +131,20 @@ class DefaultServiceProvider
             display_name = "#{name} [#{e.class.ecore.name}]"
             display_name += " - #{scope}" if scope.size > 0
             path = File.expand_path(@lang.fragment_ref(e).fragment.location)
-            result << OpenElementChoice.new(display_name, path, @lang.line_number(e))
+            if !@result_limit || result.size < @result_limit
+              result << OpenElementChoice.new(display_name, path, @lang.line_number(e))
+            else
+              truncate_result = true
+            end
           end
         end
       end
     end
-    result.sort{|a,b| a.display_name <=> b.display_name}
+    result = result.sort{|a,b| a.display_name <=> b.display_name}
+    if truncate_result
+      result << OpenElementChoice.new("--- result truncated, showing first #{@result_limit} entries ---", "/", 1)
+    end
+    result
   end
 
   def element_name_index

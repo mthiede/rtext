@@ -6,4 +6,5 @@
 
 * Fixed generation of child role labels in serializer
 * Added :after_load hook to DefaultLoader
+* Added result limit option to DefaultServiceProvider
 
