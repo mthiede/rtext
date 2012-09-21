@@ -7,7 +7,7 @@ require 'rgen/metamodel_builder'
 require 'rtext/instantiator'
 require 'rtext/language'
 
-class RTextInstantiatorTest < Test::Unit::TestCase
+class InstantiatorTest < Test::Unit::TestCase
 
   module TestMM
     extend RGen::MetamodelBuilder::ModuleExtension
@@ -77,6 +77,12 @@ class RTextInstantiatorTest < Test::Unit::TestCase
       class Data < RGen::MetamodelBuilder::MMBase
         has_attr 'notTheBuiltin', String
       end
+    end
+  end
+
+  module TestMMNonRootClass
+    extend RGen::MetamodelBuilder::ModuleExtension
+    class NonRootClass < RGen::MetamodelBuilder::MMBase
     end
   end
 
@@ -241,6 +247,17 @@ class RTextInstantiatorTest < Test::Unit::TestCase
     assert_no_problems(problems)
     assert_model_simple(env)
   end
+
+  def test_child_role_empty
+    env, problems = instantiate(%Q(
+      TestNode {
+        childs: [
+        ]
+      }
+    ), TestMM)
+    assert_no_problems(problems)
+  end
+
 
   #
   # whitespace
@@ -508,6 +525,17 @@ class RTextInstantiatorTest < Test::Unit::TestCase
     ], problems)
   end
 
+  def test_child_role_without_child
+    env, problems = instantiate(%Q(
+      TestNode {
+        singleChild:
+      }
+    ), TestMM2)
+    assert_problems([
+      /unexpected }, expected identifier/i
+    ], problems)
+  end
+
   def test_wrong_child
     env, problems = instantiate(%Q(
       TestNode {
@@ -617,6 +645,13 @@ class RTextInstantiatorTest < Test::Unit::TestCase
       }
     ), TestMM)
     assert_problems([/unexpected \}, expected identifier/i], problems)
+  end
+
+  def test_invalid_root
+    env, problems = instantiate(%Q(
+      NonRootClass
+    ), TestMMNonRootClass)
+    assert_problems([/command 'NonRootClass' can't be used on root level/i], problems)
   end
 
   #
@@ -889,7 +924,9 @@ class RTextInstantiatorTest < Test::Unit::TestCase
 
   def instantiate(text, mm, options={})
     env = RGen::Environment.new
-    lang = RText::Language.new(mm.ecore, options)
+    lang = RText::Language.new(mm.ecore, options.merge(
+      :root_classes => mm.ecore.eAllClasses.select{|c| 
+        c.name == "TestNode" || c.name == "Data" || c.name == "TestNodeSub" || c.name == "SubNode"}))
     inst = RText::Instantiator.new(lang)
     problems = []
     inst.instantiate(text, options.merge({:env => env, :problems => problems}))

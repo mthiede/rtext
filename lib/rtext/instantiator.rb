@@ -57,8 +57,9 @@ class Instantiator
         end,
         :ascent_visitor => lambda do |*args|
           if args[0]
-            create_element(*args)
+            element =create_element(*args)
             @context_class_stack.pop
+            element
           else
             unassociated_comments(args[3])
           end
@@ -91,6 +92,10 @@ class Instantiator
     end
     if clazz.ecore.abstract
       problem("Unknown command '#{command.value}' (metaclass is abstract)", command.line)
+      return
+    end
+    if is_root && !@lang.root_classes.include?(clazz.ecore)
+      problem("Command '#{command.value}' can't be used on root level", command.line)
       return
     end
     element = clazz.new

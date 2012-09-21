@@ -75,6 +75,10 @@ class Language
   #     default: no reference qualifier, i.e. all identifiers returned by the identifier provider 
   #              must be globally unique
   #
+  #  :root_classes
+  #     an Array of EClass objects representing classes which can be used on root level
+  #     default: all classes which can't be contained by any class
+  #
   #  :line_number_attribute
   #     the name of the attribute which will be used to associate the line number with a model element
   #     default: no line number
@@ -114,6 +118,7 @@ class Language
     @unlabled_arguments = options[:unlabled_arguments]
     @unquoted_arguments = options[:unquoted_arguments]
     @argument_format_provider = options[:argument_format_provider]
+    @root_classes = options[:root_classes] || default_root_classes(root_epackage)
     @class_by_command = {}
     command_name_provider = options[:command_name_provider] || proc{|c| c.name}
     ((!options.has_key?(:short_class_names) || options[:short_class_names]) ?
@@ -143,6 +148,7 @@ class Language
   end
 
   attr_reader :root_epackage
+  attr_reader :root_classes
   attr_reader :reference_regexp
   attr_reader :identifier_provider
   attr_reader :line_number_attribute
@@ -225,6 +231,11 @@ class Language
   end
 
   private
+
+  def default_root_classes(root_package)
+    root_epackage.eAllClasses.select{|c| !c.abstract &&
+      !c.eAllReferences.any?{|r| r.eOpposite && r.eOpposite.containment}}
+  end
 
   def features(clazz)
     @feature_provider.call(clazz)

@@ -120,10 +120,12 @@ class Service
   def complete(lines)
     linepos = lines.shift.to_i
     context = ContextElementBuilder.build_context_element(@lang, lines, linepos)
+    # if the current line is empty or the command is invalid, set the surrounding element as context
+    context ||= ContextElementBuilder.build_context_element(@lang, lines[0..-2], linepos)
     @logger.debug("context element: #{@lang.identifier_provider.call(context, nil)}") if @logger
     current_line = lines.pop
     current_line ||= ""
-    options = @completer.complete(current_line, linepos, 
+    options = @completer.complete(current_line[0..linepos-1], context,
       proc {|i| lines[-i]}, 
       proc {|ref| 
         @service_provider.get_reference_completion_options(ref, context).collect {|o|

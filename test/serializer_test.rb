@@ -6,7 +6,7 @@ require 'rgen/metamodel_builder'
 require 'rtext/serializer'
 require 'rtext/language'
 
-class RTextSerializerTest < Test::Unit::TestCase
+class SerializerTest < Test::Unit::TestCase
 
   class StringWriter < String
     alias write concat
