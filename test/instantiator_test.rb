@@ -86,6 +86,24 @@ class InstantiatorTest < Test::Unit::TestCase
     end
   end
 
+  module TestMMContextSensitiveCommands
+    extend RGen::MetamodelBuilder::ModuleExtension
+    module SubPackage2
+      extend RGen::MetamodelBuilder::ModuleExtension
+      class Command < RGen::MetamodelBuilder::MMBase
+      end
+    end
+    module SubPackage1
+      extend RGen::MetamodelBuilder::ModuleExtension
+      class Command < RGen::MetamodelBuilder::MMBase
+        contains_one 'command', SubPackage2::Command, 'super'
+      end
+    end
+    class TestNode < RGen::MetamodelBuilder::MMBase
+      contains_one 'command', SubPackage1::Command, 'testNode'
+    end
+  end
+
   def test_simple
     env, problems = instantiate(%Q(
       TestNode text: "some text", nums: [1,2] {
@@ -427,6 +445,41 @@ class InstantiatorTest < Test::Unit::TestCase
     assert_no_problems(problems)
     assert_model_simple(env, :with_nums)
   end
+  
+  # 
+  # context sensitive commands
+  #
+
+  def test_context_sensitive
+    env, problems = instantiate(%Q(
+      TestNode {
+        Command {
+          Command
+        }
+      }
+      ), TestMMContextSensitiveCommands)
+    assert_no_problems(problems)
+    root = env.find(:class => TestMMContextSensitiveCommands::TestNode).first
+    assert_not_nil(root)
+    assert(root.command.is_a?(TestMMContextSensitiveCommands::SubPackage1::Command))
+    assert(root.command.command.is_a?(TestMMContextSensitiveCommands::SubPackage2::Command))
+  end
+
+  def test_context_sensitive_command_name_mapping
+    env, problems = instantiate(%Q(
+      Command {
+        Command {
+          Command
+        }
+      }
+      ), TestMMContextSensitiveCommands, :command_name_provider => lambda do |c|
+        "Command" end)
+    assert_no_problems(problems)
+    root = env.find(:class => TestMMContextSensitiveCommands::TestNode).first
+    assert_not_nil(root)
+    assert(root.command.is_a?(TestMMContextSensitiveCommands::SubPackage1::Command))
+    assert(root.command.command.is_a?(TestMMContextSensitiveCommands::SubPackage2::Command))
+  end
 
   #
   # problems
@@ -543,7 +596,7 @@ class InstantiatorTest < Test::Unit::TestCase
       }
     ), TestMM2)
     assert_problems([
-      /this kind of element can not be contained here/i,
+      /command 'TestNode3' can not be used in this context/i,
     ], problems)
   end
 
@@ -651,7 +704,7 @@ class InstantiatorTest < Test::Unit::TestCase
     env, problems = instantiate(%Q(
       NonRootClass
     ), TestMMNonRootClass)
-    assert_problems([/command 'NonRootClass' can't be used on root level/i], problems)
+    assert_problems([/command 'NonRootClass' can not be used on root level/i], problems)
   end
 
   #
@@ -806,13 +859,6 @@ class InstantiatorTest < Test::Unit::TestCase
     ), TestMMSubpackage)
     assert_no_problems(problems)
     assert_equal "something", env.elements.first.text
-  end
-
-  def test_subpackage_no_shortname_opt
-    env, problems = instantiate(%q(
-      TestNodeSub text: "something" 
-    ), TestMMSubpackage, :short_class_names => false)
-    assert_problems([/Unknown command 'TestNodeSub'/], problems)
   end
 
   #

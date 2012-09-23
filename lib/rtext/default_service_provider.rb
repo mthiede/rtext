@@ -26,7 +26,7 @@ class DefaultServiceProvider
       targets = @model.index.values.flatten.select{|e| e.is_a?(clazz)}
     end
     targets.collect{|t| 
-      ident = @lang.identifier_provider.call(t, context)
+      ident = @lang.identifier_provider.call(t, context.element)
       if ident
         ReferenceCompletionOption.new(ident, t.class.ecore.name)
       else
@@ -36,19 +36,13 @@ class DefaultServiceProvider
   end
 
   ReferenceTarget = Struct.new(:file, :line, :display_name)
-  def get_reference_targets(identifier, context, lines, linepos)
+  def get_reference_targets(identifier, context)
     result = []
-    identifier = @lang.qualify_reference(identifier, context)
+    identifier = @lang.qualify_reference(identifier, context.element)
     targets = @model.index[identifier]
     if targets && @lang.per_type_identifier
-      current_line = lines.last
-      linestart = current_line[0..linepos-1]
-      if linestart =~ /\s*(\w+)\s+(?:[^,]+,)*\s*(\w+):\s*(\S*)$/
-        command, fn, prefix = $1, $2, $3
-        feature = @lang.non_containments(context.class.ecore).find{|f| f.name == fn}
-        if feature
-          targets = targets.select{|t| t.is_a?(feature.eType.instanceClass)}
-        end
+      if context.feature
+        targets = targets.select{|t| t.is_a?(context.feature.eType.instanceClass)}
       end
     end 
     targets && targets.each do |t|
@@ -62,9 +56,9 @@ class DefaultServiceProvider
 
   def get_referencing_elements(identifier, context)
     result = []
-    targets = @model.index[@lang.identifier_provider.call(context, nil)]
+    targets = @model.index[@lang.identifier_provider.call(context.element, nil)]
     if targets && @lang.per_type_identifier
-      targets = targets.select{|t| t.class == context.class}
+      targets = targets.select{|t| t.class == context.element.class}
     end
     if targets && targets.size == 1
       target = targets.first

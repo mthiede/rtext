@@ -353,7 +353,7 @@ def build_context(mm, text)
   pos_in_line = context_lines.last.index("|")
   context_lines.last.sub!("|", "")
   lang = RText::Language.new(mm.ecore, :root_classes => mm.ecore.eAllClasses)
-  RText::ContextBuilder.build_context_element(lang, context_lines, pos_in_line)
+  RText::ContextBuilder.build_context(lang, context_lines, pos_in_line)
 end
 
 end

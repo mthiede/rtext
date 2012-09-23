@@ -1,6 +1,6 @@
 require 'socket'
 require 'rtext/completer'
-require 'rtext/context_element_builder'
+require 'rtext/context_builder'
 
 module RText
 
@@ -119,15 +119,11 @@ class Service
 
   def complete(lines)
     linepos = lines.shift.to_i
-    context = ContextElementBuilder.build_context_element(@lang, lines, linepos)
-    # if the current line is empty or the command is invalid, set the surrounding element as context
-    context ||= ContextElementBuilder.build_context_element(@lang, lines[0..-2], linepos)
-    @logger.debug("context element: #{@lang.identifier_provider.call(context, nil)}") if @logger
+    context = ContextBuilder.build_context(@lang, lines, linepos)
+    @logger.debug("context element: #{@lang.identifier_provider.call(context.element, nil)}") if @logger
     current_line = lines.pop
     current_line ||= ""
-    options = @completer.complete(current_line[0..linepos-1], context,
-      proc {|i| lines[-i]}, 
-      proc {|ref| 
+    options = @completer.complete(context, lambda {|ref| 
         @service_provider.get_reference_completion_options(ref, context).collect {|o|
           Completer::CompletionOption.new(o.identifier, "<#{o.type}>")}
       })
@@ -150,10 +146,10 @@ class Service
 
   def get_reference_targets(lines)
     linepos = lines.shift.to_i
-    context = ContextElementBuilder.build_context_element(@lang, lines, linepos)
     current_line = lines.last
+    context = ContextBuilder.build_context(@lang, lines, lines.last.size)
     result = []
-    if current_line[linepos..linepos] =~ /[\w\/]/
+    if context && current_line[linepos..linepos] =~ /[\w\/]/
       ident_start = (current_line.rindex(/[^\w\/]/, linepos) || -1)+1
       ident_end = (current_line.index(/[^\w\/]/, linepos) || current_line.size)-1
       ident = current_line[ident_start..ident_end]
@@ -163,7 +159,7 @@ class Service
           result << "#{t.file};#{t.line};#{t.display_name}\n"
         end
       else
-        @service_provider.get_reference_targets(ident, context, lines, linepos).each do |t|
+        @service_provider.get_reference_targets(ident, context).each do |t|
           result << "#{t.file};#{t.line};#{t.display_name}\n"
         end
       end

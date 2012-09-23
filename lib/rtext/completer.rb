@@ -81,13 +81,7 @@ class Completer
             # containment reference, ignore
           end
         else
-          # label completion
-          result = @lang.labled_arguments(clazz).
-            select{|f| f.name.index(context.prefix) == 0 && 
-              context.element.getGenericAsArray(f.name).empty?}.
-            sort{|a,b| a.name <=> b.name}.collect do |f| 
-              CompletionOption.new("#{f.name}:", "<#{f.eType.name}>")
-            end 
+          result = []
           if !@lang.labled_arguments(clazz).any?{|f| 
               context.element.getGenericAsArray(f.name).size > 0}
             result += @lang.unlabled_arguments(clazz).
@@ -97,6 +91,13 @@ class Completer
                 CompletionOption.new("<#{f.name}>", "<#{f.eType.name}>")
               end
           end
+          # label completion
+          result += @lang.labled_arguments(clazz).
+            select{|f| f.name.index(context.prefix) == 0 && 
+              context.element.getGenericAsArray(f.name).empty?}.
+            sort{|a,b| a.name <=> b.name}.collect do |f| 
+              CompletionOption.new("#{f.name}:", "<#{f.eType.name}>")
+            end 
           result
         end
       end

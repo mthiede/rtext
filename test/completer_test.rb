@@ -24,6 +24,13 @@ module TestMM
     contains_one 'child2RoleA', TestNode2, 'parentA'
     contains_many 'child2RoleB', TestNode2, 'parentB'
   end
+  SomeEnum = RGen::MetamodelBuilder::DataTypes::Enum.new(
+    :name => "SomeEnum", :literals => [:A, :B, :'non-word*chars'])
+  class TestNode3 < RGen::MetamodelBuilder::MMBase
+    has_attr 'bool', Boolean
+    has_attr 'float', Float
+    has_attr 'enum', SomeEnum
+  end
   class TextNode < RGen::MetamodelBuilder::MMBase
   end
 end
@@ -33,11 +40,11 @@ def test_after_command
   TestNode |
   END
   assert_options([
+    ["<unlabled1>", "<EString>"],
     ["nums:", "<EInt>"],
     ["others:", "<TestNode>"],
     ["related:", "<TestNode>"],
-    ["text:", "<EString>"],
-    ["<unlabled1>", "<EString>"]
+    ["text:", "<EString>"]
   ], options)
 end
 
@@ -75,11 +82,11 @@ def test_after_unlabled_value
   TestNode "bla", |
   END
   assert_options([
+    ["<unlabled2>", "<EInt>"],
     ["nums:", "<EInt>"],
     ["others:", "<TestNode>"],
     ["related:", "<TestNode>"],
-    ["text:", "<EString>"],
-    ["<unlabled2>", "<EInt>"]
+    ["text:", "<EString>"]
   ], options)
 end
 
@@ -114,7 +121,7 @@ def test_after_array_direct
   ], options)
 end
 
-def test_value
+def test_value_int
   options = complete TestMM, <<-END
   TestNode nums: | 
   END
@@ -124,6 +131,40 @@ def test_value
     ["2", nil],
     ["3", nil],
     ["4", nil]
+  ], options)
+end
+
+def test_value_boolean
+  options = complete TestMM, <<-END
+  TestNode3 bool: | 
+  END
+  assert_options([
+    ["true", nil],
+    ["false", nil],
+  ], options)
+end
+
+def test_value_float
+  options = complete TestMM, <<-END
+  TestNode3 float: | 
+  END
+  assert_options([
+    ["0.0", nil],
+    ["1.0", nil],
+    ["2.0", nil],
+    ["3.0", nil],
+    ["4.0", nil]
+  ], options)
+end
+
+def test_value_enum
+  options = complete TestMM, <<-END
+  TestNode3 enum: | 
+  END
+  assert_options([
+    ["A", nil],
+    ["B", nil],
+    ["non-word*chars", nil]
   ], options)
 end
 
@@ -150,6 +191,26 @@ def test_array_value2
     ["2", nil],
     ["3", nil],
     ["4", nil]
+  ], options)
+end
+
+def test_reference_value
+  options = complete(TestMM, %Q(\
+  TestNode related: |\
+  ), lambda { |r| [
+    RText::Completer::CompletionOption.new("A", "a"),
+    RText::Completer::CompletionOption.new("B", "b") ] })
+  assert_options([
+    ["A", "a"],
+    ["B", "b"],
+  ], options)
+end
+
+def test_reference_value_no_ref_completion_provider
+  options = complete TestMM, <<-END
+  TestNode related: |
+  END
+  assert_options([
   ], options)
 end
 
@@ -226,6 +287,7 @@ def test_root
   assert_options([
     ["TestNode", "<unlabled1>, <unlabled2>"],
     ["TestNode2", ""],
+    ["TestNode3", ""],
     ["TextNode", ""]
   ], options)
 end
@@ -243,15 +305,15 @@ def assert_options(expected, options)
   assert_equal(expected, options.collect { |o| [o.text, o.extra] })
 end
 
-def complete(mm, text)
+def complete(mm, text, ref_comp_option_provider=nil)
   context_lines = text.split("\n")
   pos_in_line = context_lines.last.index("|")
   context_lines.last.sub!("|", "")
   lang = RText::Language.new(mm.ecore,
     :root_classes => mm.ecore.eAllClasses,
     :unlabled_arguments => lambda {|c| ["unlabled1", "unlabled2"]})
-  context = RText::ContextBuilder.build_context_element(lang, context_lines, pos_in_line)
-  RText::Completer.new(lang).complete(context)
+  context = RText::ContextBuilder.build_context(lang, context_lines, pos_in_line)
+  RText::Completer.new(lang).complete(context, ref_comp_option_provider)
 end
 
 end

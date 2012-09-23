@@ -32,7 +32,7 @@ module ContextBuilder
   # Builds the context information based on a set of +content_lines+. Content lines
   # are the RText lines containing the nested command headers in the original order.
   # The cursor is assumed to be in the last context line at column +position_in_line+
-  def build_context_element(language, context_lines, position_in_line)
+  def build_context(language, context_lines, position_in_line)
     context_info = fix_context(context_lines, position_in_line)
     return nil unless context_info
     element = instantiate_context_element(language, context_info)

@@ -35,11 +35,6 @@ class Language
   #     (in sprintf syntax) which will be used by the serializer for integers and floats.
   #     default: if not present or the proc returns nil, then #to_s is used
   #
-  #  :short_class_names
-  #     if true, the metamodel is searched for classes by unqualified class name recursively
-  #     if false, classes can only be found in the root package, not in subpackages 
-  #     default: true
-  #
   #  :reference_regexp  
   #     a Regexp which is used by the tokenizer for identifying references 
   #     it must only match at the beginning of a string, i.e. it should start with \A
@@ -119,18 +114,8 @@ class Language
     @unquoted_arguments = options[:unquoted_arguments]
     @argument_format_provider = options[:argument_format_provider]
     @root_classes = options[:root_classes] || default_root_classes(root_epackage)
-    @class_by_command = {}
     command_name_provider = options[:command_name_provider] || proc{|c| c.name}
-    ((!options.has_key?(:short_class_names) || options[:short_class_names]) ?
-      root_epackage.eAllClasses : root_epackage.eClasses).each do |c|
-        next if c.abstract
-        command_name = command_name_provider.call(c)
-        raise "ambiguous command name #{command_name}" if @class_by_command[command_name]
-        @class_by_command[command_name] = c.instanceClass
-      end
-    # there can't be multiple commands for the same class as the command name provider
-    # can only return one command per class
-    @command_by_class = @class_by_command.invert 
+    setup_commands(root_epackage, command_name_provider)
     @reference_regexp = options[:reference_regexp] || /\A\w*(\/\w*)+/
     @identifier_provider = options[:identifier_provider] || 
       proc { |element, context|
@@ -159,8 +144,13 @@ class Language
   attr_reader :indent_string
   attr_reader :per_type_identifier
 
-  def class_by_command(command, context)
-    @class_by_command[command]
+  def class_by_command(command, context_class)
+    map = @class_by_command[context_class]
+    map && map[command]
+  end
+
+  def has_command(command)
+    @has_command[command]
   end
 
   def command_by_class(clazz)
@@ -231,6 +221,34 @@ class Language
   end
 
   private
+
+  def setup_commands(root_epackage, command_name_provider)
+    @class_by_command = {}
+    @command_by_class = {}
+    @has_command = {}
+    root_epackage.eAllClasses.each do |c|
+      next if c.abstract
+      cmd = command_name_provider.call(c)
+      @command_by_class[c.instanceClass] = cmd 
+      @has_command[cmd] = true
+      clazz = c.instanceClass
+      @class_by_command[clazz] ||= {} 
+      c.eAllReferences.select{|r| r.containment}.collect{|r|
+          [r.eType] + r.eType.eAllSubTypes}.flatten.uniq.each do |t|
+        next if t.abstract
+        cmw = command_name_provider.call(t)
+        raise "ambiguous command name #{cmw}" if @class_by_command[clazz][cmw]
+        @class_by_command[clazz][cmw] = t.instanceClass
+      end
+    end
+    @class_by_command[nil] = {} 
+    @root_classes.each do |c|
+      next if c.abstract
+      cmw = command_name_provider.call(c)
+      raise "ambiguous command name #{cmw}" if @class_by_command[nil][cmw]
+      @class_by_command[nil][cmw] = c.instanceClass
+    end
+  end
 
   def default_root_classes(root_package)
     root_epackage.eAllClasses.select{|c| !c.abstract &&

@@ -86,16 +86,20 @@ class Instantiator
 
   def create_element(command, arg_list, element_list, comments, is_root)
     clazz = @context_class_stack.last 
-    if !clazz 
+    if !@lang.has_command(command.value)
       problem("Unknown command '#{command.value}'", command.line)
       return
+    elsif !clazz 
+      if is_root
+        problem("Command '#{command.value}' can not be used on root level", command.line)
+        return
+      else
+        problem("Command '#{command.value}' can not be used in this context", command.line)
+        return
+      end
     end
     if clazz.ecore.abstract
       problem("Unknown command '#{command.value}' (metaclass is abstract)", command.line)
-      return
-    end
-    if is_root && !@lang.root_classes.include?(clazz.ecore)
-      problem("Command '#{command.value}' can't be used on root level", command.line)
       return
     end
     element = clazz.new
@@ -167,6 +171,7 @@ class Instantiator
       return if child.nil?
       feature = @lang.containments_by_target_type(element.class.ecore, child.class.ecore)
       if feature.size == 0
+        # this should never happen since the scope of an element is already checked when it's created
         problem("This kind of element can not be contained here", line_number(child))
         return
       end
