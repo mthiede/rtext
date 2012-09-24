@@ -292,6 +292,16 @@ def test_root
   ], options)
 end
 
+def test_root_no_context_lines
+  options = complete TestMM, ""
+  assert_options([
+    ["TestNode", "<unlabled1>, <unlabled2>"],
+    ["TestNode2", ""],
+    ["TestNode3", ""],
+    ["TextNode", ""]
+  ], options)
+end
+
 def test_root_prefix
   options = complete TestMM, <<-END
   Text|
@@ -307,8 +317,10 @@ end
 
 def complete(mm, text, ref_comp_option_provider=nil)
   context_lines = text.split("\n")
-  pos_in_line = context_lines.last.index("|")
-  context_lines.last.sub!("|", "")
+  if context_lines.last
+    pos_in_line = context_lines.last.index("|")
+    context_lines.last.sub!("|", "")
+  end
   lang = RText::Language.new(mm.ecore,
     :root_classes => mm.ecore.eAllClasses,
     :unlabled_arguments => lambda {|c| ["unlabled1", "unlabled2"]})

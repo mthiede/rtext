@@ -77,6 +77,9 @@ module ContextBuilder
   # extend +context_lines+ into a set of lines which can be processed by the RText
   def fix_context(context_lines, position_in_line)
     context_lines = context_lines.dup
+    # make sure there is at least one line
+    context_lines << "" if context_lines.empty?
+    position_in_line ||= context_lines.last.size
     # cut off last line right of cursor
     context_lines << context_lines.pop[0..position_in_line-1]
     line = context_lines.last
