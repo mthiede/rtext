@@ -2,9 +2,15 @@
 
 * First public release
 
-=0.2.1
+=0.3.0
 
+* Added context sensitive commands
+* Show child role lables in auto completer
+* Show unlabled arguments in auto completer
+* Show only arguments in auto completer which don't have a value yet
+* Fixed auto completion within array values
 * Fixed generation of child role labels in serializer
 * Added :after_load hook to DefaultLoader
 * Added result limit option to DefaultServiceProvider
+* Removed short_class_names option from Language
 
