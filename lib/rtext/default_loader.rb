@@ -29,6 +29,10 @@ class DefaultLoader
   #  :cache
   #    a fragment cache to be used for loading
   #
+  #  :dont_reload_with_errors
+  #    if set to true, don't reload fragments which have parse errors 
+  #    instead keep the existing fragment but attach the new problem list
+  #
   def initialize(language, fragmented_model, options={})
     @lang = language
     @model = fragmented_model
@@ -40,6 +44,7 @@ class DefaultLoader
     @fragment_by_file = {}
     pattern = options[:pattern]
     @file_provider = options[:file_provider] || proc { Dir.glob(pattern) }
+    @dont_reload_with_errors = options[:dont_reload_with_errors]
   end
 
   # Loads or reloads model fragments from files using the file patterns or file provider 
@@ -79,8 +84,18 @@ class DefaultLoader
   end
 
   def file_changed(file)
-    file_removed(file)
-    file_added(file)
+    fragment = RGen::Fragment::ModelFragment.new(file, 
+      :identifier_provider => @lang.identifier_provider)
+    load_fragment_cached(fragment)
+    if @dont_reload_with_errors && fragment.data[:problems].size > 0
+      # keep old fragment but attach new problems
+      old_fragment = @fragment_by_file[file]
+      old_fragment.data[:problems] = fragment.data[:problems] 
+    else
+      file_removed(file)
+      @model.add_fragment(fragment)
+      @fragment_by_file[file] = fragment
+    end
   end
 
   def fragment_provider(element)

@@ -14,3 +14,7 @@
 * Added result limit option to DefaultServiceProvider
 * Removed short_class_names option from Language
 
+=0.3.1
+
+* Added DefaultLoader option to not reload fragments with errors
+
