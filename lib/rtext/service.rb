@@ -120,7 +120,7 @@ class Service
   def complete(lines)
     linepos = lines.shift.to_i
     context = ContextBuilder.build_context(@lang, lines, linepos)
-    @logger.debug("context element: #{@lang.identifier_provider.call(context.element, nil)}") if @logger
+    @logger.debug("context element: #{@lang.identifier_provider.call(context.element, nil)}") if context && @logger
     current_line = lines.pop
     current_line ||= ""
     options = @completer.complete(context, lambda {|ref| 
