@@ -13,8 +13,12 @@ class DefaultServiceProvider
     })
   end
 
-  def load_model
-    @loader.load
+  def load_model(options={})
+    if options[:on_progress]
+      @loader.load(:after_load => options[:on_progress])
+    else
+      @loader.load
+    end
   end
 
   ReferenceCompletionOption = Struct.new(:identifier, :type)
@@ -81,8 +85,8 @@ class DefaultServiceProvider
 
   FileProblems = Struct.new(:file, :problems)
   Problem = Struct.new(:severity, :line, :message)
-  def get_problems
-    load_model
+  def get_problems(options={})
+    load_model(options)
     result = []
     @model.fragments.sort{|a,b| a.location <=> b.location}.each do |fragment|
       problems = []

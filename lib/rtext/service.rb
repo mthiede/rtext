@@ -54,13 +54,23 @@ class Service
       cmd = lines.shift
       invocation_id = lines.shift
       response = nil
+      progress_index = 0
       case cmd
+      when "protocol_version"
+        response = ["1"]
       when "refresh"
         response = refresh(lines) 
       when "complete"
         response = complete(lines)
       when "show_problems"
         response = get_problems(lines)
+      when "show_problems2"
+        response = get_problems(lines, :with_severity => true, :on_progress => lambda do |frag, num_frags|
+          progress_index += 1
+          num_frags = 1 if num_frags < 1
+          progress = ["progress: #{progress_index*100/num_frags}"]
+          send_response(progress, invocation_id, socket, from, :incremental => true)
+        end)
       when "get_reference_targets"
         response = get_reference_targets(lines)
       when "get_elements"
@@ -79,7 +89,7 @@ class Service
 
   private
 
-  def send_response(response, invocation_id, socket, from)
+  def send_response(response, invocation_id, socket, from, options={})
     @logger.debug(response.inspect) if @logger
     loop do
       packet_lines = []
@@ -88,7 +98,7 @@ class Service
         size += response.first.size
         packet_lines << response.shift
       end
-      if response.size > 0
+      if options[:incremental] || response.size > 0
         packet_lines.unshift("more\n")
       else
         packet_lines.unshift("last\n")
@@ -132,13 +142,13 @@ class Service
     }
   end
 
-  def get_problems(lines)
-    # TODO: severity
+  def get_problems(lines, options={})
     result = []
-    @service_provider.get_problems.each do |fp|
+    severity = options[:with_severity] ? "e;" : ""
+    @service_provider.get_problems(:on_progress => options[:on_progress]).each do |fp|
       result << fp.file+"\n"
       fp.problems.each do |p| 
-        result << "#{p.line};#{p.message}\n"
+        result << "#{severity}#{p.line};#{p.message}\n"
       end
     end
     result

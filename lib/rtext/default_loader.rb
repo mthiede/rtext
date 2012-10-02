@@ -53,16 +53,19 @@ class DefaultLoader
   #  :before_load
   #    a proc which is called before a file is actually loaded, receives the fragment to load
   #    into and a symbol indicating the kind of loading: :load, :load_cached, :load_update_cache
+  #    optionally, the proc may take third argument which is the overall number of files
   #    default: no before load proc
   # 
   #  :after_load
   #    a proc which is called after a file has been loaded, receives the fragment loaded
+  #    optionally, the proc may take second argument which is the overall number of files
   #    default: no after load proc
   #
   def load(options={})
     @before_load_proc = options[:before_load]
     @after_load_proc = options[:after_load]
     files = @file_provider.call 
+    @num_files = files.size
     @change_detector.check_files(files)
     @model.resolve(:fragment_provider => method(:fragment_provider),
       :use_target_type => @lang.per_type_identifier)
@@ -116,18 +119,38 @@ class DefaultLoader
         end
       end
       if result == :invalid
-        @before_load_proc && @before_load_proc.call(fragment, :load_update_cache)
+        call_before_load_proc(fragment, :load_update_cache)
         load_fragment(fragment)
         @cache.store(fragment)
-      @after_load_proc && @after_load_proc.call(fragment)
+        call_after_load_proc(fragment)
       else
-        @before_load_proc && @before_load_proc.call(fragment, :load_cached)
-      @after_load_proc && @after_load_proc.call(fragment)
+        call_before_load_proc(fragment, :load_cached)
+        call_after_load_proc(fragment)
       end
     else
-      @before_load_proc && @before_load_proc.call(fragment, :load)
+      call_before_load_proc(fragment, :load)
       load_fragment(fragment)
-    @after_load_proc && @after_load_proc.call(fragment)
+      call_after_load_proc(fragment)
+    end
+  end
+
+  def call_before_load_proc(fragment, kind)
+    if @before_load_proc
+      if @before_load_proc.arity == 3
+        @before_load_proc.call(fragment, kind, @num_files) 
+      else
+        @before_load_proc.call(fragment, kind) 
+      end
+    end
+  end
+
+  def call_after_load_proc(fragment)
+    if @after_load_proc
+      if @after_load_proc.arity == 2
+        @after_load_proc.call(fragment, @num_files) 
+      else
+        @after_load_proc.call(fragment) 
+      end
     end
   end
 

@@ -188,11 +188,32 @@ The command implicitly reloads the model from the filesystem before checking for
     no parameters 
 
   Response Format:
-    result line n:       <file name>
-    result line n+1..n+m <line number>;<message>
+    result line 1:       <file name>
+    result line 2..n     <line number>;<message>
 
 Note that the file name is repeated only once for all problems within a file to reduce the amout of
 result data which needs to be transmitted.
+
+
+===Command: Show Problems 2
+
+Since protocol version 1
+
+Like the first version but provides progress information while the model is loaded and problem severity.
+
+  Request Format:
+    command id:          "show_problems2"
+    no parameters 
+
+  Response Format:
+    result line 1..n:    progress:<[0..100]>
+    result line n+1:     <file name>
+    result line n+2..m   <[diwef]>;<line number>;<message>
+
+Progress is expressed by a value between 0 and 100. The backend may choose to return any number
+of progress lines. It should start with 0 and end with 100 and progress should not go backwards.
+
+Problem severity is expressed with one of the following flags: d (debug), i (info), w (warn), e (error), f (fatal)
 
 
 ===Command: Reference Targets
