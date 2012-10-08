@@ -17,4 +17,5 @@
 =0.3.1
 
 * Added DefaultLoader option to not reload fragments with errors
+* Fixed serialization of enum literals starting with a digit
 

@@ -133,7 +133,7 @@ class Serializer
           result << v.to_s
         end
       elsif feature.eType.is_a?(RGen::ECore::EEnum)
-        if v.to_s =~ /\W/
+        if v.to_s =~ /^\d|\W/
           result << "\"#{v.to_s.gsub("\\","\\\\\\\\").gsub("\"","\\\"").gsub("\n","\\n").
             gsub("\r","\\r").gsub("\t","\\t").gsub("\f","\\f").gsub("\b","\\b")}\""
         else
