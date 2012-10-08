@@ -114,7 +114,7 @@ class Service
     port = PortRangeStart
     begin
       socket.bind("localhost", port)
-    rescue Errno::EADDRINUSE
+    rescue Errno::EADDRINUSE, Errno::EAFNOSUPPORT
       port += 1
       retry if port <= PortRangeEnd
       raise
