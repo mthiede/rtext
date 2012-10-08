@@ -2,3 +2,7 @@
 
 * First public release
 
+=0.2.1
+
+* Fixed serialization of enum literals starting with a digit
+

@@ -15,7 +15,7 @@ class RTextSerializerTest < Test::Unit::TestCase
   module TestMM
     extend RGen::MetamodelBuilder::ModuleExtension
     SomeEnum = RGen::MetamodelBuilder::DataTypes::Enum.new(
-      :name => "SomeEnum", :literals => [:A, :B, :'non-word*chars'])
+      :name => "SomeEnum", :literals => [:A, :B, :'non-word*chars', :'2you'])
     class TestNode < RGen::MetamodelBuilder::MMBase
       has_attr 'text', String
       has_attr 'integer', Integer
@@ -352,7 +352,8 @@ TestNode {
     testModel = [
       TestMM::TestNode.new(:enum => :A),
       TestMM::TestNode.new(:enum => :B),
-      TestMM::TestNode.new(:enum => :'non-word*chars')
+      TestMM::TestNode.new(:enum => :'non-word*chars'),
+      TestMM::TestNode.new(:enum => :'2you')
     ]
     output = StringWriter.new
     serialize(testModel, TestMM, output) 
@@ -360,6 +361,7 @@ TestNode {
 TestNode enum: A
 TestNode enum: B
 TestNode enum: "non-word*chars"
+TestNode enum: "2you"
 ), output
   end
 
