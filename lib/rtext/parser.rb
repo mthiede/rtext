@@ -2,6 +2,8 @@ module RText
 
 class Parser
 
+  Problem = Struct.new(:message, :line)
+
   def initialize(reference_regexp)
     @reference_regexp = reference_regexp
   end
@@ -9,10 +11,17 @@ class Parser
   def parse(str, options)
     @dsc_visitor = options[:descent_visitor]
     @asc_visitor = options[:ascent_visitor]
+    @problems = options[:problems] || []
+    @problem_hash = {}
+    @consume_problem_reported = false
     @tokens = tokenize(str, @reference_regexp)
     @last_line = @tokens.last && @tokens.last.line 
-    while next_token
-      parse_statement(true, true)
+    #@debug = true
+    begin
+      while next_token
+        statement = parse_statement(true, true)
+      end
+    rescue InternalError
     end
   end
 
@@ -23,17 +32,22 @@ class Parser
     if (next_token && next_token == :identifier) || !allow_unassociated_comment
       comments << [ comment, :above] if comment
       command = consume(:identifier)
-      @dsc_visitor.call(command)
-      arg_list = []
-      parse_argument_list(arg_list)
-      element_list = []
-      if next_token == "{"
-        parse_statement_block(element_list, comments)
+      if command
+        @dsc_visitor.call(command)
+        arg_list = []
+        parse_argument_list(arg_list)
+        element_list = []
+        if next_token == "{"
+          parse_statement_block(element_list, comments)
+        end
+        eol_comment = parse_eol_comment
+        comments << [ eol_comment, :eol ] if eol_comment
+        consume(:newline)
+        @asc_visitor.call(command, arg_list, element_list, comments, is_root)
+      else
+        discard_until(:newline)
+        nil
       end
-      eol_comment = parse_eol_comment
-      comments << [ eol_comment, :eol ] if eol_comment
-      consume(:newline)
-      @asc_visitor.call(command, arg_list, element_list, comments, is_root)
     elsif comment
       # if there is no statement, the comment is non-optional
       comments << [ comment, :unassociated ]
@@ -42,6 +56,8 @@ class Parser
     else
       # die expecting an identifier (next token is not an identifier)
       consume(:identifier)
+      discard_until(:newline)
+      nil
     end
   end
 
@@ -90,7 +106,8 @@ class Parser
     else
       eol_comment = parse_eol_comment
       comments << [ eol_comment, :eol ] if eol_comment
-      consume(:newline)
+      nl = consume(:newline)
+      discard_until(:newline) unless nl
       parse_statement
     end
   end
@@ -99,7 +116,8 @@ class Parser
     consume("[")
     eol_comment = parse_eol_comment
     comments << [ eol_comment, :eol ] if eol_comment
-    consume(:newline)
+    nl = consume(:newline)
+    discard_until(:newline) unless nl
     result = []
     while next_token && next_token != "]"
       statement = parse_statement(false, true)
@@ -114,7 +132,7 @@ class Parser
 
   def parse_argument_list(arg_list)
     first = true
-    while !["{", :comment, :newline].include?(next_token)
+    while (AnyValue + [",", "[", :label, :error]).include?(next_token)
       consume(",") unless first
       first = false
       parse_argument(arg_list)
@@ -142,7 +160,7 @@ class Parser
     consume("[")
     first = true
     result = []
-    while next_token != "]"
+    while (AnyValue + [",", :error]).include?(next_token)
       consume(",") unless first
       first = false
       result << parse_value
@@ -151,34 +169,68 @@ class Parser
     result
   end
 
+  AnyValue = [:identifier, :integer, :float, :string, :boolean, :reference] 
+
   def parse_value
-    consume(:identifier, :integer, :float, :string, :boolean, :reference)
+    consume(*AnyValue)
   end
 
   def next_token
     @tokens.first && @tokens.first.kind
   end
 
-  class Error < Exception
-    attr_reader :message, :line
-    def initialize(message, line)
-      @message, @line = message, line
+  def discard_until(kind)
+    t = @tokens.shift
+    if t
+      puts "discarding #{t.kind} #{t.value}" if @debug
+      while t.kind != kind
+        t = @tokens.shift
+        break unless t
+        puts "discarding #{t.kind} #{t.value}" if @debug
+      end
     end
   end
 
   def consume(*args)
-    t = @tokens.shift
+    t = @tokens.first
     if t.nil?
-      raise Error.new("Unexpected end of file, expected #{args.join(", ")}", @last_line)
+      report_consume_problem("Unexpected end of file, expected #{args.join(", ")}", @last_line)
+      return nil
     end
     if args.include?(t.kind)
+      @tokens.shift
+      @consume_problem_reported = false
+      puts "consuming #{t.kind} #{t.value}" if @debug
       t
     else
       if t.kind == :error
-        raise Error.new("Parse error on token '#{t.value}'", t.line)
+        @tokens.shift
+        report_consume_problem("Parse error on token '#{t.value}'", t.line)
+        return nil
       else
         value = " '#{t.value}'" if t.value
-        raise Error.new("Unexpected #{t.kind}#{value}, expected #{args.join(", ")}", t.line)
+        report_consume_problem("Unexpected #{t.kind}#{value}, expected #{args.join(", ")}", t.line)
+        return nil
+      end
+    end
+  end
+
+  class InternalError < Exception
+  end
+
+  def report_consume_problem(message, line)
+    problem = Problem.new(message, line)
+    if @problem_hash[problem]
+      # safety check, stop reoccuring problems to avoid endless loops
+      @problems << Problem.new("Internal error", line) 
+      puts [@problems.last.message, @problems.last.line].inspect if @debug
+      raise InternalError.new
+    else
+      if !@consume_problem_reported
+        @consume_problem_reported = true
+        @problems << problem 
+        @problem_hash[problem] = true
+        puts [@problems.last.message, @problems.last.line].inspect if @debug
       end
     end
   end

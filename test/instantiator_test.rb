@@ -199,7 +199,7 @@ class InstantiatorTest < Test::Unit::TestCase
       TestNode text: B
       TestNode a problem here 
     ), TestMM, :file_name => "some_file")
-    assert_equal ["some_file"], problems.collect{|p| p.file}
+    assert_equal "some_file", problems.first.file
   end
 
   def test_file_name_setter
@@ -321,6 +321,19 @@ class InstantiatorTest < Test::Unit::TestCase
       ), TestMM)
     assert_no_problems(problems)
     assert_model_simple(env)
+  end
+
+  def test_no_newline_at_eof
+    env, problems = instantiate(%Q(
+      TestNode), TestMM)
+    assert_no_problems(problems)
+  end
+
+  def test_no_newline_at_eof2
+    env, problems = instantiate(%Q(
+      TestNode {
+      }), TestMM)
+    assert_no_problems(problems)
   end
 
   #
@@ -585,7 +598,7 @@ class InstantiatorTest < Test::Unit::TestCase
       }
     ), TestMM2)
     assert_problems([
-      /unexpected }, expected identifier/i
+      /unexpected \}, expected identifier/i
     ], problems)
   end
 
@@ -705,6 +718,346 @@ class InstantiatorTest < Test::Unit::TestCase
       NonRootClass
     ), TestMMNonRootClass)
     assert_problems([/command 'NonRootClass' can not be used on root level/i], problems)
+  end
+
+  #
+  # problem recovery
+  #
+
+  def test_missing_value
+    root_elements = []
+    env, problems = instantiate(%Q(
+      TestNode nums: 1, text:
+      TestNode nums: 2, text: {
+        SubNode
+      }
+      TestNode text: ,nums: 3 {
+        SubNode
+      }
+    ), TestMM, :root_elements => root_elements)
+    assert_equal 3, root_elements.size
+    assert_equal [1], root_elements[0].nums
+    assert_nil root_elements[0].text
+    assert_equal [2], root_elements[1].nums
+    assert_equal 1, root_elements[1].childs.size
+    assert_equal [3], root_elements[2].nums
+    assert_equal 1, root_elements[2].childs.size
+    assert_problems([
+      /unexpected newline, expected.*integer/i,
+      /unexpected \{, expected.*integer/i,
+      /unexpected ,, expected.*integer/i
+    ], problems)
+  end
+
+  def test_missing_comma
+    root_elements = []
+    env, problems = instantiate(%Q(
+      TestNode nums: 1 text: "bla"
+    ), TestMM, :root_elements => root_elements)
+    assert_equal 1, root_elements.size
+    assert_equal [1], root_elements[0].nums
+    assert_equal "bla", root_elements[0].text
+    assert_problems([
+      /unexpected label .*, expected ,/i,
+    ], problems)
+  end
+
+  def test_missing_label
+    root_elements = []
+    env, problems = instantiate(%Q(
+      TestNode nums: 1 "bla"
+    ), TestMM, :root_elements => root_elements)
+    assert_equal 1, root_elements.size
+    assert_equal [1], root_elements[0].nums
+    assert_problems([
+      /unexpected string 'bla', expected ,/i,
+      /unexpected unlabled argument/i
+    ], problems)
+  end
+
+  def test_unclosed_bracket
+    root_elements = []
+    env, problems = instantiate(%Q(
+      TestNode nums: [1, "bla"
+      TestNode nums: [1, text: "bla"
+      TestNode nums: [1 text: "bla"
+      TestNode nums: [1 "bla"
+      TestNode [1, "bla"
+      TestNode [1, "bla" [
+      TestNode [1, "bla", [
+    ), TestMM, :root_elements => root_elements)
+    assert_equal 7, root_elements.size
+    assert_equal [1], root_elements[0].nums
+    assert_nil root_elements[0].text
+    assert_equal [1], root_elements[1].nums
+    assert_equal "bla", root_elements[1].text
+    assert_equal [1], root_elements[2].nums
+    assert_equal "bla", root_elements[2].text
+    assert_equal [1], root_elements[3].nums
+    assert_nil root_elements[3].text
+    assert_equal [], root_elements[4].nums
+    assert_nil root_elements[4].text
+    assert_problems([
+      [/unexpected newline, expected \]/i, 2],
+      [/argument 'nums' can not take a string, expected integer/i, 2],
+      [/unexpected label 'text', expected identifier/i, 3],
+      [/unexpected label 'text', expected \]/i, 4],
+      [/unexpected string 'bla', expected ,/i, 5],
+      [/argument 'nums' can not take a string, expected integer/i, 5],
+      [/unexpected newline, expected \]/i, 5],
+      [/unexpected newline, expected \]/i, 6],
+      [/unexpected unlabled argument/i, 6],
+      [/unexpected \[, expected \]/i, 7],
+      [/unexpected newline, expected \]/i, 7],
+      [/unexpected unlabled argument/i, 7],
+      [/unexpected unlabled argument/i, 7],
+      [/unexpected \[, expected identifier/i, 8],
+      [/unexpected unlabled argument/i, 8],
+      [/unexpected unlabled argument/i, 8],
+      [/unexpected newline, expected \]/i, 8],
+    ], problems)
+  end
+
+  def test_closing_bracket
+    root_elements = []
+    env, problems = instantiate(%Q(
+      TestNode ] 
+      TestNode 1 ] 
+      TestNode 1, ] 
+      TestNode nums: ]1, "bla"
+      TestNode text: "bla" ] 
+    ), TestMM, :root_elements => root_elements)
+    assert_equal 5, root_elements.size
+    assert_equal [], root_elements[3].nums
+    assert_equal "bla", root_elements[4].text
+    assert_problems([
+      [/unexpected \], expected newline/i, 2],
+      [/unexpected \], expected newline/i, 3],
+      [/unexpected unlabled argument/i, 3],
+      [/unexpected \], expected identifier/i, 4],
+      [/unexpected unlabled argument/i, 4],
+      [/unexpected \], expected identifier/i, 5],
+      [/unexpected \], expected newline/i, 6],
+    ], problems)
+  end
+
+  def test_closing_brace
+    root_elements = []
+    env, problems = instantiate(%Q(
+      TestNode } 
+      TestNode 1 } 
+      TestNode 1, } 
+      TestNode nums: }1, "bla"
+      TestNode text: "bla" } 
+    ), TestMM, :root_elements => root_elements)
+    assert_equal 5, root_elements.size
+    assert_equal [], root_elements[3].nums
+    assert_equal "bla", root_elements[4].text
+    assert_problems([
+      [/unexpected \}, expected newline/i, 2],
+      [/unexpected \}, expected newline/i, 3],
+      [/unexpected unlabled argument/i, 3],
+      [/unexpected \}, expected identifier/i, 4],
+      [/unexpected unlabled argument/i, 4],
+      [/unexpected \}, expected identifier/i, 5],
+      [/unexpected \}, expected newline/i, 6],
+    ], problems)
+  end
+
+  def test_starting_non_command
+    root_elements = []
+    env, problems = instantiate(%Q(
+      \)
+      TestNode
+      *
+      TestNode
+      $
+      TestNode
+      ,
+      TestNode
+      [
+      TestNode
+      {
+      TestNode
+      ]
+      TestNode
+      }
+      TestNode
+      }}
+    ), TestMM, :root_elements => root_elements)
+    assert_equal 8, root_elements.size
+    assert_problems([
+      [/parse error on token '\)'/i, 2],
+      [/parse error on token '\*'/i, 4],
+      [/parse error on token '\$'/i, 6],
+      [/unexpected ,, expected identifier/i, 8],
+      [/unexpected \[, expected identifier/i, 10],
+      [/unexpected \{, expected identifier/i, 12],
+      [/unexpected \], expected identifier/i, 14],
+      [/unexpected \}, expected identifier/i, 16],
+      [/unexpected \}, expected identifier/i, 18],
+    ], problems)
+  end
+
+  def test_parse_error_in_argument_list
+    root_elements = []
+    env, problems = instantiate(%Q(
+      TestNode text: "bla", * nums: 1
+      TestNode text: "bla" * , nums: 1
+      TestNode ?text: "bla"
+      TestNode nums: [1, * 3]
+    ), TestMM, :root_elements => root_elements)
+    assert_equal 4, root_elements.size
+    assert_equal "bla", root_elements[0].text
+    assert_equal [1], root_elements[0].nums
+    assert_equal "bla", root_elements[1].text
+    assert_equal [1], root_elements[1].nums
+    assert_equal [1, 3], root_elements[3].nums
+    assert_problems([
+      [/parse error on token '\*'/i, 2],
+      [/parse error on token '\*'/i, 3],
+      [/parse error on token '\?text:'/i, 4],
+      [/unexpected unlabled argument/i, 4],
+      [/parse error on token '\*'/i, 5],
+    ], problems)
+  end
+
+  def test_unclosed_brace
+    root_elements = []
+    env, problems = instantiate(%Q(
+      TestNode { 
+    ), TestMM, :root_elements => root_elements)
+    assert_equal 1, root_elements.size
+    assert_problems([
+      [/unexpected end of file, expected \}/i, 2]
+    ], problems)
+  end
+
+  def test_unclosed_brace2
+    root_elements = []
+    env, problems = instantiate(%Q(
+      TestNode { 
+        *
+    ), TestMM, :root_elements => root_elements)
+    assert_equal 1, root_elements.size
+    assert_problems([
+      [/parse error on token '\*'/i, 3]
+    ], problems)
+  end
+
+  def test_unclosed_brace3
+    root_elements = []
+    env, problems = instantiate(%Q(
+      TestNode { 
+        childs:
+    ), TestMM, :root_elements => root_elements)
+    assert_equal 1, root_elements.size
+    assert_problems([
+      [/unexpected end of file, expected identifier/i, 3]
+    ], problems)
+  end
+
+  def test_label_without_child
+    root_elements = []
+    env, problems = instantiate(%Q(
+      TestNode { 
+        childs:
+      }
+    ), TestMM, :root_elements => root_elements)
+    assert_equal 1, root_elements.size
+    assert_problems([
+      [/unexpected \}, expected identifier/i, 4]
+    ], problems)
+  end
+
+  def test_unclosed_bracket
+    root_elements = []
+    env, problems = instantiate(%Q(
+      TestNode { 
+        childs: [
+    ), TestMM, :root_elements => root_elements)
+    assert_equal 1, root_elements.size
+    assert_problems([
+      [/unexpected end of file, expected \]/i, 3]
+    ], problems)
+  end
+
+  def test_child_label_problems
+    root_elements = []
+    env, problems = instantiate(%Q(
+      TestNode { 
+        childs: x 
+          SubNode
+        childs: * 
+          SubNode
+        childs: & 
+      }
+    ), TestMM, :root_elements => root_elements)
+    assert_equal 1, root_elements.size
+    assert_equal 2, root_elements[0].childs.size
+    assert_problems([
+      [/unexpected identifier 'x', expected newline/i, 3],
+      [/parse error on token '\*'/i, 5],
+      [/parse error on token '&'/i, 7]
+    ], problems)
+  end
+
+  def test_child_label_problems_with_bracket
+    root_elements = []
+    env, problems = instantiate(%Q(
+      TestNode { 
+        childs: [ x 
+          SubNode
+        ]
+        childs: [ * 
+          SubNode
+        ]
+        childs: [& 
+        ]
+      }
+    ), TestMM, :root_elements => root_elements)
+    assert_equal 1, root_elements.size
+    assert_equal 2, root_elements[0].childs.size
+    assert_problems([
+      [/unexpected identifier 'x', expected newline/i, 3],
+      [/parse error on token '\*'/i, 6],
+      [/parse error on token '&'/i, 9]
+    ], problems)
+  end
+
+  def test_missing_closing_bracket
+    root_elements = []
+    env, problems = instantiate(%Q(
+      TestNode { 
+        childs: [
+          SubNode
+        childs: [
+          SubNode
+        SubNode
+      }
+    ), TestMM, :root_elements => root_elements)
+    assert_equal 1, root_elements.size
+    assert_equal 3, root_elements[0].childs.size
+    assert_problems([
+      [/unexpected label 'childs', expected identifier/i, 5],
+      [/unexpected \}, expected identifier/i, 8],
+    ], problems)
+  end
+
+  def test_missing_closing_brace
+    root_elements = []
+    env, problems = instantiate(%Q(
+      TestNode { 
+        TestNode {
+          TestNode
+      }
+    ), TestMM, :root_elements => root_elements)
+    assert_equal 1, root_elements.size
+    assert_equal 1, root_elements[0].childs.size
+    assert_equal 1, root_elements[0].childs[0].childs.size
+    assert_problems([
+      [/unexpected end of file, expected \}/i, 5],
+    ], problems)
   end
 
   #
@@ -976,7 +1329,7 @@ class InstantiatorTest < Test::Unit::TestCase
         c.name == "TestNode" || c.name == "Data" || c.name == "TestNodeSub" || c.name == "SubNode"}))
     inst = RText::Instantiator.new(lang)
     problems = []
-    inst.instantiate(text, options.merge({:env => env, :problems => problems}))
+    inst.instantiate(text, options.merge({:env => env, :problems => problems, :root_elements => options[:root_elements]}))
     return env, problems
   end
   
@@ -988,9 +1341,15 @@ class InstantiatorTest < Test::Unit::TestCase
     remaining = problems.dup
     probs = []
     expected.each do |e|
-      p = problems.find{|p| p.message =~ e}
+      if e.is_a?(Array)
+        p = remaining.find{|p| p.message =~ e[0] && p.line == e[1]}
+      else
+        p = remaining.find{|p| p.message =~ e}
+      end
       probs << "expected problem not present: #{e}" if !p
-      remaining.delete(p)
+      # make sure to not delete duplicate problems at once
+      idx = remaining.index(p)
+      remaining.delete_at(idx) if idx
     end
     remaining.each do |p|
       probs << "unexpected problem: #{p.message}, line: #{p.line}"

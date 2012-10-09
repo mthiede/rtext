@@ -46,28 +46,27 @@ class Instantiator
     @fragment_ref = options[:fragment_ref]
     @context_class_stack = []
     parser = Parser.new(@lang.reference_regexp)
-    begin
-      @root_elements.clear
-      parser.parse(str, 
-        :descent_visitor => lambda do |command|
-          clazz = @lang.class_by_command(command.value, @context_class_stack.last)
-          # in case no class is found, nil will be pushed, this will case the next command
-          # lookup to act as if called from toplevel
-          @context_class_stack.push(clazz)
-        end,
-        :ascent_visitor => lambda do |*args|
-          if args[0]
-            element =create_element(*args)
-            @context_class_stack.pop
-            element
-          else
-            unassociated_comments(args[3])
-          end
-        end)
-    rescue Parser::Error => e
-      problem(e.message, e.line)
-      @unresolved_refs.clear if @unresolved_refs
-      @root_elements.clear
+    @root_elements.clear
+    parser_problems = []
+    parser.parse(str, 
+      :descent_visitor => lambda do |command|
+        clazz = @lang.class_by_command(command.value, @context_class_stack.last)
+        # in case no class is found, nil will be pushed, this will case the next command
+        # lookup to act as if called from toplevel
+        @context_class_stack.push(clazz)
+      end,
+      :ascent_visitor => lambda do |*args|
+        if args[0]
+          element =create_element(*args)
+          @context_class_stack.pop
+          element
+        else
+          unassociated_comments(args[3])
+        end
+      end,
+      :problems => parser_problems)
+    parser_problems.each do |p|
+      problem(p.message, p.line)
     end
     if @unresolved_refs
       @unresolved_refs.each do |ur|
@@ -115,7 +114,7 @@ class Instantiator
         if di_index < unlabled_args.size 
           set_argument(element, unlabled_args[di_index], a, defined_args, command.line)
           di_index += 1
-        else
+        elsif a != nil
           problem("Unexpected unlabled argument, #{unlabled_args.size} unlabled arguments expected", command.line)
         end
       end
@@ -203,6 +202,7 @@ class Instantiator
       return
     end
     value = [value] unless value.is_a?(Array)
+    value.compact!
     if value.size > 1 && !feature.many
       problem("Argument '#{name}' can take only one value", line)
       return
