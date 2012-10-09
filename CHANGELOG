@@ -14,8 +14,11 @@
 * Added result limit option to DefaultServiceProvider
 * Removed short_class_names option from Language
 
-=0.3.1
+=0.4.0
 
+* Made instantiator a lot more robust against parse errors
 * Added DefaultLoader option to not reload fragments with errors
+* Added service load progress indication and custom problem severity
 * Fixed serialization of enum literals starting with a digit
+* Fixed used port detection in service
 
