@@ -12,7 +12,7 @@ class Parser
     @dsc_visitor = options[:descent_visitor]
     @asc_visitor = options[:ascent_visitor]
     @problems = options[:problems] || []
-    @problem_hash = {}
+    @non_consume_count = 0
     @consume_problem_reported = false
     @tokens = tokenize(str, @reference_regexp)
     @last_line = @tokens.last && @tokens.last.line 
@@ -194,21 +194,25 @@ class Parser
   def consume(*args)
     t = @tokens.first
     if t.nil?
+      @non_consume_count += 1
       report_consume_problem("Unexpected end of file, expected #{args.join(", ")}", @last_line)
       return nil
     end
     if args.include?(t.kind)
       @tokens.shift
       @consume_problem_reported = false
+      @non_consume_count = 0
       puts "consuming #{t.kind} #{t.value}" if @debug
       t
     else
       if t.kind == :error
         @tokens.shift
+        @non_consume_count = 0
         report_consume_problem("Parse error on token '#{t.value}'", t.line)
         return nil
       else
         value = " '#{t.value}'" if t.value
+        @non_consume_count += 1
         report_consume_problem("Unexpected #{t.kind}#{value}, expected #{args.join(", ")}", t.line)
         return nil
       end
@@ -220,7 +224,7 @@ class Parser
 
   def report_consume_problem(message, line)
     problem = Problem.new(message, line)
-    if @problem_hash[problem]
+    if @non_consume_count > 100
       # safety check, stop reoccuring problems to avoid endless loops
       @problems << Problem.new("Internal error", line) 
       puts [@problems.last.message, @problems.last.line].inspect if @debug
@@ -229,7 +233,6 @@ class Parser
       if !@consume_problem_reported
         @consume_problem_reported = true
         @problems << problem 
-        @problem_hash[problem] = true
         puts [@problems.last.message, @problems.last.line].inspect if @debug
       end
     end

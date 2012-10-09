@@ -734,8 +734,9 @@ class InstantiatorTest < Test::Unit::TestCase
       TestNode text: ,nums: 3 {
         SubNode
       }
+      TestNode nums: , text: , bla: 
     ), TestMM, :root_elements => root_elements)
-    assert_equal 3, root_elements.size
+    assert_equal 4, root_elements.size
     assert_equal [1], root_elements[0].nums
     assert_nil root_elements[0].text
     assert_equal [2], root_elements[1].nums
@@ -743,9 +744,13 @@ class InstantiatorTest < Test::Unit::TestCase
     assert_equal [3], root_elements[2].nums
     assert_equal 1, root_elements[2].childs.size
     assert_problems([
-      /unexpected newline, expected.*integer/i,
-      /unexpected \{, expected.*integer/i,
-      /unexpected ,, expected.*integer/i
+      [/unexpected newline, expected.*integer/i, 2],
+      [/unexpected \{, expected.*integer/i, 3],
+      [/unexpected ,, expected.*integer/i, 6],
+      [/unexpected ,, expected.*integer/i, 9],
+      [/unexpected ,, expected.*integer/i, 9],
+      [/unexpected newline, expected.*integer/i, 9],
+      [/unknown argument 'bla'/i, 9],
     ], problems)
   end
 
