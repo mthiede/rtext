@@ -34,7 +34,7 @@ class Completer
         else
           # all target types which don't need a label
           # and all lables which are needed by a potential target type
-          clazz.eAllReferences.select{|r| r.containment}.each do |r|
+          @lang.containments(clazz).each do |r|
             ([r.eType] + r.eType.eAllSubTypes).select{|t| !t.abstract}.each do |t|
               if @lang.containments_by_target_type(clazz, t).size > 1
                 labled_refs << r
@@ -48,8 +48,7 @@ class Completer
           sort{|a,b| a.name <=> b.name}.collect do |c| 
             class_completion_option(c)
           end +
-        labled_refs.uniq.select{|r| r.name.index(context.prefix) == 0}.
-          sort!{|a,b| a.name <=> b.name}.collect do |r|
+        labled_refs.uniq.select{|r| r.name.index(context.prefix) == 0}.collect do |r|
             CompletionOption.new("#{r.name}:", "<#{r.eType.name}>")
           end
       else
@@ -86,16 +85,14 @@ class Completer
               context.element.getGenericAsArray(f.name).size > 0}
             result += @lang.unlabled_arguments(clazz).
               select{|f| f.name.index(context.prefix) == 0 && 
-                context.element.getGenericAsArray(f.name).empty?}[0..0].
-              sort{|a,b| a.name <=> b.name}.collect do |f| 
+                context.element.getGenericAsArray(f.name).empty?}[0..0].collect do |f| 
                 CompletionOption.new("<#{f.name}>", "<#{f.eType.name}>")
               end
           end
           # label completion
           result += @lang.labled_arguments(clazz).
             select{|f| f.name.index(context.prefix) == 0 && 
-              context.element.getGenericAsArray(f.name).empty?}.
-            sort{|a,b| a.name <=> b.name}.collect do |f| 
+              context.element.getGenericAsArray(f.name).empty?}.collect do |f| 
               CompletionOption.new("#{f.name}:", "<#{f.eType.name}>")
             end 
           result

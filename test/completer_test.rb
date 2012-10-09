@@ -41,10 +41,10 @@ def test_after_command
   END
   assert_options([
     ["<unlabled1>", "<EString>"],
+    ["text:", "<EString>"],
     ["nums:", "<EInt>"],
-    ["others:", "<TestNode>"],
     ["related:", "<TestNode>"],
-    ["text:", "<EString>"]
+    ["others:", "<TestNode>"]
   ], options)
 end
 
@@ -71,9 +71,9 @@ def test_after_labled_value
   TestNode nums: 1, |
   END
   assert_options([
-    ["others:", "<TestNode>"],
+    ["text:", "<EString>"],
     ["related:", "<TestNode>"],
-    ["text:", "<EString>"]
+    ["others:", "<TestNode>"]
   ], options)
 end
 
@@ -83,10 +83,10 @@ def test_after_unlabled_value
   END
   assert_options([
     ["<unlabled2>", "<EInt>"],
+    ["text:", "<EString>"],
     ["nums:", "<EInt>"],
-    ["others:", "<TestNode>"],
     ["related:", "<TestNode>"],
-    ["text:", "<EString>"]
+    ["others:", "<TestNode>"]
   ], options)
 end
 
@@ -95,10 +95,10 @@ def test_after_unlabled_value2
   TestNode "bla", 1, |
   END
   assert_options([
+    ["text:", "<EString>"],
     ["nums:", "<EInt>"],
-    ["others:", "<TestNode>"],
     ["related:", "<TestNode>"],
-    ["text:", "<EString>"]
+    ["others:", "<TestNode>"]
   ], options)
 end
 
@@ -107,9 +107,9 @@ def test_after_array
   TestNode nums: [1, 2], |
   END
   assert_options([
-    ["others:", "<TestNode>"],
+    ["text:", "<EString>"],
     ["related:", "<TestNode>"],
-    ["text:", "<EString>"]
+    ["others:", "<TestNode>"]
   ], options)
 end
 

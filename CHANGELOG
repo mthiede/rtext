@@ -21,4 +21,5 @@
 * Added service load progress indication and custom problem severity
 * Fixed serialization of enum literals starting with a digit
 * Fixed used port detection in service
+* Fixed completion option order to match order defined in lanugage
 
