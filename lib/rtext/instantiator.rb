@@ -83,7 +83,7 @@ class Instantiator
     end
   end
 
-  def create_element(command, arg_list, element_list, comments, is_root)
+  def create_element(command, arg_list, element_list, comments, annotation, is_root)
     clazz = @context_class_stack.last 
     if !@lang.has_command(command.value)
       problem("Unknown command '#{command.value}'", command.line)
@@ -132,6 +132,7 @@ class Instantiator
     comments.each do |c|
       handle_comment(c, element)
     end
+    handle_annotation(annotation, element) if annotation
     element
   end
 
@@ -247,6 +248,18 @@ class Instantiator
           problem("This kind of element can not take this comment", line_number(element))
         end
       end
+    end
+  end
+
+  def handle_annotation(annotation_desc, element)
+    if @lang.annotation_handler
+      annotation = annotation_desc.collect{|c| c.value}.join("\n")
+      success = @lang.annotation_handler.call(annotation, element, @env)
+      if !success 
+        problem("This kind of element can not take an annotation", line_number(element))
+      end
+    else
+      problem("This language does not support annotations", line_number(element))
     end
   end
 

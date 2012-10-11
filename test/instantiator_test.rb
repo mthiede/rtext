@@ -1208,6 +1208,92 @@ class InstantiatorTest < Test::Unit::TestCase
   end
 
   #
+  # annotations
+  #
+
+  def test_annotation_not_supported
+    env, problems = instantiate(%Q(
+      @annotation 
+      TestNode
+      ), TestMM)
+    assert_problems([/this language does not support annotations/i], problems)
+  end
+
+  def test_annotation_not_allowed
+    env, problems = instantiate(%Q(
+      @annotation 
+      TestNode
+      ), TestMM, :annotation_handler => proc {|a,e,env|
+        false
+      })
+    assert_problems([/this kind of element can not take an annotation/i], problems)
+  end
+
+  def test_annotation_in_wrong_places
+    env, problems = instantiate(%Q(
+      @annotation 
+      #comment
+      TestNode {
+        @annotation
+        childs:
+          TestNode
+          @annotation
+      }
+      @annotation
+      ), TestMM)
+    assert_problems([
+      [/unexpected comment 'comment', expected identifier/i, 3],
+      [/unexpected label 'childs', expected identifier/i, 6],
+      [/unexpected \}, expected identifier/i, 9],
+      [/unexpected end of file, expected identifier/i, 10]
+    ], problems)
+  end
+
+  def test_annotation_handler
+    annotations = []
+    elements = [] 
+    env, problems = instantiate(%Q(
+      @annotation
+      TestNode text: "aa"
+      @annotation
+      @ in a new line
+
+      @ even with space in between
+
+      TestNode text: "bb" {
+        @at child
+        TestNode text: "cc"
+        childs:
+          @after label
+          TestNode text: "dd"
+        @another child
+        TestNode text: "ee"
+        childs: [
+          @in brackets
+          TestNode text: "ff"
+        ]
+      }
+      ), TestMM, :annotation_handler => proc {|a,e,env|
+        annotations << a
+        elements << e
+        true
+      })
+    assert_equal "aa", elements[0].text
+    assert_equal "annotation", annotations[0]
+    assert_equal "cc", elements[1].text
+    assert_equal "at child", annotations[1]
+    assert_equal "dd", elements[2].text
+    assert_equal "after label", annotations[2]
+    assert_equal "ee", elements[3].text
+    assert_equal "another child", annotations[3]
+    assert_equal "ff", elements[4].text
+    assert_equal "in brackets", annotations[4]
+    assert_equal "bb", elements[5].text
+    assert_equal "annotation\n in a new line\n even with space in between", annotations[5]
+    assert_no_problems(problems)
+  end
+
+  #
   # subpackages
   #
 

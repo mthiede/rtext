@@ -29,6 +29,7 @@ class Parser
   def parse_statement(is_root=false, allow_unassociated_comment=false)
     comments = [] 
     comment = parse_comment 
+    annotation = parse_annotation
     if (next_token && next_token == :identifier) || !allow_unassociated_comment
       comments << [ comment, :above] if comment
       command = consume(:identifier)
@@ -43,7 +44,7 @@ class Parser
         eol_comment = parse_eol_comment
         comments << [ eol_comment, :eol ] if eol_comment
         consume(:newline)
-        @asc_visitor.call(command, arg_list, element_list, comments, is_root)
+        @asc_visitor.call(command, arg_list, element_list, comments, annotation, is_root)
       else
         discard_until(:newline)
         nil
@@ -51,7 +52,7 @@ class Parser
     elsif comment
       # if there is no statement, the comment is non-optional
       comments << [ comment, :unassociated ]
-      @asc_visitor.call(nil, nil, nil, comments, nil)
+      @asc_visitor.call(nil, nil, nil, comments, nil, nil)
       nil
     else
       # die expecting an identifier (next token is not an identifier)
@@ -66,6 +67,16 @@ class Parser
     while next_token == :comment
       result ||= []
       result << consume(:comment)
+      consume(:newline)
+    end
+    result
+  end
+
+  def parse_annotation
+    result = nil
+    while next_token == :annotation
+      result ||= []
+      result << consume(:annotation)
       consume(:newline)
     end
     result
@@ -244,8 +255,12 @@ class Parser
     result = []
     str.split(/\r?\n/).each_with_index do |str, idx|
       idx += 1
-      if str =~ /^\s*#(.*)/
-        result << Token.new(:comment, $1, idx) 
+      if str =~ /^\s*([\#@])(.*)/
+        if $1 == "#"
+          result << Token.new(:comment, $2, idx) 
+        else
+          result << Token.new(:annotation, $2, idx) 
+        end
       else
         until str.empty?
           case str

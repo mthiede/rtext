@@ -98,6 +98,18 @@ class Language
   #     the Proc may also modify the element to remove information already part of the comment
   #     default: no comments
   #
+  #  :annotation_handler
+  #     a Proc which will be invoked when a new element has been instantiated. receives  
+  #     the annotation as a string, the element and the environment to which the element has been added to.
+  #     the environment may be nil. it may change the model or otherwise use the annotated information. 
+  #     if the element can take no annotation, it should return false, otherwise true.
+  #     default: no handling of annotations 
+  #
+  #  :annotation_provider
+  #     a Proc which receives an element and should return this element's annotation as a string or nil.
+  #     the Proc may also modify the element to remove information already part of the annotation.
+  #     default: no annotations
+  #
   #  :indent_string
   #     the string representing one indent, could be a tab or spaces
   #     default: 2 spaces
@@ -128,6 +140,8 @@ class Language
     @fragment_ref_attribute = options[:fragment_ref_attribute]
     @comment_handler = options[:comment_handler]
     @comment_provider = options[:comment_provider]
+    @annotation_handler = options[:annotation_handler]
+    @annotation_provider = options[:annotation_provider]
     @indent_string = options[:indent_string] || "  "
     @per_type_identifier = options[:per_type_identifier]
   end
@@ -141,6 +155,8 @@ class Language
   attr_reader :fragment_ref_attribute
   attr_reader :comment_handler
   attr_reader :comment_provider
+  attr_reader :annotation_handler
+  attr_reader :annotation_provider
   attr_reader :indent_string
   attr_reader :per_type_identifier
 

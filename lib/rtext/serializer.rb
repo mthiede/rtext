@@ -57,6 +57,13 @@ class Serializer
         write("##{l}")
       end
     end
+    # the annotation provider may modify the element
+    annotation = @lang.annotation_provider && @lang.annotation_provider.call(element)
+    if annotation
+      annotation.split(/\r?\n/).each do |l|
+        write("@#{l}")
+      end
+    end
     headline = @lang.command_by_class(clazz.instanceClass)
     raise "no command name for class #{clazz.instanceClass.to_s}" unless headline
     args = []

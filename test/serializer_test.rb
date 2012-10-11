@@ -151,6 +151,44 @@ TestNode {
 ), output 
   end
 
+  module TestMMAnnotation
+    extend RGen::MetamodelBuilder::ModuleExtension
+    class TestNode < RGen::MetamodelBuilder::MMBase
+      has_attr 'annotation', String
+      contains_many 'childs', TestNode, 'parent'
+    end
+  end
+
+  def test_annotation_provider
+    testModel = TestMMAnnotation::TestNode.new(
+      :annotation => "this is an annotation",
+      :childs => [
+        TestMMAnnotation::TestNode.new(:annotation => "annotation of a child node\n  multiline"),
+        TestMMAnnotation::TestNode.new(:annotation => "don't show")])
+
+    output = StringWriter.new
+    serialize(testModel, TestMMAnnotation, output,
+      :annotation_provider => proc { |e| 
+        if e.annotation != "don't show"
+          a = e.annotation
+          e.annotation = nil
+          a
+        else
+          nil
+        end
+      })
+
+    assert_equal %Q(\
+@this is an annotation
+TestNode {
+  @annotation of a child node
+  @  multiline
+  TestNode
+  TestNode annotation: "don't show"
+}
+), output 
+  end
+
   def test_indent_string
     testModel = TestMM::TestNode.new(:childs => [
       TestMM::TestNode.new(:text => "child")])
