@@ -1,4 +1,5 @@
 require 'rtext/language'
+require 'rtext/generic'
 
 module RText
 
@@ -118,7 +119,9 @@ class Serializer
     result = []
     arg_format = @lang.argument_format(feature)
     values.each do |v|
-      if feature.eType.instanceClass == Integer
+      if v.is_a?(RText::Generic)
+        result << "<#{v.string.split(">").first}>"
+      elsif feature.eType.instanceClass == Integer
         if arg_format 
           result << sprintf(arg_format, v)
         else

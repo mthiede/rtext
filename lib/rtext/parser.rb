@@ -1,3 +1,5 @@
+require 'rtext/generic'
+
 module RText 
 
 class Parser
@@ -180,7 +182,7 @@ class Parser
     result
   end
 
-  AnyValue = [:identifier, :integer, :float, :string, :boolean, :reference] 
+  AnyValue = [:identifier, :integer, :float, :string, :boolean, :reference, :generic] 
 
   def parse_value
     consume(*AnyValue)
@@ -305,6 +307,9 @@ class Parser
           when /\A\s+/
             str = $'
             # ignore
+          when /\A<([^>]*)>/
+            str = $'
+            result << Token.new(:generic, RText::Generic.new($1), idx)
           when /\A\S+/
             str = $'
             result << Token.new(:error, $&, idx)

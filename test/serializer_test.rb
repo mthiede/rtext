@@ -21,6 +21,7 @@ class SerializerTest < Test::Unit::TestCase
       has_attr 'integer', Integer
       has_attr 'float', Float
       has_attr 'enum', SomeEnum
+      has_attr 'boolean', Boolean
       contains_many 'childs', TestNode, 'parent'
     end
   end
@@ -403,6 +404,25 @@ TestNode enum: A
 TestNode enum: B
 TestNode enum: "non-word*chars"
 TestNode enum: "2you"
+), output
+  end
+
+  def test_generic
+    testModel = [
+      TestMM::TestNode.new(:text => RText::Generic.new("some text angel >bracket")),
+      TestMM::TestNode.new(:integer => RText::Generic.new("a number: 1")),
+      TestMM::TestNode.new(:float => RText::Generic.new("precision")),
+      TestMM::TestNode.new(:enum => RText::Generic.new("an option")),
+      TestMM::TestNode.new(:boolean => RText::Generic.new("falsy"))
+    ]
+    output = StringWriter.new
+    serialize(testModel, TestMM, output) 
+    assert_equal %Q(\
+TestNode text: <some text angel >
+TestNode integer: <a number: 1>
+TestNode float: <precision>
+TestNode enum: <an option>
+TestNode boolean: <falsy>
 ), output
   end
 

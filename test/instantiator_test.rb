@@ -1294,6 +1294,42 @@ class InstantiatorTest < Test::Unit::TestCase
   end
 
   #
+  # generics
+  #
+
+  def test_generics_parse_error
+    env, problems = instantiate(%Q(
+      TestNode text: <bla
+      TestNode text: bla>
+      TestNode text: <a<b>
+      TestNode text: <a>b>
+      ), TestMM)
+    assert_problems([
+      [/parse error on token '<bla'/i, 2],
+      [/parse error on token '>'/i, 3],
+      [/unexpected identifier 'b'/i, 5],
+      [/parse error on token '>'/i, 5],
+      [/unexpected unlabled argument/i, 5]
+    ], problems)
+  end
+
+  def test_generics
+    root_elements = []
+    env, problems = instantiate(%q(
+      TestNode text: <bla>, nums: [<1>, <2>], boolean: <truthy>, enum: <option>, float: <precise>, related: <noderef>, others: [<other1>, <other2>]
+    ), TestMM, :root_elements => root_elements)
+    assert_no_problems(problems)
+    assert root_elements[0].text.is_a?(RText::Generic)
+    assert_equal "bla", root_elements[0].text.string
+    assert_equal ["1", "2"], root_elements[0].nums.collect{|n| n.string}
+    assert_equal "truthy", root_elements[0].boolean.string
+    assert_equal "option", root_elements[0].enum.string
+    assert_equal "precise", root_elements[0].float.string
+    assert_equal "noderef", root_elements[0].related.string
+    assert_equal ["other1", "other2"], root_elements[0].others.collect{|n| n.string}
+  end
+
+  #
   # subpackages
   #
 
