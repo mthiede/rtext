@@ -8,8 +8,9 @@ include Process
 
 InvocationDescriptor = Struct.new(:proc, :result)
 
-def initialize(config)
+def initialize(config, logger)
   @config = config
+  @logger = logger
   @state = :off
   @invocation_id = 1
   @invocations = {}
@@ -83,7 +84,7 @@ def connect
   @state = :connecting
   port = nil
 
-  puts @config.command
+  @logger.info @config.command
   io_in = io_out = thread = nil
   Dir.chdir(File.dirname(@config.file)) do
     io_in, io_out, thread = Open3.popen2e(@config.command)
@@ -91,10 +92,12 @@ def connect
   @process_id = thread.pid
 
   @out_thread = Thread.new do
+    @logger.info "out thread"
     output = ""
     while true
       data = io_out.readpartial(100000)
       print "OUT:"+data
+      @logger.info "OUT:"+data 
       if !port
         output.concat(data)
         if output =~ /^RText service, listening on port (\d+)/
@@ -107,10 +110,11 @@ def connect
   @socket = UDPSocket.new
 
   @sock_thread = Thread.new do
+    @logger.info "sock thread"
     while !port
       sleep(0.1)
     end
-    puts "connecting to #{port}"
+    @logger.info "connecting to #{port}"
     @socket.connect("127.0.0.1", port)
     @state = :connected
     while true
@@ -127,10 +131,10 @@ def connect
             desc.result += lines[2..-1]
           end 
         else
-          puts "WARN: unknown answer"
+          @logger.error "unknown answer"
         end
       else
-        puts "WARN: no invocation id"
+        @logger.error "no invocation id"
       end
     end
   end

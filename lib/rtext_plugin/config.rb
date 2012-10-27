@@ -16,6 +16,7 @@ def self.find_service_config(file)
     last_dir = dir
     dir = File.expand_path("#{dir}/..")
   end
+  nil
 end
 
 def self.file_pattern(file)

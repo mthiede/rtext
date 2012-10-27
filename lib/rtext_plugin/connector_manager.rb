@@ -6,7 +6,8 @@ module RTextPlugin
 
 class ConnectorManager
 
-def initialize
+def initialize(logger)
+  @logger = logger
   @connector_descs = {}
 end
 
@@ -37,7 +38,7 @@ end
 private
 
 def create_connector(config, pattern)
-  desc = ConnectorDesc.new(Connector.new(config), config_checksum(config))
+  desc = ConnectorDesc.new(Connector.new(config, @logger), config_checksum(config))
   key = desc_key(config, pattern)
   @connector_descs[key] = desc
   desc.connector
