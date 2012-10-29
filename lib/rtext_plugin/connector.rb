@@ -1,5 +1,6 @@
 require 'socket'
 require 'open3'
+require 'tmpdir'
 
 module RTextPlugin
 
@@ -74,9 +75,20 @@ def backend_running?
 end
 
 def disconnect
-  @out_thread.kill if @out_thread
+  @out_thread.join if @out_thread
   @sock_thread.kill if @sock_thread
   @socket.close if @socket rescue IOError
+end
+
+def tempfile_name
+  dir = Dir.tmpdir
+  i = 0
+  file = nil 
+  while !file || File.exist?(file)
+    file = dir+"/rtext.temp.#{i}"
+    i += 1
+  end
+  file
 end
 
 def connect
@@ -85,26 +97,30 @@ def connect
   port = nil
 
   @logger.info @config.command
-  io_in = io_out = thread = nil
+
+  out_file = tempfile_name 
+  File.unlink(out_file) if File.exist?(out_file)
+
   Dir.chdir(File.dirname(@config.file)) do
-    io_in, io_out, thread = Open3.popen2e(@config.command)
+    @process_id = spawn(@config.command.strip + " > #{out_file}")
   end
-  @process_id = thread.pid
 
   @out_thread = Thread.new do
     @logger.info "out thread"
     output = ""
+    while !File.exist?(out_file)
+      sleep 0.1
+    end
     while true
-      data = io_out.readpartial(100000)
-      print "OUT:"+data
-      @logger.info "OUT:"+data 
-      if !port
-        output.concat(data)
-        if output =~ /^RText service, listening on port (\d+)/
-          port = $1.to_i
-        end
+      output = File.read(out_file)
+      if output =~ /^RText service, listening on port (\d+)/
+        puts output
+        port = $1.to_i
+        break
       end
     end
+    waitpid(@process_id)
+    File.unlink(out_file)
   end
 
   @socket = UDPSocket.new
@@ -118,7 +134,13 @@ def connect
     @socket.connect("127.0.0.1", port)
     @state = :connected
     while true
-      data = @socket.readpartial(100000)
+      begin
+        data, from = @socket.recvfrom_nonblock(100000)
+      rescue Errno::EWOULDBLOCK
+        sleep(0.1)
+        retry
+      end
+      #data = @socket.readpartial(100000)
       lines = data.split("\n")
       if lines.first =~ /^(\d+)$/
         inv_id = $1.to_i
