@@ -18,6 +18,10 @@ def initialize(config, logger)
   @busy = false
 end
 
+def resume
+  @fiber.resume if @fiber
+end
+
 def execute_command(command, params=[], options={})
   if @busy
     ["busy..."]
@@ -40,6 +44,7 @@ def execute_command(command, params=[], options={})
       @invocation_id += 1
       while !result
         sleep(0.1)
+        @fiber.resume
       end
       result
     end
@@ -51,7 +56,6 @@ end
 
 def stop
   execute_command("stop")
-  disconnect
 end
 
 private
@@ -74,12 +78,6 @@ def backend_running?
   false
 end
 
-def disconnect
-  @out_thread.join if @out_thread
-  @sock_thread.kill if @sock_thread
-  @socket.close if @socket rescue IOError
-end
-
 def tempfile_name
   dir = Dir.tmpdir
   i = 0
@@ -92,9 +90,7 @@ def tempfile_name
 end
 
 def connect
-  disconnect
   @state = :connecting
-  port = nil
 
   @logger.info @config.command
 
@@ -105,39 +101,32 @@ def connect
     @process_id = spawn(@config.command.strip + " > #{out_file}")
   end
 
-  @out_thread = Thread.new do
-    @logger.info "out thread"
-    output = ""
+  @fiber = Fiber.new do
+
     while !File.exist?(out_file)
-      sleep 0.1
+      Fiber.yield
     end
-    while true
+
+    port = nil
+    while !port
       output = File.read(out_file)
       if output =~ /^RText service, listening on port (\d+)/
         puts output
         port = $1.to_i
-        break
+      else
+        Fiber.yield
       end
     end
-    waitpid(@process_id)
-    File.unlink(out_file)
-  end
 
-  @socket = UDPSocket.new
-
-  @sock_thread = Thread.new do
-    @logger.info "sock thread"
-    while !port
-      sleep(0.1)
-    end
     @logger.info "connecting to #{port}"
+    @socket = UDPSocket.new
     @socket.connect("127.0.0.1", port)
     @state = :connected
-    while true
+    while backend_running?
       begin
         data, from = @socket.recvfrom_nonblock(100000)
       rescue Errno::EWOULDBLOCK
-        sleep(0.1)
+        Fiber.yield
         retry
       end
       #data = @socket.readpartial(100000)
@@ -159,7 +148,11 @@ def connect
         @logger.error "no invocation id"
       end
     end
+
+    @socket.close
+    File.unlink(out_file)
   end
+
 end
 
 end
