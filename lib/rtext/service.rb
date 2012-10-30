@@ -1,10 +1,13 @@
 require 'socket'
 require 'rtext/completer'
 require 'rtext/context_builder'
+require 'rtext/message_helper'
 
 module RText
 
 class Service
+  include RText::MessageHelper
+
   PortRangeStart = 9001
   PortRangeEnd   = 9100
 
@@ -27,161 +30,176 @@ class Service
   end
 
   def run
-    socket = create_socket 
-    puts "RText service, listening on port #{socket.addr[1]}"
+    server = create_server 
+    puts "RText service, listening on port #{server.addr[1]}"
     $stdout.flush
 
     last_access_time = Time.now
     last_flush_time = Time.now
-    stop_requested = false
-    while !stop_requested
+    @stop_requested = false
+    sockets = []
+    request_data = {}
+    while !@stop_requested
       begin
-        msg, from = socket.recvfrom_nonblock(65000)
-      rescue Errno::EWOULDBLOCK
-        sleep(0.01)
-        if (Time.now - last_access_time) > @timeout
-          @logger.info("RText service, stopping now (timeout)") if @logger
-          break 
+        sock = server.accept_nonblock
+        sockets << sock
+        @logger.info "accepted connection" if @logger
+      rescue Errno::EAGAIN, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR, Errno::EWOULDBLOCK
+      end
+      sockets.dup.each do |sock|
+        data = nil
+        begin
+          data = sock.read_nonblock(100000)
+        rescue Errno::EWOULDBLOCK
+        rescue EOFError
+          request_data[sock] = nil
+          sockets.delete(sock)
         end
-        retry
+        if data
+          last_access_time = Time.now
+          request_data[sock] ||= ""
+          request_data[sock].concat(data)
+          while obj = extract_message(request_data[sock])
+            message_received(sock, obj)
+          end
+        end
+      end
+      IO.select([server] + sockets, [], [], 1)
+      if Time.now > last_access_time + @timeout
+        @logger.info("RText service, stopping now (timeout)") if @logger
+        break 
       end
       if Time.now > last_flush_time + FlushInterval
         $stdout.flush
         last_flush_time = Time.now
       end
-      last_access_time = Time.now
-      lines = msg.split(/\r?\n/)
-      cmd = lines.shift
-      invocation_id = lines.shift
-      response = nil
-      progress_index = 0
-      case cmd
-      when "protocol_version"
-        response = ["1"]
-      when "refresh"
-        response = refresh(lines) 
-      when "complete"
-        response = complete(lines)
-      when "show_problems"
-        response = get_problems(lines)
-      when "show_problems2"
-        response = get_problems(lines, :with_severity => true, :on_progress => lambda do |frag, num_frags|
-          progress_index += 1
-          num_frags = 1 if num_frags < 1
-          progress = ["progress: #{progress_index*100/num_frags}"]
-          send_response(progress, invocation_id, socket, from, :incremental => true)
-        end)
-      when "get_reference_targets"
-        response = get_reference_targets(lines)
-      when "get_elements"
-        response = get_open_element_choices(lines)
+    end
+  end
+
+  def message_received(sock, obj)
+    if check_request(obj) 
+      response = { "type" => "response", "invocation_id" => obj["invocation_id"] }
+      case obj["command"]
+      when "load_model"
+        load_model(sock, obj, response)
+      when "content_complete"
+        content_complete(sock, obj, response)
+      when "link_targets" 
+        link_targets(sock, obj, response)
+      when "find_elements"
+        find_elements(sock, obj, response)
       when "stop"
-        response = [] 
         @logger.info("RText service, stopping now (stop requested)") if @logger
-        stop_requested = true
+        @stop_requested = true
       else
-        @logger.debug("unknown command #{cmd}") if @logger
-        response = []
+        @logger.warn("unknown command #{obj["command"]}") if @logger
+        response["type"] = "unknown_command_error"
+        response["command"] = obj["command"] 
       end
-      send_response(response, invocation_id, socket, from)
+      sock.send(serialize_message(response), 0) if response
     end
   end
 
   private
 
-  def send_response(response, invocation_id, socket, from, options={})
-    @logger.debug(response.inspect) if @logger
-    loop do
-      packet_lines = []
-      size = 0
-      while response.size > 0 && size + response.first.size < 65000
-        size += response.first.size
-        packet_lines << response.shift
-      end
-      if options[:incremental] || response.size > 0
-        packet_lines.unshift("more\n")
-      else
-        packet_lines.unshift("last\n")
-      end
-      packet_lines.unshift("#{invocation_id}\n")
-      socket.send(packet_lines.join, 0, from[2], from[1])
-      break if response.size == 0 
+  def check_request(obj)
+    if obj["type"] != "request" 
+      @logger.warn("received message is not a request") if @logger
+      false
+    elsif !obj["invocation_id"].is_a?(Integer)
+      @logger.warn("invalid invocation id #{obj["invocation_id"]}") if @logger
+      false
+    else
+      true
     end
   end
 
-  def create_socket
-    socket = UDPSocket.new
-    port = PortRangeStart
-    begin
-      socket.bind("localhost", port)
-    rescue Errno::EADDRINUSE, Errno::EAFNOSUPPORT
-      port += 1
-      retry if port <= PortRangeEnd
-      raise
+  def load_model(sock, request, response)
+    progress_index = 0
+    problems = @service_provider.get_problems(
+      :on_progress => lambda do |frag, num_frags|
+        progress_index += 1
+        num_frags = 1 if num_frags < 1
+        sock.send(serialize_message( {
+          "type" => "progress",
+          "invocation_id" => request["invocation_id"],
+          "percentage" => progress_index*100/num_frags
+        }), 0)
+      end)
+    total = 0
+    response["problems"] = problems.collect do |fp|
+      { "file" => fp.file,
+        "problems" => fp.problems.collect do |p| 
+            total += 1
+            { "severity" => "error", "line" => p.line, "message" => p.message }
+          end }
     end
-    socket
+    response["total_problems"] = total
   end
 
-  def refresh(lines)
-    @service_provider.load_model
-    []
-  end
-
-  def complete(lines)
-    linepos = lines.shift.to_i
+  def content_complete(sock, request, response)
+    linepos = request["column"] 
+    lines = request["context"]
     context = ContextBuilder.build_context(@lang, lines, linepos)
-    @logger.debug("context element: #{@lang.identifier_provider.call(context.element, nil)}") if context && @logger
-    current_line = lines.pop
+    @logger.debug("context element: #{@lang.identifier_provider.call(context.element, nil)}") \
+      if context && @logger
+    current_line = lines.last
     current_line ||= ""
     options = @completer.complete(context, lambda {|ref| 
         @service_provider.get_reference_completion_options(ref, context).collect {|o|
           Completer::CompletionOption.new(o.identifier, "<#{o.type}>")}
       })
-    options.collect { |o|
-      "#{o.text};#{o.extra}\n"
-    }
-  end
-
-  def get_problems(lines, options={})
-    result = []
-    severity = options[:with_severity] ? "e;" : ""
-    @service_provider.get_problems(:on_progress => options[:on_progress]).each do |fp|
-      result << fp.file+"\n"
-      fp.problems.each do |p| 
-        result << "#{severity}#{p.line};#{p.message}\n"
-      end
+    response["options"] = options.collect do |o|
+      { "insert" => o.text, "display" => "#{o.text} #{o.extra}" }
     end
-    result
   end
 
-  def get_reference_targets(lines)
-    linepos = lines.shift.to_i
+  def link_targets(sock, request, response)
+    linepos = request["column"] 
+    lines = request["context"]
     current_line = lines.last
     context = ContextBuilder.build_context(@lang, lines, lines.last.size)
-    result = []
     if context && current_line[linepos..linepos] =~ /[\w\/]/
       ident_start = (current_line.rindex(/[^\w\/]/, linepos) || -1)+1
       ident_end = (current_line.index(/[^\w\/]/, linepos) || current_line.size)-1
       ident = current_line[ident_start..ident_end]
-      result << "#{ident_start};#{ident_end}\n"
+      response["begin_column"] = ident_start
+      response["end_column"] = ident_end
+      targets = []
       if current_line[0..linepos+1] =~ /^\s*\w+$/
         @service_provider.get_referencing_elements(ident, context).each do |t|
-          result << "#{t.file};#{t.line};#{t.display_name}\n"
+          targets << { "file" => t.file, "line" => t.line, "display" => t.display_name }
         end
       else
         @service_provider.get_reference_targets(ident, context).each do |t|
-          result << "#{t.file};#{t.line};#{t.display_name}\n"
+          targets << { "file" => t.file, "line" => t.line, "display" => t.display_name }
         end
       end
+      response["targets"] = targets
     end
-    result
   end
 
-  def get_open_element_choices(lines)
-    pattern = lines.shift
-    @service_provider.get_open_element_choices(pattern).collect do |c|
-      "#{c.display_name};#{c.file};#{c.line}\n"
+  def find_elements(sock, request, response)
+    pattern = request["search_pattern"] 
+    total = 0
+    response["elements"] = @service_provider.get_open_element_choices(pattern).collect do |c|
+      total += 1
+      { "display" => c.display_name, "file" => c.file, "line" => c.line }
     end
+    response["total_elements"] = total
+  end
+
+  def create_server
+    port = PortRangeStart
+    begin
+      # using the IP address implies IPv4
+      serv = TCPServer.new("127.0.0.1", port)
+    rescue Errno::EADDRINUSE, Errno::EAFNOSUPPORT
+      port += 1
+      retry if port <= PortRangeEnd
+      raise
+    end
+    serv
   end
 
 end

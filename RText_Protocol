@@ -23,7 +23,8 @@ The invocation id field holds an identifier which will be repeated by the backen
 ## Response Messages
 
 The response message repeats the invocation id of the request it replies to.
-TODO unknown command
+If the requested command is not known by the backend, it will respond with a 
+"unknonw_command_error" message instead (see below).
 ``
 {
   "type": "response",
@@ -32,24 +33,39 @@ TODO unknown command
 }
 ``
 
+## Error Messages
+
+There are a number of error message which may be sent in response to a request message.
+
+### Unknown Command Error
+``
+{
+  "type": "unknown_command_error",
+  "invocation_id": <invocation_id>,
+  "command": <unknown command [string]>
+}
+``
+
 ## Progress Information
 
 Before the actual response is sent, the backend may send progress information.
 This is useful whenever a command takes a longer time to complete.
 Frontends should be prepared to receive progress information messages for any command.
-The may however choose to ignore this information, i.e. not display any progress to the user.
+They may however choose to ignore this information, i.e. not display any progress to the user.
 
 ``
 {
   "type": "progress",
-  "invocation_id": <invocation_id>,
-  "percentage": <percentage>,
-  "message": <message>
+  "invocation_id": <invocation_id [integer]>,
+  "percentage": <percentage [integer][0..100]>,
+  "message": <message [string]>
 }
 ``
 
-The percentage field is optional. It's present, the frontend should display the message and a progress bar.
-Otherwise it should just display the message and indicate to the user that a job is currently ongoing.
+The percentage and message fields are optional. 
+If percentage is present, the frontend should display a progress bar, otherwise it should just
+indicate to the user that a job is ongoing.
+The message field may carry information about the currently ongoing subtask.
 
 ## Commands
 
@@ -78,15 +94,15 @@ limit detection effort and/or response time.
 ``
 {
   "type": "response"
-  "total_problems": <number of total problems or -1>,
-  "problems: [
+  "total_problems": <number of total problems or -1 [integer]>,
+  "problems": [
     { 
-      "file": <fully qualifed file name>,
+      "file": <fully qualifed file name [string]>,
       "problems: [
         {
-          "message": <message>,
-          "severity": <one of 'debug', 'info', 'warn', 'error', 'fatal'>,
-          "line": <line number>
+          "message": <message [string]>,
+          "severity": <['debug', 'info', 'warn', 'error', 'fatal']>,
+          "line": <line number [integer]>
         }
         ...
       ]
@@ -107,23 +123,25 @@ build the set of context lines in the frontend. Column positions start at 1.
 {
   "type": "request",
   "command": "content_complete",
-  "context": <context lines>,
-  "column": <cursor column>
+  "context": <context lines [array of string]>,
+  "column": <cursor column [integer]>
 }
 ``
 
 The backend replies with a list of completion options. 
 The field ``insert`` holds the text to be inserted if the completion option is chosen.
-This should also be the string displayed to the user in some kind of completion option menu.
-An optional description field may provide more information about a particular option.
+The field ``display`` contains the string which should be displayed to the user in some kind of 
+completion option menu. An optional description field may provide more information about a 
+particular option.
 
 ``
 {
   "type": "response",
   "options": [
     {
-      "insert": <text to be inserted>,
-      "desc": <optional description>
+      "display": <text to display [string]>,
+      "insert": <text to be inserted [string]>,
+      "desc": <optional description [string]>
     }
   ]
 }
@@ -140,8 +158,8 @@ All column indices start at 1.
 {
   "type": "request",
   "command": "link_targets",
-  "context": <context lines>,
-  "column": <cursor column>
+  "context": <context lines [array of string]>,
+  "column": <cursor column [integer]>
 }
 ``
 The backend analyses the text at the cursor position in order to find out if a link is present.
@@ -156,14 +174,14 @@ If there is no link, the backend should send an empty response.
 ``
 {
   "type": "response",
-  "begin_column": <begin column of hyperlink>,
-  "end_column": <end column of hyperlink>,
+  "begin_column": <begin column of hyperlink [integer]>,
+  "end_column": <end column of hyperlink [integer]>,
   "targets": [
     {
-      "display": <display name>,
-      "file": <fully qualified file name>,
-      "line": <line number>,
-      "desc": <optional description>
+      "display": <display name [string]>,
+      "file": <fully qualified file name [string]>,
+      "line": <line number [integer]>,
+      "desc": <optional description [string]>
     }
     ...
   ]
@@ -180,7 +198,7 @@ which actually defines how the pattern is interpreted.
 {
   "type": "request",
   "command": "find_elements",
-  "search_pattern": <search pattern as a string>
+  "search_pattern": <search pattern [string]>
 }
 ``
 The backend responds by sending the total number of elements found and a list of elements
@@ -194,13 +212,13 @@ An optional description field my provide more information about a particular ele
 ``
 {
   "type": "response",
-  "total_elements": <total number of elements or -1>,
+  "total_elements": <total number of elements or -1 [string]>,
   "elements": [
     {
-      "display": <display name>,
-      "file": <fully qualified file name>,
-      "line": <line number>,
-      "desc": <optional description>
+      "display": <display name [string]>,
+      "file": <fully qualified file name [string]>,
+      "line": <line number [integer]>,
+      "desc": <optional description [string]>
     }
     ...
   ]

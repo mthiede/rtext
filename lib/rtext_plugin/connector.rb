@@ -1,13 +1,13 @@
 require 'socket'
 require 'open3'
 require 'tmpdir'
+require 'rtext/message_helper'
 
 module RTextPlugin
 
 class Connector
 include Process
-
-InvocationDescriptor = Struct.new(:received_proc, :update_proc, :result)
+include RText::MessageHelper
 
 def initialize(config, logger, options={})
   @config = config
@@ -23,34 +23,32 @@ def resume
   do_work
 end
 
-def execute_command(command, params=[], options={})
+def execute_command(obj, options={})
   if @busy
     do_work
     ["busy..."]
   elsif connected?
-    @socket.send("#{command}\n#{@invocation_id}\n#{params.join("\n")}", 0)
+    obj["invocation_id"] = @invocation_id
+    @socket.send(serialize_message(obj), 0)
     result = nil
     @busy = true
-    if options[:result_callback]
-      @invocations[@invocation_id] = InvocationDescriptor.new(lambda do |r|
-        @busy = false
-        options[:result_callback].call(r)
-      end,
-      lambda do |r|
-        if options[:update_callback]
-          options[:update_callback].call(r)
+    if options[:response_callback]
+      @invocations[@invocation_id] = lambda do |r|
+        if r["type"] == "response"
+          @busy = false
         end
-      end)
+        options[:response_callback].call(r)
+      end
       @invocation_id += 1
       do_work
       ["pending..."]
     else
-      @invocations[@invocation_id] = InvocationDescriptor.new(lambda do |r|
-        result = r
-        @busy = false
-      end,
-      lambda do |r|
-      end)
+      @invocations[@invocation_id] = lambda do |r|
+        if r["type"] == "response" || r["type"] == "unknown_command_error"
+          result = r
+          @busy = false
+        end
+      end
       @invocation_id += 1
       while !result
         sleep(0.1)
@@ -66,7 +64,7 @@ def execute_command(command, params=[], options={})
 end
 
 def stop
-  execute_command("stop")
+  execute_command({"type" => "request", "command" => "stop"})
   while do_work 
     sleep(0.1)
   end
@@ -130,8 +128,7 @@ def do_work
       puts output
       port = $1.to_i
       @logger.info "connecting to #{port}"
-      @socket = UDPSocket.new
-      @socket.connect("127.0.0.1", port)
+      @socket = TCPSocket.new("127.0.0.1", port)
       @state = :connected
       @work_state = :read_from_socket
       @connection_listener.call if @connection_listener
@@ -139,35 +136,33 @@ def do_work
     true
   when :read_from_socket
     repeat = true
+    socket_closed = false
+    response_data = ""
     while repeat
       repeat = false
+      data = nil
       begin
-        data, from = @socket.recvfrom_nonblock(100000)
+        data = @socket.read_nonblock(100000)
       rescue Errno::EWOULDBLOCK
-        data = nil
+      rescue EOFError
+        socket_closed = true
+        @logger.error "server socket closed (end of file)"
       end
       if data
+        puts data
         repeat = true
-        lines = data.split("\n")
-        if lines.first =~ /^(\d+)$/
-          inv_id = $1.to_i
-          desc = @invocations[inv_id]
-          if desc
-            desc.result ||= []
-            if lines[1] == "last"
-              desc.received_proc.call(desc.result + lines[2..-1])
-            else
-              desc.result += lines[2..-1]
-              desc.update_proc.call(desc.result)
-            end 
+        response_data.concat(data)
+        while obj = extract_message(response_data)
+          inv_id = obj["invocation_id"] 
+          callback = @invocations[inv_id]
+          if callback
+            callback.call(obj)
           else
             @logger.error "unknown answer"
           end
-        else
-          @logger.error "no invocation id"
         end
         true
-      elsif !backend_running?
+      elsif !backend_running? || socket_closed
         @socket.close
         File.unlink(@out_file)
         @work_state = :done
