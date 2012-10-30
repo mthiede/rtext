@@ -6,9 +6,10 @@ module RTextPlugin
 
 class ConnectorManager
 
-def initialize(logger)
+def initialize(logger, options={})
   @logger = logger
   @connector_descs = {}
+  @connector_listener = options[:on_connect]
 end
 
 ConnectorDesc = Struct.new(:connector, :checksum)
@@ -35,10 +36,17 @@ def connector_for_file(file)
   end
 end
 
+def all_connectors
+  @connector_descs.values.collect{|v| v.connector}
+end
+
 private
 
 def create_connector(config, pattern)
-  desc = ConnectorDesc.new(Connector.new(config, @logger), config_checksum(config))
+  con = Connector.new(config, @logger, :on_connect => lambda do
+    @connector_listener.call(con) if @connector_listener
+  end)
+  desc = ConnectorDesc.new(con, config_checksum(config))
   key = desc_key(config, pattern)
   @connector_descs[key] = desc
   desc.connector

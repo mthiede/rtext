@@ -7,23 +7,25 @@ module RTextPlugin
 class Connector
 include Process
 
-InvocationDescriptor = Struct.new(:proc, :result)
+InvocationDescriptor = Struct.new(:received_proc, :update_proc, :result)
 
-def initialize(config, logger)
+def initialize(config, logger, options={})
   @config = config
   @logger = logger
   @state = :off
   @invocation_id = 1
   @invocations = {}
   @busy = false
+  @connection_listener = options[:on_connect]
 end
 
 def resume
-  @fiber.resume if @fiber
+  do_work
 end
 
 def execute_command(command, params=[], options={})
   if @busy
+    do_work
     ["busy..."]
   elsif connected?
     @socket.send("#{command}\n#{@invocation_id}\n#{params.join("\n")}", 0)
@@ -33,29 +35,41 @@ def execute_command(command, params=[], options={})
       @invocations[@invocation_id] = InvocationDescriptor.new(lambda do |r|
         @busy = false
         options[:result_callback].call(r)
+      end,
+      lambda do |r|
+        if options[:update_callback]
+          options[:update_callback].call(r)
+        end
       end)
       @invocation_id += 1
+      do_work
       ["pending..."]
     else
       @invocations[@invocation_id] = InvocationDescriptor.new(lambda do |r|
         result = r
         @busy = false
+      end,
+      lambda do |r|
       end)
       @invocation_id += 1
       while !result
         sleep(0.1)
-        @fiber.resume
+        do_work
       end
       result
     end
   else
     connect unless connecting?
+    do_work
     ["connecting..."]
   end
 end
 
 def stop
   execute_command("stop")
+  while do_work 
+    sleep(0.1)
+  end
 end
 
 private
@@ -94,63 +108,72 @@ def connect
 
   @logger.info @config.command
 
-  out_file = tempfile_name 
-  File.unlink(out_file) if File.exist?(out_file)
+  @out_file = tempfile_name 
+  File.unlink(@out_file) if File.exist?(@out_file)
 
   Dir.chdir(File.dirname(@config.file)) do
-    @process_id = spawn(@config.command.strip + " > #{out_file}")
+    @process_id = spawn(@config.command.strip + " > #{@out_file}")
   end
+  @work_state = :wait_for_file
+end
 
-  @fiber = Fiber.new do
-
-    while !File.exist?(out_file)
-      Fiber.yield
+def do_work
+  case @work_state
+  when :wait_for_file
+    if File.exist?(@out_file)
+      @work_state = :wait_for_port
     end
-
-    port = nil
-    while !port
-      output = File.read(out_file)
-      if output =~ /^RText service, listening on port (\d+)/
-        puts output
-        port = $1.to_i
-      else
-        Fiber.yield
-      end
+    true
+  when :wait_for_port
+    output = File.read(@out_file)
+    if output =~ /^RText service, listening on port (\d+)/
+      puts output
+      port = $1.to_i
+      @logger.info "connecting to #{port}"
+      @socket = UDPSocket.new
+      @socket.connect("127.0.0.1", port)
+      @state = :connected
+      @work_state = :read_from_socket
+      @connection_listener.call if @connection_listener
     end
-
-    @logger.info "connecting to #{port}"
-    @socket = UDPSocket.new
-    @socket.connect("127.0.0.1", port)
-    @state = :connected
-    while backend_running?
+    true
+  when :read_from_socket
+    repeat = true
+    while repeat
+      repeat = false
       begin
         data, from = @socket.recvfrom_nonblock(100000)
       rescue Errno::EWOULDBLOCK
-        Fiber.yield
-        retry
+        data = nil
       end
-      #data = @socket.readpartial(100000)
-      lines = data.split("\n")
-      if lines.first =~ /^(\d+)$/
-        inv_id = $1.to_i
-        desc = @invocations[inv_id]
-        if desc
-          desc.result ||= []
-          if lines[1] == "last"
-            desc.proc.call(desc.result + lines[2..-1])
+      if data
+        repeat = true
+        lines = data.split("\n")
+        if lines.first =~ /^(\d+)$/
+          inv_id = $1.to_i
+          desc = @invocations[inv_id]
+          if desc
+            desc.result ||= []
+            if lines[1] == "last"
+              desc.received_proc.call(desc.result + lines[2..-1])
+            else
+              desc.result += lines[2..-1]
+              desc.update_proc.call(desc.result)
+            end 
           else
-            desc.result += lines[2..-1]
-          end 
+            @logger.error "unknown answer"
+          end
         else
-          @logger.error "unknown answer"
+          @logger.error "no invocation id"
         end
-      else
-        @logger.error "no invocation id"
+        true
+      elsif !backend_running?
+        @socket.close
+        File.unlink(@out_file)
+        @work_state = :done
+        false
       end
     end
-
-    @socket.close
-    File.unlink(out_file)
   end
 
 end
