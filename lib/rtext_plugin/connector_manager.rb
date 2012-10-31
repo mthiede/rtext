@@ -6,8 +6,8 @@ module RTextPlugin
 
 class ConnectorManager
 
-def initialize(logger, options={})
-  @logger = logger
+def initialize(options={})
+  @logger = options[:logger]
   @connector_descs = {}
   @connector_listener = options[:on_connect]
 end
@@ -43,7 +43,7 @@ end
 private
 
 def create_connector(config, pattern)
-  con = Connector.new(config, @logger, :on_connect => lambda do
+  con = Connector.new(config, :logger => @logger, :on_connect => lambda do
     @connector_listener.call(con) if @connector_listener
   end)
   desc = ConnectorDesc.new(con, config_checksum(config))

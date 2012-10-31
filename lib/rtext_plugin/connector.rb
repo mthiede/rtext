@@ -9,9 +9,9 @@ class Connector
 include Process
 include RText::MessageHelper
 
-def initialize(config, logger, options={})
+def initialize(config, options={})
   @config = config
-  @logger = logger
+  @logger = options[:logger]
   @state = :off
   @invocation_id = 1
   @invocations = {}
@@ -105,7 +105,7 @@ end
 def connect
   @state = :connecting
 
-  @logger.info @config.command
+  @logger.info @config.command if @logger
 
   @out_file = tempfile_name 
   File.unlink(@out_file) if File.exist?(@out_file)
@@ -127,7 +127,7 @@ def do_work
     output = File.read(@out_file)
     if output =~ /^RText service, listening on port (\d+)/
       port = $1.to_i
-      @logger.info "connecting to #{port}"
+      @logger.info "connecting to #{port}" if @logger
       @socket = TCPSocket.new("127.0.0.1", port)
       @state = :connected
       @work_state = :read_from_socket
@@ -146,7 +146,7 @@ def do_work
       rescue Errno::EWOULDBLOCK
       rescue EOFError
         socket_closed = true
-        @logger.error "server socket closed (end of file)"
+        @logger.error "server socket closed (end of file)" if @logger
       end
       if data
         repeat = true
@@ -157,7 +157,7 @@ def do_work
           if callback
             callback.call(obj)
           else
-            @logger.error "unknown answer"
+            @logger.error "unknown answer" if @logger
           end
         end
         true
