@@ -16,11 +16,7 @@ def initialize(config, logger, options={})
   @invocation_id = 1
   @invocations = {}
   @busy = false
-  @connection_listener = options[:on_connect]
-end
-
-def resume
-  do_work
+  @connection_listener = options[:connect_callback]
 end
 
 def execute_command(obj, options={})
@@ -35,7 +31,7 @@ def execute_command(obj, options={})
     @busy = true
     if options[:response_callback]
       @invocations[@invocation_id] = lambda do |r|
-        if r["type"] == "response"
+        if r["type"] == "response" || r["type"] =~ /.*error$/
           @busy = false
         end
         options[:response_callback].call(r)
@@ -45,7 +41,7 @@ def execute_command(obj, options={})
       :request_pending 
     else
       @invocations[@invocation_id] = lambda do |r|
-        if r["type"] == "response" || r["type"] == "unknown_command_error"
+        if r["type"] == "response" || r["type"] == /.*error$/ 
           result = r
           @busy = false
         end
@@ -62,6 +58,10 @@ def execute_command(obj, options={})
     do_work
     :connecting 
   end
+end
+
+def resume
+  do_work
 end
 
 def stop
