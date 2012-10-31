@@ -78,6 +78,7 @@ class Service
 
   def message_received(sock, obj)
     if check_request(obj) 
+      @logger.debug("request: "+obj.inspect) if @logger
       response = { "type" => "response", "invocation_id" => obj["invocation_id"] }
       case obj["command"]
       when "load_model"
@@ -96,6 +97,7 @@ class Service
         response["type"] = "unknown_command_error"
         response["command"] = obj["command"] 
       end
+      @logger.debug("response: "+response.inspect) if response && @logger
       sock.send(serialize_message(response), 0) if response
     end
   end

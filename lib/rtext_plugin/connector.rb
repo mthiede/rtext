@@ -26,9 +26,10 @@ end
 def execute_command(obj, options={})
   if @busy
     do_work
-    ["busy..."]
+    :backend_busy 
   elsif connected?
     obj["invocation_id"] = @invocation_id
+    obj["type"] = "request"
     @socket.send(serialize_message(obj), 0)
     result = nil
     @busy = true
@@ -41,7 +42,7 @@ def execute_command(obj, options={})
       end
       @invocation_id += 1
       do_work
-      ["pending..."]
+      :request_pending 
     else
       @invocations[@invocation_id] = lambda do |r|
         if r["type"] == "response" || r["type"] == "unknown_command_error"
@@ -59,7 +60,7 @@ def execute_command(obj, options={})
   else
     connect unless connecting?
     do_work
-    ["connecting..."]
+    :connecting 
   end
 end
 
@@ -125,7 +126,6 @@ def do_work
   when :wait_for_port
     output = File.read(@out_file)
     if output =~ /^RText service, listening on port (\d+)/
-      puts output
       port = $1.to_i
       @logger.info "connecting to #{port}"
       @socket = TCPSocket.new("127.0.0.1", port)
@@ -149,7 +149,6 @@ def do_work
         @logger.error "server socket closed (end of file)"
       end
       if data
-        puts data
         repeat = true
         response_data.concat(data)
         while obj = extract_message(response_data)
