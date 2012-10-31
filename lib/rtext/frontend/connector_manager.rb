@@ -1,15 +1,16 @@
 require 'digest'
-require 'rtext_plugin/config'
-require 'rtext_plugin/connector'
+require 'rtext/frontend/config'
+require 'rtext/frontend/connector'
 
-module RTextPlugin
+module RText
+module Frontend
 
 class ConnectorManager
 
 def initialize(options={})
   @logger = options[:logger]
   @connector_descs = {}
-  @connector_listener = options[:on_connect]
+  @connector_listener = options[:connect_callback]
 end
 
 ConnectorDesc = Struct.new(:connector, :checksum)
@@ -43,7 +44,7 @@ end
 private
 
 def create_connector(config, pattern)
-  con = Connector.new(config, :logger => @logger, :on_connect => lambda do
+  con = Connector.new(config, :logger => @logger, :connect_callback => lambda do
     @connector_listener.call(con) if @connector_listener
   end)
   desc = ConnectorDesc.new(con, config_checksum(config))
@@ -69,5 +70,6 @@ end
 
 end
 
+end
 end
 

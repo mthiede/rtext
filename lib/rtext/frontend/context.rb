@@ -1,4 +1,5 @@
-module RTextPlugin
+module RText
+module Frontend
 
 module Context
 
@@ -50,5 +51,6 @@ end
 
 end
 
+end
 end
 

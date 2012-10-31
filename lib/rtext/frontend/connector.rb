@@ -1,9 +1,9 @@
 require 'socket'
-require 'open3'
 require 'tmpdir'
 require 'rtext/message_helper'
 
-module RTextPlugin
+module RText
+module Frontend
 
 class Connector
 include Process
@@ -174,5 +174,6 @@ end
 
 end
 
+end
 end
 
