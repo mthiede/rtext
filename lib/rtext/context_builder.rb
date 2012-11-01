@@ -78,8 +78,7 @@ module ContextBuilder
   def fix_context(context_lines, position_in_line)
     context_lines = context_lines.dup
     # make sure there is at least one line
-    # the frontent may ommit the last context line if the cursor is at collumn 0
-    if context_lines.empty? || (position_in_line == 0 && context_lines.last != "")
+    if context_lines.empty?
       context_lines << ""
     end
     position_in_line ||= context_lines.last.size
