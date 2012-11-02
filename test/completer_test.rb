@@ -312,6 +312,55 @@ TestNode related: |
   ], options)
 end
 
+def test_reference_value_in_array
+  options = complete(TestMM, %Q(\
+TestNode others: |
+), lambda { |r| [
+    RText::Completer::CompletionOption.new("A", "a"),
+    RText::Completer::CompletionOption.new("B", "b") ] })
+  assert_options([
+    ["A", "a"],
+    ["B", "b"],
+  ], options)
+end
+
+def test_reference_value_in_array_after_bracket
+  options = complete(TestMM, %Q(\
+TestNode others: [|
+), lambda { |r| [
+    RText::Completer::CompletionOption.new("A", "a"),
+    RText::Completer::CompletionOption.new("B", "b") ] })
+  assert_options([
+    ["A", "a"],
+    ["B", "b"],
+  ], options)
+end
+
+def test_reference_value_in_array_second_value
+  options = complete(TestMM, %Q(\
+TestNode others: [xxx, |
+), lambda { |r| [
+    RText::Completer::CompletionOption.new("A", "a"),
+    RText::Completer::CompletionOption.new("B", "b") ] })
+  assert_options([
+    ["A", "a"],
+    ["B", "b"],
+  ], options)
+end
+
+def test_reference_value_nested
+  options = complete(TestMM, %Q(\
+TestNode {
+  TestNode SimpleState, others: [|/StatemachineMM/State]
+), lambda { |r| [
+    RText::Completer::CompletionOption.new("A", "a"),
+    RText::Completer::CompletionOption.new("B", "b") ] })
+  assert_options([
+    ["A", "a"],
+    ["B", "b"],
+  ], options)
+end
+
 def test_after_curly 
   options = complete TestMM, <<-END
 TestNode {|

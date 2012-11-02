@@ -234,6 +234,102 @@ EPackage StatemachineMM {
   ]
 end
 
+def test_reference_completion
+  response = load_model
+  context = build_context <<-END
+EPackage StatemachineMM {
+  EClass State, abstract: true {
+    EAttribute name, eType: |/StatemachineMM/StringType
+  END
+  assert_completions context, [
+    "/StatemachineMM/CompositeState",
+    "/StatemachineMM/SimpleState",
+    "/StatemachineMM/State",
+    "/StatemachineMM/StringType",
+    "/StatemachineMM/Transition"
+  ]
+  context = build_context <<-END
+EPackage StatemachineMM {
+  EClass State, abstract: true {
+    EAttribute name, eType: /StatemachineMM/|StringType
+  END
+  assert_completions context, [
+    "/StatemachineMM/CompositeState",
+    "/StatemachineMM/SimpleState",
+    "/StatemachineMM/State",
+    "/StatemachineMM/StringType",
+    "/StatemachineMM/Transition"
+  ]
+  context = build_context <<-END
+EPackage StatemachineMM {
+  EClass State, abstract: true {
+    EAttribute name, eType: /StatemachineMM/St|ringType
+  END
+  assert_completions context, [
+    "/StatemachineMM/State",
+    "/StatemachineMM/StringType",
+  ]
+  context = build_context <<-END
+EPackage StatemachineMM {
+  EClass State, abstract: true {
+    EAttribute name, eType: /StatemachineMM/StringType|
+  END
+  assert_completions context, [
+    "/StatemachineMM/StringType",
+  ]
+end
+
+def test_reference_completion_in_array
+  response = load_model
+  context = build_context <<-END
+EPackage StatemachineMM {
+  EClass State, abstract: true {
+    EAttribute name, eType: /StatemachineMM/StringType
+    EReference parent, eType: /StatemachineMM/CompositeState, eOpposite: /StatemachineMM/CompositeState/substates
+  }
+  EClass SimpleState, eSuperTypes: [|/StatemachineMM/State]
+  END
+  assert_completions context, [
+    "/StatemachineMM/CompositeState",
+    "/StatemachineMM/SimpleState",
+    "/StatemachineMM/State",
+    "/StatemachineMM/Transition"
+  ]
+  context = build_context <<-END
+EPackage StatemachineMM {
+  EClass State, abstract: true {
+    EAttribute name, eType: /StatemachineMM/StringType
+    EReference parent, eType: /StatemachineMM/CompositeState, eOpposite: /StatemachineMM/CompositeState/substates
+  }
+  EClass SimpleState, eSuperTypes: [/StatemachineMM/S|tate]
+  END
+  assert_completions context, [
+    "/StatemachineMM/SimpleState",
+    "/StatemachineMM/State",
+  ]
+  context = build_context <<-END
+EPackage StatemachineMM {
+  EClass State, abstract: true {
+    EAttribute name, eType: /StatemachineMM/StringType
+    EReference parent, eType: /StatemachineMM/CompositeState, eOpposite: /StatemachineMM/CompositeState/substates
+  }
+  EClass SimpleState, eSuperTypes: [/StatemachineMM/State|]
+  END
+  assert_completions context, [
+    "/StatemachineMM/State",
+  ]
+  context = build_context <<-END
+EPackage StatemachineMM {
+  EClass State, abstract: true {
+    EAttribute name, eType: /StatemachineMM/StringType
+    EReference parent, eType: /StatemachineMM/CompositeState, eOpposite: /StatemachineMM/CompositeState/substates
+  }
+  EClass SimpleState, eSuperTypes: [/StatemachineMM/State]|
+  END
+  assert_completions context, [
+  ]
+end
+
 TestContext = Struct.new(:line, :col)
 
 def build_context(text, text2=nil)
@@ -257,6 +353,7 @@ end
 
 def assert_completions(context, expected)
   lines = File.read(@infile).split(/\r?\n/)[0..context.line-1]
+  lines =  RText::Frontend::Context.extract(lines)
   response = @con.execute_command( 
     {"command" => "content_complete", "context" => lines, "column" => context.col})
   assert_equal expected, response["options"].collect{|o| o["insert"]}
