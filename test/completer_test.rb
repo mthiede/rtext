@@ -167,6 +167,15 @@ TestNode nums: |
   ], options)
 end
 
+def test_value_int_part
+  options = complete TestMM, <<-END
+TestNode nums: 3| 
+  END
+  assert_options([
+    ["3", nil],
+  ], options)
+end
+
 def test_value_boolean
   options = complete TestMM, <<-END
 TestNode3 bool: | 
@@ -174,6 +183,24 @@ TestNode3 bool: |
   assert_options([
     ["true", nil],
     ["false", nil],
+  ], options)
+end
+
+def test_value_boolean_part
+  options = complete TestMM, <<-END
+TestNode3 bool: t| 
+  END
+  assert_options([
+    ["true", nil],
+  ], options)
+end
+
+def test_value_boolean_full
+  options = complete TestMM, <<-END
+TestNode3 bool: true| 
+  END
+  assert_options([
+    ["true", nil],
   ], options)
 end
 
@@ -190,6 +217,24 @@ TestNode3 float: |
   ], options)
 end
 
+def test_value_float_part
+  options = complete TestMM, <<-END
+TestNode3 float: 1| 
+  END
+  assert_options([
+    ["1.0", nil],
+  ], options)
+end
+
+def test_value_float_full
+  options = complete TestMM, <<-END
+TestNode3 float: 1.0| 
+  END
+  assert_options([
+    ["1.0", nil],
+  ], options)
+end
+
 def test_value_enum
   options = complete TestMM, <<-END
 TestNode3 enum: | 
@@ -198,6 +243,15 @@ TestNode3 enum: |
     ["A", nil],
     ["B", nil],
     ["non-word*chars", nil]
+  ], options)
+end
+
+def test_value_enum_part
+  options = complete TestMM, <<-END
+TestNode3 enum: A| 
+  END
+  assert_options([
+    ["A", nil],
   ], options)
 end
 
@@ -239,9 +293,28 @@ TestNode related: |\
   ], options)
 end
 
+def test_reference_value_part
+  options = complete(TestMM, %Q(\
+TestNode related: /My/|\
+  ), lambda { |r| [
+    RText::Completer::CompletionOption.new("/My/Target", "a"),
+    RText::Completer::CompletionOption.new("/MyOther/Target", "b") ] })
+  assert_options([
+    ["/My/Target", "a"],
+  ], options)
+end
+
 def test_reference_value_no_ref_completion_provider
   options = complete TestMM, <<-END
 TestNode related: |
+  END
+  assert_options([
+  ], options)
+end
+
+def test_after_curly 
+  options = complete TestMM, <<-END
+TestNode {|
   END
   assert_options([
   ], options)
@@ -267,6 +340,42 @@ TestNode {
   END
   assert_options([
     ["TestNode2", ""],
+  ], options)
+end
+
+def test_after_child_role
+  options = complete TestMM, <<-END
+TestNode { 
+  child2RoleA:|
+  END
+  assert_options([
+  ], options)
+end
+
+def test_after_child_role2
+  options = complete TestMM, <<-END
+TestNode { 
+  child2RoleA: |
+  END
+  assert_options([
+  ], options)
+end
+
+def test_after_child_role3
+  options = complete TestMM, <<-END
+TestNode { 
+  child2RoleA: [|
+  END
+  assert_options([
+  ], options)
+end
+
+def test_after_child_role4
+  options = complete TestMM, <<-END
+TestNode { 
+  child2RoleA: [ |
+  END
+  assert_options([
   ], options)
 end
 

@@ -71,8 +71,6 @@ EPackage StatemachineMM| {
 EPackage StatemachineMM |{
   END
   assert_completions context, [
-    "nsPrefix:",
-    "nsURI:"
   ]
   context = build_context <<-END
 EPackage StatemachineMM {|
@@ -169,7 +167,71 @@ EPackage StatemachineMM {
 EPackage StatemachineMM {
   EClass State,| abstract: true {
   END
-  assert_completions context, []
+  assert_completions context, [
+    "abstract:", 
+    "interface:", 
+    "eSuperTypes:", 
+    "instanceClassName:"
+  ]
+  context = build_context <<-END
+EPackage StatemachineMM {
+  EClass State, |abstract: true {
+  END
+  assert_completions context, [
+    "abstract:", 
+    "interface:", 
+    "eSuperTypes:", 
+    "instanceClassName:"
+  ]
+  context = build_context <<-END
+EPackage StatemachineMM {
+  EClass State, a|bstract: true {
+  END
+  assert_completions context, [
+    "abstract:"
+  ]
+  context = build_context <<-END
+EPackage StatemachineMM {
+  EClass State, abstract:| true {
+  END
+  assert_completions context, [
+    "true",
+    "false"
+  ]
+  context = build_context <<-END
+EPackage StatemachineMM {
+  EClass State, abstract: |true {
+  END
+  assert_completions context, [
+    "true",
+    "false"
+  ]
+  context = build_context <<-END
+EPackage StatemachineMM {
+  EClass State, abstract: t|rue {
+  END
+  assert_completions context, [
+    "true"
+  ]
+  context = build_context <<-END
+EPackage StatemachineMM {
+  EClass State, abstract: true| {
+  END
+  assert_completions context, [
+    "true"
+  ]
+  context = build_context <<-END
+EPackage StatemachineMM {
+  EClass State, abstract: true |{
+  END
+  assert_completions context, [
+  ]
+  context = build_context <<-END
+EPackage StatemachineMM {
+  EClass State, abstract: true {|
+  END
+  assert_completions context, [
+  ]
 end
 
 TestContext = Struct.new(:line, :col)
@@ -185,8 +247,9 @@ def build_context(text, text2=nil)
   context_lines.last.sub!("|", "")
 
   # check that the context data actally matches the real file in the filesystem
-  ref_lines = File.read(@infile).split(/\r?\n/)
-  assert_equal ref_lines[0..context_lines.size-1], context_lines, "inconsistent test data"
+  ref_lines = File.read(@infile).split(/\r?\n/)[0..context_lines.size-1]
+  raise "inconsistent test data, expected\n:#{ref_lines.join("\n")}\ngot:\n#{context_lines.join("\n")}\n" \
+    unless ref_lines == context_lines
 
   # column numbers start at 1
   TestContext.new(context_lines.size, pos_in_line)

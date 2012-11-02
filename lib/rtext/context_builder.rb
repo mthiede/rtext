@@ -26,7 +26,7 @@ module RText
 #
 module ContextBuilder
 
-  Context = Struct.new(:element, :feature, :prefix, :in_array, :in_block)
+  Context = Struct.new(:element, :feature, :prefix, :in_array, :in_block, :problem)
 
   class << self
   include RText::Tokenizer
@@ -41,9 +41,9 @@ module ContextBuilder
     if element
       feature = context_info.role &&
         element.class.ecore.eAllStructuralFeatures.find{|f| f.name == context_info.role}
-      Context.new(element, feature, context_info.prefix, context_info.in_array, context_info.in_block)
+      Context.new(element, feature, context_info.prefix, context_info.in_array, context_info.in_block, context_info.problem)
     else
-      Context.new(nil, nil, context_info.prefix, context_info.in_array, context_info.in_block)
+      Context.new(nil, nil, context_info.prefix, context_info.in_array, context_info.in_block, context_info.problem)
     end
   end
 
@@ -74,7 +74,7 @@ module ContextBuilder
     end
   end
 
-  ContextInternal = Struct.new(:lines, :num_elements, :role, :prefix, :in_array, :in_block)
+  ContextInternal = Struct.new(:lines, :num_elements, :role, :prefix, :in_array, :in_block, :problem)
 
   # extend +context_lines+ into a set of lines which can be processed by the RText
   def fix_context(language, context_lines, position_in_line)
@@ -91,9 +91,15 @@ module ContextBuilder
     else
       context_lines << context_lines.pop[0..position_in_line-1]
     end
+    problem = nil
     line = context_lines.last
+    if line =~ /\{\s*$/
+      # remove curly brace from last line, required for correct counting of num_elements
+      line.sub!(/\{\s*$/,"")
+      problem = :after_curly
+    end
     
-    num_elements = in_block = in_array = role = prefix = nil
+    num_elements = in_block = in_array = missing_comma = role = prefix = nil
     tokens = tokenize(line, language.reference_regexp)
     tokens.pop if tokens.last && tokens.last.kind == :newline
     if tokens.size > 0 && tokens[0].kind == :identifier
@@ -103,33 +109,38 @@ module ContextBuilder
         in_block = false
         in_array = false
         role = nil
+        missing_comma = false
         tokens[1..-1].each do |token|
           if token.kind == "["
             in_array = true
           elsif token.kind == "]"
             in_array = false
+            missing_comma = true
             role = nil
           elsif token.kind == :label
             role = token.value.sub(/:$/, "")
           elsif token.kind == ","
+            missing_comma = false
             role = nil unless in_array
           end
         end
         if [:string, :integer, :float, :boolean, :identifier, :reference].
-            include?(tokens.last.kind) && line =~ /\s$/
+            include?(tokens.last.kind) && line =~ /\s$/ && tokens.size > 1
+            missing_comma = true
             role = nil unless in_array
         end
         if [:error, :string, :integer, :float, :boolean, :identifier, :reference].
             include?(tokens.last.kind) && line !~ /\s$/
-          prefix = tokens.last.value
+          prefix = tokens.last.value.to_s
         else
           prefix = ""
         end
       else
         # in completion of command
         num_elements = 0
+        missing_comma = false
         in_block = (context_lines.size > 1)
-        prefix = tokens[0].value
+        prefix = tokens[0].value.to_s
         role, in_array = find_role(context_lines[0..-2])
         # fix single role lable
         if context_lines[-2] =~ /^\s*\w+:\s*$/
@@ -139,6 +150,7 @@ module ContextBuilder
     elsif line.strip.empty?
       # in completion of command but without prefix
       num_elements = 0
+      missing_comma = false
       in_block = (context_lines.size > 1)
       prefix = ""
       role, in_array = find_role(context_lines[0..-2])
@@ -149,6 +161,7 @@ module ContextBuilder
     else
       # comment, closing brackets, etc.
       num_elements = 0
+      missing_comma = false
       in_block = (context_lines.size > 1)
       return nil
     end
@@ -167,7 +180,8 @@ module ContextBuilder
         context_lines << "]"
       end
     end
-    ContextInternal.new(context_lines, num_elements, role, prefix, in_array, in_block)
+    problem = :missing_comma if !problem && missing_comma
+    ContextInternal.new(context_lines, num_elements, role, prefix, in_array, in_block, problem)
   end
 
   def find_role(context_lines)

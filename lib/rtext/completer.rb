@@ -23,6 +23,7 @@ class Completer
     clazz = context && context.element && context.element.class.ecore
     if clazz
       if context.in_block
+        # command and lable completion within block
         types = []
         labled_refs = []
         if context.feature
@@ -51,28 +52,29 @@ class Completer
         labled_refs.uniq.select{|r| r.name.index(context.prefix) == 0}.collect do |r|
             CompletionOption.new("#{r.name}:", "<#{r.eType.name}>")
           end
-      else
+      elsif !context.problem
         if context.feature
           # value completion
           if context.feature.is_a?(RGen::ECore::EAttribute) || !context.feature.containment
             if context.feature.is_a?(RGen::ECore::EReference)
               if ref_completion_option_provider
-                ref_completion_option_provider.call(context.feature)
+                ref_completion_option_provider.call(context.feature).
+                  select{|o| o.text.index(context.prefix) == 0}
               else
                 []
               end
             elsif context.feature.eType.is_a?(RGen::ECore::EEnum)
-              context.feature.eType.eLiterals.collect do |l|
+              context.feature.eType.eLiterals.select{|l| l.name.index(context.prefix) == 0}.collect do |l|
                 CompletionOption.new("#{l.name}")
               end 
             elsif context.feature.eType.instanceClass == String
               [ CompletionOption.new("\"\"") ]
             elsif context.feature.eType.instanceClass == Integer 
-              (0..4).collect{|i| CompletionOption.new("#{i}") }
+              (0..4).select{|i| i.to_s.index(context.prefix) == 0}.collect{|i| CompletionOption.new("#{i}") }
             elsif context.feature.eType.instanceClass == Float 
-              (0..4).collect{|i| CompletionOption.new("#{i}.0") }
+              (0..4).select{|i| "#{i}.0".index(context.prefix) == 0}.collect{|i| CompletionOption.new("#{i}.0") }
             elsif context.feature.eType.instanceClass == RGen::MetamodelBuilder::DataTypes::Boolean
-              [true, false].collect{|b| CompletionOption.new("#{b}") }
+              [true, false].select{|b| b.to_s.index(context.prefix) == 0}.collect{|b| CompletionOption.new("#{b}") }
             else
               []
             end
@@ -97,6 +99,9 @@ class Completer
             end 
           result
         end
+      else
+        # missing comma, after curly brace, etc.
+        []
       end
     elsif context
       # root classes
