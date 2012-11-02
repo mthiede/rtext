@@ -117,7 +117,7 @@ limit detection effort and/or response time.
 This command is a request by the frontend in order to show content completion options at a given
 location within a file. The location is expressed using a set of context lines and the cursor
 column position in the current line. See section "Context Extraction" for details about how to
-build the set of context lines in the frontend. Column positions start at 1.
+build the set of context lines in the frontend. The first column in a line is number 1.
 
 ``
 {

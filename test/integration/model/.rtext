@@ -1,0 +1,2 @@
+*.ect:
+ruby -I../../../../rgen/lib -I ../../../lib ../ecore_editor.rb "*.ect" 2>&1

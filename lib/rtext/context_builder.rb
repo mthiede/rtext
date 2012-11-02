@@ -63,10 +63,10 @@ module ContextBuilder
   def find_leaf_child(element, num_required_children)
     childs = element.class.ecore.eAllReferences.select{|r| r.containment}.collect{|r|
       element.getGenericAsArray(r.name)}.flatten
-    if childs.size > 0
-      find_leaf_child(childs.first, num_required_children-1)
-    elsif num_required_children == 0
+    if num_required_children == 0
       element
+    elsif childs.size > 0
+      find_leaf_child(childs.first, num_required_children-1)
     else
       nil
     end
@@ -83,7 +83,12 @@ module ContextBuilder
     end
     position_in_line ||= context_lines.last.size
     # cut off last line right of cursor
-    context_lines << context_lines.pop[0..position_in_line-1]
+    if position_in_line < 1
+      context_lines.pop
+      context_lines << ""
+    else
+      context_lines << context_lines.pop[0..position_in_line-1]
+    end
     line = context_lines.last
     if line =~ /^\s*\w+\s+/
       # this line contains a new element
@@ -93,28 +98,42 @@ module ContextBuilder
       if line =~ /\W(\w+):\s*\[([^\]]*)$/
         role = $1
         array_content = $2
+        array_content.gsub!(/"(?:[^"\\]|\\\\|\\")*"\s*,/, "") 
+        array_content.gsub!(/"(?:[^"\\]|\\\\|\\")*"\s+/, "") 
         in_array = true
-        if array_content =~ /,\s*(\S*)$/
+        if array_content =~ /,\s*("(?:[^"\\]|\\\\|\\")*"?)$/ 
           prefix = $1
-          line.sub!(/,\s*\S*$/, "]")
+          line.slice!(-(prefix.size)..-1) if prefix.size > 0
+          line.sub!(/,\s*$/, "]")
+        elsif array_content =~ /\s*("(?:[^"\\]|\\\\|\\")*"?)$/ 
+          prefix = $1
+          line.slice!(-(prefix.size)..-1) if prefix.size > 0
+          line.sub!(/\[\s*$/, "[]")
+        elsif array_content =~ /,\s*([^,\s]*)$/
+          prefix = $1
+          line.slice!(-(prefix.size)..-1) if prefix.size > 0
+          line.sub!(/,\s*$/, "]")
         else 
-          array_content =~ /\s*(\S*)$/
+          array_content =~ /\s*([^,\s]*)$/
           prefix = $1
-          line.sub!(/\[[^\]]*$/, "[]")
+          line.slice!(-(prefix.size)..-1) if prefix.size > 0
+          line.sub!(/\[\s*$/, "[]")
         end
       # labled value
-      elsif line =~ /\W(\w+):\s*(\S*)$/
+      elsif line =~ /\W(\w+):\s*("(?:[^"\\]|\\\\|\\")*"?)$/ || line =~ /\W(\w+):\s*([^,\s]*)$/
         role = $1
         prefix = $2
         in_array = false
-        line.sub!(/\s*\w+:\s*\S*$/, "")
+        line.slice!(-(prefix.size)..-1) if prefix.size > 0
+        line.sub!(/\s*\w+:\s*$/, "")
         line.sub!(/,$/, "")
       # unlabled value or label
-      elsif line =~ /[,\s](\S*)$/
+      elsif line =~ /[,\s]("(?:[^"\\]|\\\\|\\")*"?)$/ || line =~ /[,\s]([^,\s]*)$/ 
         role = nil
         prefix = $1
         in_array = false
-        line.sub!(/\s*\S*$/, "")
+        line.slice!(-(prefix.size)..-1) if prefix.size > 0
+        line.sub!(/\s*$/, "")
         line.sub!(/,$/, "")
       # TODO: unlabled array value
       else 
@@ -122,9 +141,9 @@ module ContextBuilder
         return nil
       end
     else
-      # this line is in the content block
+      # this line is the first line of the file or in the content block
       num_elements = 0
-      in_block = true
+      in_block = (context_lines.size > 1)
       # role or new element
       if line =~ /^\s*(\w*)$/
         prefix = $1

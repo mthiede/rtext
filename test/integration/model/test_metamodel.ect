@@ -1,0 +1,18 @@
+EPackage StatemachineMM {
+  EClass State, abstract: true {
+    EAttribute name, eType: /StatemachineMM/StringType
+    EReference parent, eType: /StatemachineMM/CompositeState, eOpposite: /StatemachineMM/CompositeState/substates
+  }
+  EClass SimpleState, eSuperTypes: [/StatemachineMM/State]
+  EClass CompositeState, eSuperTypes: [/StatemachineMM/State] {
+    EReference substates, upperBound: -1, containment: true, eType: /StatemachineMM/State, eOpposite: /StatemachineMM/State/parent
+  }
+  EClass Transition {
+    EReference target, upperBound: 1, eType: /StatemachineMM/State
+    EReference source, upperBound: 1, eType: /StatemachineMM/State
+  }
+  EDataType StringType
+  EAnnotation source: "test" {
+    EStringToStringMapEntry key: "kind", value: "package"
+  }
+} 

@@ -85,14 +85,14 @@ class Completer
               context.element.getGenericAsArray(f.name).size > 0}
             result += @lang.unlabled_arguments(clazz).
               select{|f| f.name.index(context.prefix) == 0 && 
-                context.element.getGenericAsArray(f.name).empty?}[0..0].collect do |f| 
+                !context.element.eIsSet(f.name)}[0..0].collect do |f| 
                 CompletionOption.new("<#{f.name}>", "<#{f.eType.name}>")
               end
           end
           # label completion
           result += @lang.labled_arguments(clazz).
             select{|f| f.name.index(context.prefix) == 0 && 
-              context.element.getGenericAsArray(f.name).empty?}.collect do |f| 
+              !context.element.eIsSet(f.name)}.collect do |f| 
               CompletionOption.new("#{f.name}:", "<#{f.eType.name}>")
             end 
           result

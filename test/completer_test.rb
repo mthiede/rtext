@@ -37,7 +37,7 @@ end
 
 def test_after_command
   options = complete TestMM, <<-END
-  TestNode |
+TestNode |
   END
   assert_options([
     ["<unlabled1>", "<EString>"],
@@ -50,7 +50,16 @@ end
 
 def test_lable_prefix
   options = complete TestMM, <<-END
-  TestNode t|
+TestNode t|
+  END
+  assert_options([
+    ["text:", "<EString>"]
+  ], options)
+end
+
+def test_lable_within
+  options = complete TestMM, <<-END
+TestNode t|ext
   END
   assert_options([
     ["text:", "<EString>"]
@@ -59,7 +68,7 @@ end
 
 def test_unlabled_prefix
   options = complete TestMM, <<-END
-  TestNode u|
+TestNode u|
   END
   assert_options([
     ["<unlabled1>", "<EString>"]
@@ -68,7 +77,18 @@ end
 
 def test_after_labled_value
   options = complete TestMM, <<-END
-  TestNode nums: 1, |
+TestNode nums: 1, |
+  END
+  assert_options([
+    ["text:", "<EString>"],
+    ["related:", "<TestNode>"],
+    ["others:", "<TestNode>"]
+  ], options)
+end
+
+def test_after_labled_value_directly_after_comma
+  options = complete TestMM, <<-END
+TestNode nums: 1,|
   END
   assert_options([
     ["text:", "<EString>"],
@@ -79,7 +99,20 @@ end
 
 def test_after_unlabled_value
   options = complete TestMM, <<-END
-  TestNode "bla", |
+TestNode "bla", |
+  END
+  assert_options([
+    ["<unlabled2>", "<EInt>"],
+    ["text:", "<EString>"],
+    ["nums:", "<EInt>"],
+    ["related:", "<TestNode>"],
+    ["others:", "<TestNode>"]
+  ], options)
+end
+
+def test_after_unlabled_value_directly_after_comma
+  options = complete TestMM, <<-END
+TestNode "bla",|
   END
   assert_options([
     ["<unlabled2>", "<EInt>"],
@@ -92,7 +125,7 @@ end
 
 def test_after_unlabled_value2
   options = complete TestMM, <<-END
-  TestNode "bla", 1, |
+TestNode "bla", 1, |
   END
   assert_options([
     ["text:", "<EString>"],
@@ -104,7 +137,7 @@ end
 
 def test_after_array
   options = complete TestMM, <<-END
-  TestNode nums: [1, 2], |
+TestNode nums: [1, 2], |
   END
   assert_options([
     ["text:", "<EString>"],
@@ -115,7 +148,7 @@ end
 
 def test_after_array_direct
   options = complete TestMM, <<-END
-  TestNode nums: [1, 2]|
+TestNode nums: [1, 2]|
   END
   assert_options([
   ], options)
@@ -123,7 +156,7 @@ end
 
 def test_value_int
   options = complete TestMM, <<-END
-  TestNode nums: | 
+TestNode nums: | 
   END
   assert_options([
     ["0", nil],
@@ -136,7 +169,7 @@ end
 
 def test_value_boolean
   options = complete TestMM, <<-END
-  TestNode3 bool: | 
+TestNode3 bool: | 
   END
   assert_options([
     ["true", nil],
@@ -146,7 +179,7 @@ end
 
 def test_value_float
   options = complete TestMM, <<-END
-  TestNode3 float: | 
+TestNode3 float: | 
   END
   assert_options([
     ["0.0", nil],
@@ -159,7 +192,7 @@ end
 
 def test_value_enum
   options = complete TestMM, <<-END
-  TestNode3 enum: | 
+TestNode3 enum: | 
   END
   assert_options([
     ["A", nil],
@@ -170,7 +203,7 @@ end
 
 def test_array_value
   options = complete TestMM, <<-END
-  TestNode nums: [|
+TestNode nums: [|
   END
   assert_options([
     ["0", nil],
@@ -183,7 +216,7 @@ end
 
 def test_array_value2
   options = complete TestMM, <<-END
-  TestNode nums: [1,|
+TestNode nums: [1,|
   END
   assert_options([
     ["0", nil],
@@ -196,7 +229,7 @@ end
 
 def test_reference_value
   options = complete(TestMM, %Q(\
-  TestNode related: |\
+TestNode related: |\
   ), lambda { |r| [
     RText::Completer::CompletionOption.new("A", "a"),
     RText::Completer::CompletionOption.new("B", "b") ] })
@@ -208,7 +241,7 @@ end
 
 def test_reference_value_no_ref_completion_provider
   options = complete TestMM, <<-END
-  TestNode related: |
+TestNode related: |
   END
   assert_options([
   ], options)
@@ -216,8 +249,8 @@ end
 
 def test_children
   options = complete TestMM, <<-END
-  TestNode { 
-    |
+TestNode { 
+  |
   END
   assert_options([
     ["TestNode", "<unlabled1>, <unlabled2>"],
@@ -228,9 +261,9 @@ end
 
 def test_children_with_role
   options = complete TestMM, <<-END
-  TestNode { 
-    child2RoleA:
-      |
+TestNode { 
+  child2RoleA:
+    |
   END
   assert_options([
     ["TestNode2", ""],
@@ -239,9 +272,9 @@ end
 
 def test_children_with_role_array
   options = complete TestMM, <<-END
-  TestNode { 
-    child2RoleB: [
-      |
+TestNode { 
+  child2RoleB: [
+    |
   END
   assert_options([
     ["TestNode2", ""],
@@ -250,9 +283,9 @@ end
 
 def test_children_prefix
   options = complete TestMM, <<-END
-  TestNode { 
-    child2RoleB: [
-      X|
+TestNode { 
+  child2RoleB: [
+    X|
   END
   assert_options([
   ], options)
@@ -260,9 +293,9 @@ end
 
 def test_children_inside_childrole
   options = complete TestMM, <<-END
-  TestNode { 
-    child2RoleA:
-      TestNode2 | 
+TestNode { 
+  child2RoleA:
+    TestNode2 | 
   END
   assert_options([
     ["text:", "<EString>"]
@@ -271,9 +304,9 @@ end
 
 def test_children_inside_childrole_array
   options = complete TestMM, <<-END
-  TestNode { 
-    child2RoleB: [
-      TestNode2 | 
+TestNode { 
+  child2RoleB: [
+    TestNode2 | 
   END
   assert_options([
     ["text:", "<EString>"]
@@ -282,7 +315,7 @@ end
 
 def test_root
   options = complete TestMM, <<-END
-  |
+|
   END
   assert_options([
     ["TestNode", "<unlabled1>, <unlabled2>"],
@@ -304,9 +337,30 @@ end
 
 def test_root_prefix
   options = complete TestMM, <<-END
-  Text|
-  END
+Text|
+END
   assert_options([
+    ["TextNode", ""]
+  ], options)
+end
+
+def test_within_command
+  options = complete TestMM, <<-END
+Text|Node
+END
+  assert_options([
+    ["TextNode", ""]
+  ], options)
+end
+
+def test_within_command2
+  options = complete TestMM, <<-END
+|TextNode
+END
+  assert_options([
+    ["TestNode", "<unlabled1>, <unlabled2>"],
+    ["TestNode2", ""],
+    ["TestNode3", ""],
     ["TextNode", ""]
   ], options)
 end

@@ -11,6 +11,8 @@ def initialize(options={})
   @logger = options[:logger]
   @connector_descs = {}
   @connector_listener = options[:connect_callback]
+  @keep_outfile = options[:keep_outfile]
+  @outfile_provider = options[:outfile_provider]
 end
 
 ConnectorDesc = Struct.new(:connector, :checksum)
@@ -44,9 +46,11 @@ end
 private
 
 def create_connector(config, pattern)
-  con = Connector.new(config, :logger => @logger, :connect_callback => lambda do
-    @connector_listener.call(con) if @connector_listener
-  end)
+  con = Connector.new(config, :logger => @logger, :keep_outfile => @keep_outfile,
+    :outfile_provider => @outfile_provider,
+    :connect_callback => lambda do |state|
+      @connector_listener.call(con, state) if @connector_listener
+    end)
   desc = ConnectorDesc.new(con, config_checksum(config))
   key = desc_key(config, pattern)
   @connector_descs[key] = desc

@@ -121,7 +121,8 @@ class Language
   def initialize(root_epackage, options={})
     @root_epackage = root_epackage
     @feature_provider = options[:feature_provider] || 
-      proc { |c| RGen::Serializer::OppositeReferenceFilter.call(c.eAllStructuralFeatures) }
+      proc { |c| RGen::Serializer::OppositeReferenceFilter.call(c.eAllStructuralFeatures).
+        reject{|f| f.derived} }
     @unlabled_arguments = options[:unlabled_arguments]
     @unquoted_arguments = options[:unquoted_arguments]
     @argument_format_provider = options[:argument_format_provider]

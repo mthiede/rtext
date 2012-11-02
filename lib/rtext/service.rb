@@ -51,7 +51,9 @@ class Service
         begin
           data = sock.read_nonblock(100000)
         rescue Errno::EWOULDBLOCK
-        rescue EOFError
+        # catch Exception to make sure we don't crash due to unexpected exceptions
+        rescue IOError, EOFError, Errno::ECONNRESET, Exception
+          sock.close
           request_data[sock] = nil
           sockets.delete(sock)
         end
@@ -142,11 +144,10 @@ class Service
   def content_complete(sock, request, response)
     linepos = request["column"] 
     lines = request["context"]
-    context = ContextBuilder.build_context(@lang, lines, linepos)
+    # column starts at 1, ContextBuilder expects start at 0
+    context = ContextBuilder.build_context(@lang, lines, linepos-1)
     @logger.debug("context element: #{@lang.identifier_provider.call(context.element, nil)}") \
-      if context && @logger
-    current_line = lines.last
-    current_line ||= ""
+      if context && context.element && @logger
     options = @completer.complete(context, lambda {|ref| 
         @service_provider.get_reference_completion_options(ref, context).collect {|o|
           Completer::CompletionOption.new(o.identifier, "<#{o.type}>")}
