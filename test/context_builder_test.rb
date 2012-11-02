@@ -113,7 +113,7 @@ def test_root_after_unlabled
   c = build_context TestMM, <<-END
 TestNode "bla"| 
   END
-  assert_equal("\"bla\"", c.prefix)
+  assert_equal("bla", c.prefix)
   assert_nil(c.feature)
   assert(!c.in_array)
   assert(!c.in_block)
@@ -126,7 +126,7 @@ def test_root_after_unlabled_string_with_comma
   c = build_context TestMM, <<-END
 TestNode "a,b"| 
   END
-  assert_equal("\"a,b\"", c.prefix)
+  assert_equal("a,b", c.prefix)
   assert_nil(c.feature)
   assert(!c.in_array)
   assert(!c.in_block)
@@ -225,7 +225,7 @@ def test_root_labled_string_value
   c = build_context TestMM, <<-END
 TestNode text: "a,b"| 
   END
-  assert_equal("\"a,b\"", c.prefix)
+  assert_equal("a,b", c.prefix)
   assert_equal("text", c.feature.name)
   assert(!c.in_array)
   assert(!c.in_block)
@@ -593,7 +593,7 @@ def test_in_cmd_in_array_after_second_string_value
     TestNode nums: 3 {
       TestNode strings: ["a,b", "c,d"|
   END
-  assert_equal("\"c,d\"", c.prefix)
+  assert_equal("c,d", c.prefix)
   assert_equal("strings", c.feature.name)
   assert(c.in_array)
   assert(!c.in_block)
@@ -622,8 +622,8 @@ def test_in_cmd_in_array_after_string_array
       TestNode strings: ["a,b", "c,d"]|
   END
   assert_equal("", c.prefix)
-  assert_equal("strings", c.feature.name)
-  assert(c.in_array)
+  assert_nil(c.feature)
+  assert(!c.in_array)
   assert(!c.in_block)
   assert_simple_model(c.element)
   assert_equal(["a,b", "c,d"], c.element.strings)

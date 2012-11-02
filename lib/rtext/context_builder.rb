@@ -1,4 +1,5 @@
 require 'rtext/instantiator'
+require 'rtext/tokenizer'
 
 module RText
 
@@ -28,12 +29,13 @@ module ContextBuilder
   Context = Struct.new(:element, :feature, :prefix, :in_array, :in_block)
 
   class << self
+  include RText::Tokenizer
 
   # Builds the context information based on a set of +content_lines+. Content lines
   # are the RText lines containing the nested command headers in the original order.
   # The cursor is assumed to be in the last context line at column +position_in_line+
   def build_context(language, context_lines, position_in_line)
-    context_info = fix_context(context_lines, position_in_line)
+    context_info = fix_context(language, context_lines, position_in_line)
     return nil unless context_info
     element = instantiate_context_element(language, context_info)
     if element
@@ -75,7 +77,7 @@ module ContextBuilder
   ContextInternal = Struct.new(:lines, :num_elements, :role, :prefix, :in_array, :in_block)
 
   # extend +context_lines+ into a set of lines which can be processed by the RText
-  def fix_context(context_lines, position_in_line)
+  def fix_context(language, context_lines, position_in_line)
     context_lines = context_lines.dup
     # make sure there is at least one line
     if context_lines.empty?
@@ -90,73 +92,73 @@ module ContextBuilder
       context_lines << context_lines.pop[0..position_in_line-1]
     end
     line = context_lines.last
-    if line =~ /^\s*\w+\s+/
-      # this line contains a new element
-      num_elements = 1
-      in_block = false
-      # labled array value
-      if line =~ /\W(\w+):\s*\[([^\]]*)$/
-        role = $1
-        array_content = $2
-        array_content.gsub!(/"(?:[^"\\]|\\\\|\\")*"\s*,/, "") 
-        array_content.gsub!(/"(?:[^"\\]|\\\\|\\")*"\s+/, "") 
-        in_array = true
-        if array_content =~ /,\s*("(?:[^"\\]|\\\\|\\")*"?)$/ 
-          prefix = $1
-          line.slice!(-(prefix.size)..-1) if prefix.size > 0
-          line.sub!(/,\s*$/, "]")
-        elsif array_content =~ /\s*("(?:[^"\\]|\\\\|\\")*"?)$/ 
-          prefix = $1
-          line.slice!(-(prefix.size)..-1) if prefix.size > 0
-          line.sub!(/\[\s*$/, "[]")
-        elsif array_content =~ /,\s*([^,\s]*)$/
-          prefix = $1
-          line.slice!(-(prefix.size)..-1) if prefix.size > 0
-          line.sub!(/,\s*$/, "]")
-        else 
-          array_content =~ /\s*([^,\s]*)$/
-          prefix = $1
-          line.slice!(-(prefix.size)..-1) if prefix.size > 0
-          line.sub!(/\[\s*$/, "[]")
-        end
-      # labled value
-      elsif line =~ /\W(\w+):\s*("(?:[^"\\]|\\\\|\\")*"?)$/ || line =~ /\W(\w+):\s*([^,\s]*)$/
-        role = $1
-        prefix = $2
+    
+    num_elements = in_block = in_array = role = prefix = nil
+    tokens = tokenize(line, language.reference_regexp)
+    tokens.pop if tokens.last && tokens.last.kind == :newline
+    if tokens.size > 0 && tokens[0].kind == :identifier
+      if tokens.size > 1 || line =~ /\s+$/
+        # this line contains a new element
+        num_elements = 1
+        in_block = false
         in_array = false
-        line.slice!(-(prefix.size)..-1) if prefix.size > 0
-        line.sub!(/\s*\w+:\s*$/, "")
-        line.sub!(/,$/, "")
-      # unlabled value or label
-      elsif line =~ /[,\s]("(?:[^"\\]|\\\\|\\")*"?)$/ || line =~ /[,\s]([^,\s]*)$/ 
         role = nil
-        prefix = $1
-        in_array = false
-        line.slice!(-(prefix.size)..-1) if prefix.size > 0
-        line.sub!(/\s*$/, "")
-        line.sub!(/,$/, "")
-      # TODO: unlabled array value
-      else 
-        # parse problem
-        return nil
-      end
-    else
-      # this line is the first line of the file or in the content block
-      num_elements = 0
-      in_block = (context_lines.size > 1)
-      # role or new element
-      if line =~ /^\s*(\w*)$/
-        prefix = $1
+        tokens[1..-1].each do |token|
+          if token.kind == "["
+            in_array = true
+          elsif token.kind == "]"
+            in_array = false
+            role = nil
+          elsif token.kind == :label
+            role = token.value.sub(/:$/, "")
+          elsif token.kind == ","
+            role = nil unless in_array
+          end
+        end
+        if [:string, :integer, :float, :boolean, :identifier, :reference].
+            include?(tokens.last.kind) && line =~ /\s$/
+            role = nil unless in_array
+        end
+        if [:error, :string, :integer, :float, :boolean, :identifier, :reference].
+            include?(tokens.last.kind) && line !~ /\s$/
+          prefix = tokens.last.value
+        else
+          prefix = ""
+        end
+      else
+        # in completion of command
+        num_elements = 0
+        in_block = (context_lines.size > 1)
+        prefix = tokens[0].value
         role, in_array = find_role(context_lines[0..-2])
         # fix single role lable
         if context_lines[-2] =~ /^\s*\w+:\s*$/
           context_lines[-1] = context_lines.pop
         end
-      else
-        # comment, closing brackets, etc.
-        return nil
       end
+    elsif line.strip.empty?
+      # in completion of command but without prefix
+      num_elements = 0
+      in_block = (context_lines.size > 1)
+      prefix = ""
+      role, in_array = find_role(context_lines[0..-2])
+      # fix single role lable
+      if context_lines[-2] =~ /^\s*\w+:\s*$/
+        context_lines[-1] = context_lines.pop
+      end
+    else
+      # comment, closing brackets, etc.
+      num_elements = 0
+      in_block = (context_lines.size > 1)
+      return nil
     end
+
+    # remove prefix, a value which is currently being completed should not be part of the
+    # context model
+    if prefix && prefix.size > 0
+      line.slice!(-(prefix.size)..-1)
+    end
+
     context_lines.reverse.each do |l|
       if l =~ /\{\s*$/
         context_lines << "}"
