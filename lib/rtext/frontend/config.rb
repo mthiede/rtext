@@ -15,7 +15,7 @@ def self.find_service_config(file)
       return config if config
     end
     last_dir = dir
-    dir = File.expand_path("#{dir}/..")
+    dir = File.dirname(dir)
   end
   nil
 end
