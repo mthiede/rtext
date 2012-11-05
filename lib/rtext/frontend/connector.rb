@@ -9,8 +9,6 @@ class Connector
 include Process
 include RText::MessageHelper
 
-ConnectTimeout = 10
-
 def initialize(config, options={})
   @config = config
   @logger = options[:logger]
@@ -22,6 +20,7 @@ def initialize(config, options={})
   @connection_listener = options[:connect_callback]
   @outfile_provider = options[:outfile_provider]
   @keep_outfile = options[:keep_outfile]
+  @connection_timeout = options[:connection_timeout] || 10
 end
 
 def execute_command(obj, options={})
@@ -78,9 +77,11 @@ def resume
 end
 
 def stop
-  execute_command({"type" => "request", "command" => "stop"})
-  while do_work 
-    sleep(0.1)
+  if connected? || connecting?
+    execute_command({"type" => "request", "command" => "stop"})
+    while do_work 
+      sleep(0.1)
+    end
   end
 end
 
@@ -140,11 +141,12 @@ def do_work
     if File.exist?(@out_file)
       @work_state = :wait_for_port
     end
-    if Time.now > @connect_start_time + ConnectTimeout
+    if Time.now > @connect_start_time + @connection_timeout
       cleanup
       @connection_listener.call(:timeout) if @connection_listener
       @work_state = :done
       @state = :off
+      @logger.warn "process didn't startup (connection timeout)" if @logger
     end
     true
   when :wait_for_port
@@ -157,11 +159,12 @@ def do_work
       @work_state = :read_from_socket
       @connection_listener.call(:connected) if @connection_listener
     end
-    if Time.now > @connect_start_time + ConnectTimeout
+    if Time.now > @connect_start_time + @connection_timeout
       cleanup
       @connection_listener.call(:timeout) if @connection_listener
       @work_state = :done
       @state = :off
+      @logger.warn "could not connect socket (connection timeout)" if @logger
     end
     true
   when :read_from_socket
@@ -176,7 +179,7 @@ def do_work
       rescue Errno::EWOULDBLOCK
       rescue IOError, EOFError, Errno::ECONNRESET
         socket_closed = true
-        @logger.error "server socket closed (end of file)" if @logger
+        @logger.info "server socket closed (end of file)" if @logger
       end
       if data
         repeat = true
@@ -190,19 +193,24 @@ def do_work
             @logger.error "unknown answer" if @logger
           end
         end
-        true
       elsif !backend_running? || socket_closed
         cleanup
         @work_state = :done
-        false
+        return false
       end
     end
+    true
   end
 
 end
 
 def cleanup
   @socket.close if @socket
+  # wait up to 2 seconds for backend to shutdown
+  for i in 0..20 
+    break unless backend_running?
+    sleep(0.1)
+  end
   File.unlink(@out_file) unless @keep_outfile
 end
 

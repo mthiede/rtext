@@ -13,6 +13,7 @@ def initialize(options={})
   @connector_listener = options[:connect_callback]
   @keep_outfile = options[:keep_outfile]
   @outfile_provider = options[:outfile_provider]
+  @connection_timeout = options[:connection_timeout]
 end
 
 ConnectorDesc = Struct.new(:connector, :checksum)
@@ -48,6 +49,7 @@ private
 def create_connector(config, pattern)
   con = Connector.new(config, :logger => @logger, :keep_outfile => @keep_outfile,
     :outfile_provider => @outfile_provider,
+    :connection_timeout => @connection_timeout,
     :connect_callback => lambda do |state|
       @connector_listener.call(con, state) if @connector_listener
     end)
