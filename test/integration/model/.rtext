@@ -1,2 +1,11 @@
 *.ect:
 ruby -I../../../../rgen/lib -I ../../../lib ../ecore_editor.rb "*.ect" 2>&1
+*.invalid_cmd_line:
+invalid_command_will_fail
+*.crashing_backend:
+ruby -e "this will crash"
+*.dont_open_socket:
+ruby -e "sleep(2)"
+*.crash_on_request:
+ruby -I../../../../rgen/lib -I ../../../lib ../crash_on_request_editor.rb "*.ect" 2>&1
+

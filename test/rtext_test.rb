@@ -4,4 +4,5 @@ require 'serializer_test'
 require 'instantiator_test'
 require 'context_builder_test'
 require 'completer_test'
+require 'integration/test'
 
