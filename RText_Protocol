@@ -1,88 +1,80 @@
-# RText Protocol
+= RText Protocol
 
 RText frontend and backend pass messages containing JSON objects.
 Normally the frontend invokes a backend command by means of a request message and the 
 backend will eventually reply with a response message. 
 
 
-## Request Messages
+== Request Messages
 
 Each request message contains a field ``command`` and a field ``invocation_id``.
 The command field holds the name of the command to be invoked as a string.
 The invocation id field holds an identifier which will be repeated by the backend's response.
 
-``
-{
-  "type": "request",
-  "command": <command>,
-  "invocation_id": <invocation_id>
-  ...
-}
-```
+  {
+    "type": "request",
+    "command": <command>,
+    "invocation_id": <invocation_id>
+    ...
+  }
 
-## Response Messages
+== Response Messages
 
 The response message repeats the invocation id of the request it replies to.
 If the requested command is not known by the backend, it will respond with a 
 "unknonw_command_error" message instead (see below).
-``
-{
-  "type": "response",
-  "invocation_id": <invocation_id>
-  ...
-}
-``
 
-## Error Messages
+  {
+    "type": "response",
+    "invocation_id": <invocation_id>
+    ...
+  }
+
+== Error Messages
 
 There are a number of error message which may be sent in response to a request message.
 
-### Unknown Command Error
-``
-{
-  "type": "unknown_command_error",
-  "invocation_id": <invocation_id>,
-  "command": <unknown command [string]>
-}
-``
+=== Unknown Command Error
 
-## Progress Information
+  {
+    "type": "unknown_command_error",
+    "invocation_id": <invocation_id>,
+    "command": <unknown command [string]>
+  }
+
+== Progress Information
 
 Before the actual response is sent, the backend may send progress information.
 This is useful whenever a command takes a longer time to complete.
 Frontends should be prepared to receive progress information messages for any command.
 They may however choose to ignore this information, i.e. not display any progress to the user.
 
-``
-{
-  "type": "progress",
-  "invocation_id": <invocation_id [integer]>,
-  "percentage": <percentage [integer][0..100]>,
-  "message": <message [string]>
-}
-``
+  {
+    "type": "progress",
+    "invocation_id": <invocation_id [integer]>,
+    "percentage": <percentage [integer][0..100]>,
+    "message": <message [string]>
+  }
 
 The percentage and message fields are optional. 
 If percentage is present, the frontend should display a progress bar, otherwise it should just
 indicate to the user that a job is ongoing.
 The message field may carry information about the currently ongoing subtask.
 
-## Commands
+== Commands
 
 For each command, the layout of the request and response messages will be given below.
 Note that the invocation id field is present in every request and response but is omitted for brevity.
 
 
-### Load Model
+=== Load Model
 
 This command requests the backend to load or reload the model.
 
-``
-{
-  "type": "request",
-  "command": "load_model"
-}
-``
+  {
+    "type": "request",
+    "command": "load_model"
+  }
 
 The response may indicate problems which were detected during loading.
 In order to reduce the size of the response message, problems are grouped by file.
@@ -91,42 +83,38 @@ than the number actually returned. If the total number of problems is unknown, `
 should be set to -1. This may be the case when problem detection is interrupted in order to
 limit detection effort and/or response time.
 
-``
-{
-  "type": "response"
-  "total_problems": <number of total problems or -1 [integer]>,
-  "problems": [
-    { 
-      "file": <fully qualifed file name [string]>,
-      "problems: [
-        {
-          "message": <message [string]>,
-          "severity": <['debug', 'info', 'warn', 'error', 'fatal']>,
-          "line": <line number [integer]>
-        }
-        ...
-      ]
-    }
-    ...
-  ]
-}
-``
+  {
+    "type": "response"
+    "total_problems": <number of total problems or -1 [integer]>,
+    "problems": [
+      { 
+        "file": <fully qualifed file name [string]>,
+        "problems: [
+          {
+            "message": <message [string]>,
+            "severity": <['debug', 'info', 'warn', 'error', 'fatal']>,
+            "line": <line number [integer]>
+          }
+          ...
+        ]
+      }
+      ...
+    ]
+  }
 
-### Content Complete
+=== Content Complete
 
 This command is a request by the frontend in order to show content completion options at a given
 location within a file. The location is expressed using a set of context lines and the cursor
 column position in the current line. See section "Context Extraction" for details about how to
 build the set of context lines in the frontend. Column number start at 1. 
 
-``
-{
-  "type": "request",
-  "command": "content_complete",
-  "context": <context lines [array of string]>,
-  "column": <cursor column [integer]>
-}
-``
+  {
+    "type": "request",
+    "command": "content_complete",
+    "context": <context lines [array of string]>,
+    "column": <cursor column [integer]>
+  }
 
 The backend replies with a list of completion options. 
 The field ``insert`` holds the text to be inserted if the completion option is chosen.
@@ -136,34 +124,31 @@ particular option.
 
 If there are no completion options, the backend may send an empty response.
 
-``
-{
-  "type": "response",
-  "options": [
-    {
-      "display": <text to display [string]>,
-      "insert": <text to be inserted [string]>,
-      "desc": <optional description [string]>
-    }
-  ]
-}
-``
+  {
+    "type": "response",
+    "options": [
+      {
+        "display": <text to display [string]>,
+        "insert": <text to be inserted [string]>,
+        "desc": <optional description [string]>
+      }
+    ]
+  }
 
-### Link Targets 
+=== Link Targets 
 
 This command is issued by the frontend when the user tries to follow a hyperlink, e.g. following a model reference.
 The frontend needs to send the context as described in section "Context Extraction" and the 
 column where the cursor (e.g. the mouse pointer, or an actual text cursor) is placed.
 Column numbers start at 1.
 
-``
-{
-  "type": "request",
-  "command": "link_targets",
-  "context": <context lines [array of string]>,
-  "column": <cursor column [integer]>
-}
-``
+  {
+    "type": "request",
+    "command": "link_targets",
+    "context": <context lines [array of string]>,
+    "column": <cursor column [integer]>
+  }
+
 The backend analyses the text at the cursor position in order to find out if a link is present.
 If so, it sends back the columns of the beginning and the end of the link as well as the actual
 link targets. Column positions are inclusive, i.e. the beginning and the end column are part of
@@ -173,36 +158,33 @@ An optional description field may provide more information about a particular li
 
 If there is no link, the backend may send an empty response.
 
-``
-{
-  "type": "response",
-  "begin_column": <begin column of hyperlink [integer]>,
-  "end_column": <end column of hyperlink [integer]>,
-  "targets": [
-    {
-      "display": <display name [string]>,
-      "file": <fully qualified file name [string]>,
-      "line": <line number [integer]>,
-      "desc": <optional description [string]>
-    }
-    ...
-  ]
-}
-``
+  {
+    "type": "response",
+    "begin_column": <begin column of hyperlink [integer]>,
+    "end_column": <end column of hyperlink [integer]>,
+    "targets": [
+      {
+        "display": <display name [string]>,
+        "file": <fully qualified file name [string]>,
+        "line": <line number [integer]>,
+        "desc": <optional description [string]>
+      }
+      ...
+    ]
+  }
 
-### Find Elements
+=== Find Elements
 
 This command is used to search for elements within the model. The frontend should allow the user
 to enter an arbitrary search pattern as a string. This search pattern is sent to the backend
 which actually defines how the pattern is interpreted.
 
-``
-{
-  "type": "request",
-  "command": "find_elements",
-  "search_pattern": <search pattern [string]>
-}
-``
+  {
+    "type": "request",
+    "command": "find_elements",
+    "search_pattern": <search pattern [string]>
+  }
+
 The backend responds by sending the total number of elements found and a list of elements
 together with their file and line information.
 Note that the number of elements actually returned may be lower than the total number. 
@@ -213,24 +195,21 @@ An optional description field my provide more information about a particular ele
 
 If there are no search results, the backend may send an empty response.
 
-``
-{
-  "type": "response",
-  "total_elements": <total number of elements or -1 [string]>,
-  "elements": [
-    {
-      "display": <display name [string]>,
-      "file": <fully qualified file name [string]>,
-      "line": <line number [integer]>,
-      "desc": <optional description [string]>
-    }
-    ...
-  ]
-}
-``
+  {
+    "type": "response",
+    "total_elements": <total number of elements or -1 [string]>,
+    "elements": [
+      {
+        "display": <display name [string]>,
+        "file": <fully qualified file name [string]>,
+        "line": <line number [integer]>,
+        "desc": <optional description [string]>
+      }
+      ...
+    ]
+  }
 
-### Context Information
-[work in progress]
+=== Context Information
 
 This command is used by the frontend to request information about a particular position in
 a file. The frontend will send the current context (section "context extraction") and the cursor
@@ -238,25 +217,21 @@ column. If for example, the context information is to be shown as a hover at the
 mouse pointer, the context and column need to be calculated at the position of the mouse pointer,
 not the position of the text cursor.
 
-``
-{
-  "type": "request",
-  "command": "context_info",
-  "context": <context lines>,
-  "column": <cursor column>
-}
-``
+  {
+    "type": "request",
+    "command": "context_info",
+    "context": <context lines>,
+    "column": <cursor column>
+  }
+
 The backend reponds by sending the textual description to be shown to the user.
 
-``
-{
-  "type": "response",
-  "desc": <textual description>
-}
-``
+  {
+    "type": "response",
+    "desc": <textual description>
+  }
 
-### Custom Commands
-[work in progress]
+=== Custom Commands
 
 This command is used to retrieve a list of custom commands understood by the backend.
 These commands may be available in a specific context only. If the frontend includes context
@@ -268,39 +243,36 @@ Note that even for commands without context information, the frontend should rep
 the command list as the list of available commands may change. For example, the command list could
 be requested everytime the user gets a chance to choose from a command menu.
 
-``
-{
-  "type": "request",
-  "command": "custom_commands"
-  "context": <context lines, optional>,
-  "column": <cursor column, optional>
-}
-``
+  {
+    "type": "request",
+    "command": "custom_commands"
+    "context": <context lines, optional>,
+    "column": <cursor column, optional>
+  }
+
 The backend responds by a list of commands which may be categorized into a tree structure.
 This information can be used to show the commands in a hierarchical menu, e.g. a context menu.
 
-``
-{
-  "type": "response",
-  "entries": [
-    {
-      "type": "category",
-      "name": <display name>,
-      "entries": [
-        {
-          "type": "command",
-          "name": <display name>,
-          "id": <command identifier>
-        }
-        ...
-      ]
-    }
-    ...
-  ]
-}
+  {
+    "type": "response",
+    "entries": [
+      {
+        "type": "category",
+        "name": <display name>,
+        "entries": [
+          {
+            "type": "command",
+            "name": <display name>,
+            "id": <command identifier>
+          }
+          ...
+        ]
+      }
+      ...
+    ]
+  }
 
-### Custom Command Invocation
-[work in progress]
+=== Custom Command Invocation
 
 Custom commands are invoked just like the predefined commands. The frontend uses the command
 identifier returned by the "Custom Commands" request as the value of the ``command`` field in 
@@ -309,12 +281,11 @@ included context information, the frontend should send the same context informat
 invocation request and all repeated requests (see below). If this information was not present 
 in command list request, it should not be send in the new command invocation.
 
-``
-{
-  "type": "request",
-  "command": <command id>
-}
-``
+  {
+    "type": "request",
+    "command": <command id>
+  }
+
 On first invocation, the frontend will not send any parameters with the command request.
 Instead, the backend's response may ask for parameters to be included into the next request.
 In this case, the frontend should will prompt the user to enter the required information and then 
@@ -344,69 +315,106 @@ Each dialog element has the following attributes:
 
 The frontend should keep repeating requests as long as the field ``repeat`` is set to ``true``.
 
-``
-{
-  "type": "response",
-  "repeat": <if command should be repeated>, 
-  "dialog": {
-    "title": <dialog title>,
-    "desc": <description what to do>,
-    "elements": [
-      {
-        "type": "text_input",
-        "name": <parameter name>,
-        "value": <preset value>,
-        "error": <error text>
-      },
-      {
-        "type": "choice_input",
-        "num_min": <min number of elements to choose, default: 1>,
-        "num_max": <max mumber of elements to choose, default: 1>,
-        "choices": [
-          "display": <display name>,
-          "id": <identifier to be sent back>,
-        ],
-        "value": [ <selected choice>, <selected choice>, ...],
-        "error": <error text>
-      },
-      {
-        "type": "element_input",
-        "num_min": <min number of elements to choose, default: 1>,
-        "num_max": <max mumber of elements to choose, default: 1>,
-        "choices": [
-          {
+  {
+    "type": "response",
+    "repeat": <if command should be repeated>, 
+    "dialog": {
+      "title": <dialog title>,
+      "desc": <description what to do>,
+      "elements": [
+        {
+          "type": "text_input",
+          "name": <parameter name>,
+          "value": <preset value>,
+          "error": <error text>
+        },
+        {
+          "type": "choice_input",
+          "num_min": <min number of elements to choose, default: 1>,
+          "num_max": <max mumber of elements to choose, default: 1>,
+          "choices": [
             "display": <display name>,
             "id": <identifier to be sent back>,
-            "file": <fully qualfied file name, optional>,
-            "line": <line number, optional>,
-            "ancestors": <parent hierarchy, optional",
-          }
-          ...
-        ],
-        "value": [ <selected choice>, <selected choice>, ...],
-        "error": <error text>
-      }
-    ]
+          ],
+          "value": [ <selected choice>, <selected choice>, ...],
+          "error": <error text>
+        },
+        {
+          "type": "element_input",
+          "num_min": <min number of elements to choose, default: 1>,
+          "num_max": <max mumber of elements to choose, default: 1>,
+          "choices": [
+            {
+              "display": <display name>,
+              "id": <identifier to be sent back>,
+              "file": <fully qualfied file name, optional>,
+              "line": <line number, optional>,
+              "ancestors": <parent hierarchy, optional",
+            }
+            ...
+          ],
+          "value": [ <selected choice>, <selected choice>, ...],
+          "error": <error text>
+        }
+      ]
+    }
   }
-}
-``
 
-### Stop Service
+=== Stop Service
 
 This command is normally invoked when the frontend terminates or otherwise needs to terminate
 the backend service. When receiving this command, the backend should terminate.
 
-``
-{
-  "type": "request",
-  "command": "stop"
-}
-``
+  {
+    "type": "request",
+    "command": "stop"
+  }
 
 Before actually stopping, the backend should send an empty response.
 
-``
-{
-  "type": "response"
-}
-``
+  {
+    "type": "response"
+  }
+
+== Context Extraction
+
+Context lines are lines from an RText file which contain a (context) command and all 
+the parent commands wrapped around it. Any sibling commands can be omitted as well as
+any lines containing closing braces and brackets. The order of lines is the same as in the 
+RText file.
+
+Here is an example. Consider the following RText file with the cursor in the line of "Command3" 
+at the time when the auto completion command is issued.
+
+  Command1 {
+    Command2 {
+      Command 3 {
+        Command 4
+      }
+      role1: [
+        Command5          <== cursor in this line
+        Command6
+      ]
+    }
+    Command7
+  }
+
+The context lines in this case would be the following.
+
+  Command1 {
+    Command2 {
+      role1: [
+        Command5
+
+The current line is always the last of the context lines.
+
+See RText::Frontend::Context::extract for a concise implementation of the required algorithm.
+ 
+Note that all siblings of the command and parent commands have been stripped off, as well as
+any closing braces or brackets.
+
+The purpose of this special context line format is to keep the task of extracting the
+context in the frontend simple and the amount of data transmitted to the backend low.
+It's also a way to keep the parsing time of the context low in the backend and thus to minimize
+the user noticable delay.
+

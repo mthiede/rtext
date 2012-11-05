@@ -1,10 +1,10 @@
-require 'rake/gempackagetask'
-require 'rake/rdoctask'
+require 'rubygems/package_task'
+require 'rdoc/task'
 
 DocFiles = [
-  "README", "CHANGELOG", "MIT-LICENSE", 
+  "README.rdoc", "CHANGELOG", "MIT-LICENSE", 
   "RText_Users_Guide", 
-  "RText_Plugin_Implementation_Guide"]
+  "RText_Protocol"]
 
 RTextGemSpec = Gem::Specification.new do |s|
   s.name = %q{rtext}
@@ -22,18 +22,18 @@ RTextGemSpec = Gem::Specification.new do |s|
   gemfiles.include("Rakefile") 
   gemfiles.exclude(/\b\.bak\b/)
   s.files = gemfiles
-  s.rdoc_options = ["--main", "README", "-x", "test"]
+  s.rdoc_options = ["--main", "README.rdoc", "-x", "test"]
   s.extra_rdoc_files = DocFiles
 end
 
-Rake::RDocTask.new do |rd|
-  rd.main = "README"
+RDoc::Task.new do |rd|
+  rd.main = "README.rdoc"
   rd.rdoc_files.include(DocFiles)
   rd.rdoc_files.include("lib/**/*.rb")
   rd.rdoc_dir = "doc"
 end
 
-RTextPackageTask = Rake::GemPackageTask.new(RTextGemSpec) do |p|
+RTextPackageTask = Gem::PackageTask.new(RTextGemSpec) do |p|
   p.need_zip = false
 end	
 
