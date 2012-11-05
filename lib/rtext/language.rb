@@ -133,7 +133,12 @@ class Language
     @identifier_provider = options[:identifier_provider] || 
       proc { |element, context|
         @qualified_name_provider ||= RGen::Serializer::QualifiedNameProvider.new(options)
-        @qualified_name_provider.identifier(element)
+        name_attribute = options[:attribute_name] || "name"
+        if element.is_a?(RGen::MetamodelBuilder::MMProxy) || element.respond_to?(name_attribute)
+          @qualified_name_provider.identifier(element)
+        else
+          nil
+        end
       }
     @reference_qualifier = options[:reference_qualifier]
     @line_number_attribute = options[:line_number_attribute]
