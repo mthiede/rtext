@@ -17,6 +17,10 @@ RText features include:
 
 > gem install rtext
 
+The RText service protocol requires the JSON gem:
+
+> gem install json
+
 
 = Documentation
 

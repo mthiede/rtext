@@ -27,4 +27,6 @@
 
 * Added annotations
 * Added generic value support
+* Added RText frontend support (for Ruby based RText plugins and testing)
+* Changed frontend/backend protocol to JSON over TCP
 
