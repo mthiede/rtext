@@ -142,10 +142,10 @@ class Service
   end
 
   def content_complete(sock, request, response)
-    linepos = request["column"] 
+    # column numbers start at 1
+    linepos = request["column"]-1 
     lines = request["context"]
-    # column starts at 1, ContextBuilder expects start at 0
-    context = ContextBuilder.build_context(@lang, lines, linepos-1)
+    context = ContextBuilder.build_context(@lang, lines, linepos)
     @logger.debug("context element: #{@lang.identifier_provider.call(context.element, nil)}") \
       if context && context.element && @logger
     options = @completer.complete(context, lambda {|ref| 
@@ -158,7 +158,8 @@ class Service
   end
 
   def link_targets(sock, request, response)
-    linepos = request["column"] 
+    # column numbers start at 1
+    linepos = request["column"]-1
     lines = request["context"]
     current_line = lines.last
     context = ContextBuilder.build_context(@lang, lines, lines.last.size)
@@ -166,8 +167,9 @@ class Service
       ident_start = (current_line.rindex(/[^\w\/]/, linepos) || -1)+1
       ident_end = (current_line.index(/[^\w\/]/, linepos) || current_line.size)-1
       ident = current_line[ident_start..ident_end]
-      response["begin_column"] = ident_start
-      response["end_column"] = ident_end
+      # column numbers start at 1
+      response["begin_column"] = ident_start+1
+      response["end_column"] = ident_end+1
       targets = []
       if current_line[0..linepos+1] =~ /^\s*\w+$/
         @service_provider.get_referencing_elements(ident, context).each do |t|
