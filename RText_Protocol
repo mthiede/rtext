@@ -117,7 +117,7 @@ limit detection effort and/or response time.
 This command is a request by the frontend in order to show content completion options at a given
 location within a file. The location is expressed using a set of context lines and the cursor
 column position in the current line. See section "Context Extraction" for details about how to
-build the set of context lines in the frontend. The first column in a line is number 1.
+build the set of context lines in the frontend. Column number start at 1. 
 
 ``
 {
@@ -133,6 +133,8 @@ The field ``insert`` holds the text to be inserted if the completion option is c
 The field ``display`` contains the string which should be displayed to the user in some kind of 
 completion option menu. An optional description field may provide more information about a 
 particular option.
+
+If there are no completion options, the backend may send an empty response.
 
 ``
 {
@@ -152,7 +154,7 @@ particular option.
 This command is issued by the frontend when the user tries to follow a hyperlink, e.g. following a model reference.
 The frontend needs to send the context as described in section "Context Extraction" and the 
 column where the cursor (e.g. the mouse pointer, or an actual text cursor) is placed.
-All column indices start at 1.
+Column numbers start at 1.
 
 ``
 {
@@ -169,7 +171,7 @@ the link. Link targets contain the string to be displayed to the user, the filen
 number within the file.
 An optional description field may provide more information about a particular lin target.
 
-If there is no link, the backend should send an empty response.
+If there is no link, the backend may send an empty response.
 
 ``
 {
@@ -209,6 +211,8 @@ This allows to truncate large search result sets and still provide the user with
 elements which were omitted or at least with the fact that the result set has been truncated.
 An optional description field my provide more information about a particular element.
 
+If there are no search results, the backend may send an empty response.
+
 ``
 {
   "type": "response",
@@ -226,6 +230,7 @@ An optional description field my provide more information about a particular ele
 ``
 
 ### Context Information
+[work in progress]
 
 This command is used by the frontend to request information about a particular position in
 a file. The frontend will send the current context (section "context extraction") and the cursor
@@ -251,6 +256,7 @@ The backend reponds by sending the textual description to be shown to the user.
 ``
 
 ### Custom Commands
+[work in progress]
 
 This command is used to retrieve a list of custom commands understood by the backend.
 These commands may be available in a specific context only. If the frontend includes context
@@ -294,6 +300,7 @@ This information can be used to show the commands in a hierarchical menu, e.g. a
 }
 
 ### Custom Command Invocation
+[work in progress]
 
 Custom commands are invoked just like the predefined commands. The frontend uses the command
 identifier returned by the "Custom Commands" request as the value of the ``command`` field in 
