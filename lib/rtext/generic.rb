@@ -1,3 +1,5 @@
+require 'rgen/metamodel_builder'
+
 module RText
 
 class Generic < RGen::MetamodelBuilder::MMGeneric
