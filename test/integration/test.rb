@@ -7,6 +7,7 @@ require 'logger'
 class IntegrationTest < Test::Unit::TestCase
 
 ModelFile = File.dirname(__FILE__)+"/model/test_metamodel.ect"
+ModelFile2 = File.dirname(__FILE__)+"/model/test_metamodel2.ect"
 NotInRTextFile = File.dirname(__FILE__)+"/model/test.not_in_rtext"
 InvalidCmdLineFile = File.dirname(__FILE__)+"/model/test.invalid_cmd_line"
 CrashingBackendFile = File.dirname(__FILE__)+"/model/test.crashing_backend"
@@ -303,7 +304,9 @@ EPackage StatemachineMM {
     "/StatemachineMM/SimpleState",
     "/StatemachineMM/State",
     "/StatemachineMM/StringType",
-    "/StatemachineMM/Transition"
+    "/StatemachineMM/Transition",
+    "/StatemachineMM2/SimpleState",
+    "/StatemachineMM2/State",
   ]
   context = build_context <<-END
 EPackage StatemachineMM {
@@ -351,7 +354,9 @@ EPackage StatemachineMM {
     "/StatemachineMM/CompositeState",
     "/StatemachineMM/SimpleState",
     "/StatemachineMM/State",
-    "/StatemachineMM/Transition"
+    "/StatemachineMM/Transition",
+    "/StatemachineMM2/SimpleState",
+    "/StatemachineMM2/State",
   ]
   context = build_context <<-END
 EPackage StatemachineMM {
@@ -465,6 +470,21 @@ EPackage StatemachineMM {
   assert_link_targets context, :begin => nil, :end => nil, :targets => nil 
 end
 
+def test_link_targets_no_text_after_name
+  setup_connector(ModelFile)
+  load_model
+  context = build_context({:infile => ModelFile2}, <<-END
+EPackage StatemachineMM2 {
+  ECl|ass State
+  END
+  )
+  assert_link_targets context, :file => ModelFile2, :begin => 3, :end => 8, :targets => [
+    {"file"=> File.expand_path(ModelFile2),
+     "line"=>3,
+     "display"=>"/StatemachineMM2/SimpleState [EClass]"}
+  ]
+end
+
 def test_find_elements
   setup_connector(ModelFile)
   load_model
@@ -474,8 +494,14 @@ def test_find_elements
     [{"display"=>"State [EClass] - /StatemachineMM",
       "file"=> File.expand_path(@infile),
       "line"=>2},
+     {"display"=>"State [EClass] - /StatemachineMM2",
+      "file"=> File.expand_path(ModelFile2),
+      "line"=>2},
      {"display"=>"StatemachineMM [EPackage] - /StatemachineMM",
       "file"=> File.expand_path(@infile),
+      "line"=>1},
+     {"display"=>"StatemachineMM2 [EPackage] - /StatemachineMM2",
+      "file"=> File.expand_path(ModelFile2),
       "line"=>1}], response["elements"]
   response = @con.execute_command( 
     {"command" => "find_elements", "search_pattern" => "target"})
@@ -496,15 +522,17 @@ TestContext = Struct.new(:line, :col)
 def build_context(text, text2=nil)
   if text.is_a?(Hash)
     context_lines = text2.split("\n")
-    pos_in_line = text[:col]
+    pos_in_line = text[:col] || context_lines.last.index("|") + 1
+    infile = text[:infile] || @infile
   else
     context_lines = text.split("\n")
     pos_in_line = context_lines.last.index("|") + 1
+    infile = @infile
   end
   context_lines.last.sub!("|", "")
 
   # check that the context data actally matches the real file in the filesystem
-  ref_lines = File.read(@infile).split(/\r?\n/)[0..context_lines.size-1]
+  ref_lines = File.read(infile).split(/\r?\n/)[0..context_lines.size-1]
   raise "inconsistent test data, expected\n:#{ref_lines.join("\n")}\ngot:\n#{context_lines.join("\n")}\n" \
     unless ref_lines == context_lines
 
@@ -513,7 +541,8 @@ def build_context(text, text2=nil)
 end
 
 def assert_link_targets(context, options)
-  lines = File.read(@infile).split(/\r?\n/)[0..context.line-1]
+  infile = options[:file] || @infile
+  lines = File.read(infile).split(/\r?\n/)[0..context.line-1]
   lines =  RText::Frontend::Context.extract(lines)
   response = @con.execute_command( 
     {"command" => "link_targets", "context" => lines, "column" => context.col})

@@ -161,6 +161,10 @@ class Service
     # column numbers start at 1
     linepos = request["column"]-1
     lines = request["context"]
+    # make sure there is a space at the end of the line
+    # otherwise an important attribute value (e.g. the local name) might be missing in the
+    # context model since the context builder removes it as "just being completed"
+    lines.last.concat(" ")
     current_line = lines.last
     context = ContextBuilder.build_context(@lang, lines, lines.last.size)
     if context && current_line[linepos..linepos] =~ /[\w\/]/
