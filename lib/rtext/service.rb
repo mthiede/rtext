@@ -2,6 +2,7 @@ require 'socket'
 require 'rtext/completer'
 require 'rtext/context_builder'
 require 'rtext/message_helper'
+require 'rtext/link_detector'
 
 module RText
 
@@ -159,28 +160,21 @@ class Service
 
   def link_targets(sock, request, response)
     # column numbers start at 1
-    linepos = request["column"]-1
+    linepos = request["column"]
     lines = request["context"]
-    # make sure there is a space at the end of the line
-    # otherwise an important attribute value (e.g. the local name) might be missing in the
-    # context model since the context builder removes it as "just being completed"
-    lines.last.concat(" ")
-    current_line = lines.last
-    context = ContextBuilder.build_context(@lang, lines, lines.last.size)
-    if context && current_line[linepos..linepos] =~ /[\w\/]/
-      ident_start = (current_line.rindex(/[^\w\/]/, linepos) || -1)+1
-      ident_end = (current_line.index(/[^\w\/]/, linepos) || current_line.size)-1
-      ident = current_line[ident_start..ident_end]
-      # column numbers start at 1
-      response["begin_column"] = ident_start+1
-      response["end_column"] = ident_end+1
+    link_descriptor = RText::LinkDetector.new(@lang).detect(lines, linepos)
+    if link_descriptor
+      response["begin_column"] = link_descriptor.scol
+      response["end_column"] = link_descriptor.ecol
       targets = []
-      if current_line[0..linepos+1] =~ /^\s*\w+$/
-        @service_provider.get_referencing_elements(ident, context).each do |t|
+      if link_descriptor.backward 
+        @service_provider.get_referencing_elements(
+            link_descriptor.value, link_descriptor.element, link_descriptor.feature).each do |t|
           targets << { "file" => t.file, "line" => t.line, "display" => t.display_name }
         end
       else
-        @service_provider.get_reference_targets(ident, context).each do |t|
+        @service_provider.get_reference_targets(
+            link_descriptor.value, link_descriptor.element, link_descriptor.feature).each do |t|
           targets << { "file" => t.file, "line" => t.line, "display" => t.display_name }
         end
       end

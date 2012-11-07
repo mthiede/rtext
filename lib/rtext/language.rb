@@ -118,6 +118,13 @@ class Language
   #     a Proc which receives an EClass object and should return an RText command name
   #     default: class name
   #
+  #  :backward_ref_attribute
+  #     a Proc which receives an EClass object and should return the name of this class's
+  #     feature which is used to represent backward references (i.e. for following the backward
+  #     reference, the user must click on a value of this attribute)
+  #     a value of nil means that the command name is used to follow the backward reference
+  #     default: nil (command name)
+  #
   def initialize(root_epackage, options={})
     @root_epackage = root_epackage
     @feature_provider = options[:feature_provider] || 
@@ -150,6 +157,7 @@ class Language
     @annotation_provider = options[:annotation_provider]
     @indent_string = options[:indent_string] || "  "
     @per_type_identifier = options[:per_type_identifier]
+    @backward_ref_attribute = options[:backward_ref_attribute] || proc{|c| nil}
   end
 
   attr_reader :root_epackage
@@ -165,6 +173,7 @@ class Language
   attr_reader :annotation_provider
   attr_reader :indent_string
   attr_reader :per_type_identifier
+  attr_reader :backward_ref_attribute
 
   def class_by_command(command, context_class)
     map = @class_by_command[context_class]

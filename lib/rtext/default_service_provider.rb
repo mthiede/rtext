@@ -40,13 +40,13 @@ class DefaultServiceProvider
   end
 
   ReferenceTarget = Struct.new(:file, :line, :display_name)
-  def get_reference_targets(identifier, context)
+  def get_reference_targets(identifier, element, feature)
     result = []
-    identifier = @lang.qualify_reference(identifier, context.element)
+    identifier = @lang.qualify_reference(identifier, element)
     targets = @model.index[identifier]
     if targets && @lang.per_type_identifier
-      if context.feature
-        targets = targets.select{|t| t.is_a?(context.feature.eType.instanceClass)}
+      if feature
+        targets = targets.select{|t| t.is_a?(feature.eType.instanceClass)}
       end
     end 
     targets && targets.each do |t|
@@ -58,11 +58,11 @@ class DefaultServiceProvider
     result
   end
 
-  def get_referencing_elements(identifier, context)
+  def get_referencing_elements(identifier, element, feature)
     result = []
-    targets = @model.index[@lang.identifier_provider.call(context.element, nil)]
+    targets = @model.index[@lang.identifier_provider.call(element, nil)]
     if targets && @lang.per_type_identifier
-      targets = targets.select{|t| t.class == context.element.class}
+      targets = targets.select{|t| t.class == element.class}
     end
     if targets && targets.size == 1
       target = targets.first
