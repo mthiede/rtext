@@ -154,7 +154,15 @@ def do_work
     if output =~ /^RText service, listening on port (\d+)/
       port = $1.to_i
       @logger.info "connecting to #{port}" if @logger
-      @socket = TCPSocket.new("127.0.0.1", port)
+      begin
+        @socket = TCPSocket.new("127.0.0.1", port)
+      rescue Errno::ECONNREFUSED
+        cleanup
+        @connection_listener.call(:timeout) if @connection_listener
+        @work_state = :done
+        @state = :off
+        @logger.warn "could not connect socket (connection timeout)" if @logger
+      end
       @state = :connected
       @work_state = :read_from_socket
       @connection_listener.call(:connected) if @connection_listener
