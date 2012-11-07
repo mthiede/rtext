@@ -53,52 +53,54 @@ class Completer
             CompletionOption.new("#{r.name}:", "<#{r.eType.name}>")
           end
       elsif !context.problem
+        result = []
         if context.feature
+          if context.after_label
+            description = "<#{context.feature.eType.name}>"
+          else
+            description = "[#{context.feature.name}] <#{context.feature.eType.name}>"
+          end
           # value completion
           if context.feature.is_a?(RGen::ECore::EAttribute) || !context.feature.containment
             if context.feature.is_a?(RGen::ECore::EReference)
               if ref_completion_option_provider
-                ref_completion_option_provider.call(context.feature).
+                result += ref_completion_option_provider.call(context.feature).
                   select{|o| o.text.index(context.prefix) == 0}
               else
-                []
+                # no options 
               end
             elsif context.feature.eType.is_a?(RGen::ECore::EEnum)
-              context.feature.eType.eLiterals.select{|l| l.name.index(context.prefix) == 0}.collect do |l|
-                CompletionOption.new("#{l.name}")
+              result += context.feature.eType.eLiterals.select{|l| l.name.index(context.prefix) == 0}.collect do |l|
+                CompletionOption.new("#{l.name}", "<#{context.feature.eType.name}>")
               end 
-            elsif context.feature.eType.instanceClass == String
-              [ CompletionOption.new("\"\"") ]
+            elsif context.feature.eType.instanceClass == String && context.prefix == ""
+              if @lang.unquoted?(context.feature)
+                result += [ CompletionOption.new("#{context.feature.name.gsub(/\W/,"")}", description) ]
+              else
+                result += [ CompletionOption.new("\"\"", description) ]
+              end
             elsif context.feature.eType.instanceClass == Integer 
-              (0..4).select{|i| i.to_s.index(context.prefix) == 0}.collect{|i| CompletionOption.new("#{i}") }
+              result += (0..0).select{|i| i.to_s.index(context.prefix) == 0}.collect{|i| CompletionOption.new("#{i}", description) }
             elsif context.feature.eType.instanceClass == Float 
-              (0..4).select{|i| "#{i}.0".index(context.prefix) == 0}.collect{|i| CompletionOption.new("#{i}.0") }
+              result += (0..0).select{|i| "#{i}.0".index(context.prefix) == 0}.collect{|i| CompletionOption.new("#{i}.0", description) }
             elsif context.feature.eType.instanceClass == RGen::MetamodelBuilder::DataTypes::Boolean
-              [true, false].select{|b| b.to_s.index(context.prefix) == 0}.collect{|b| CompletionOption.new("#{b}") }
+              result += [true, false].select{|b| b.to_s.index(context.prefix) == 0}.collect{|b| CompletionOption.new("#{b}", description) }
             else
-              []
+              # no options 
             end
           else
             # containment reference, ignore
           end
-        else
-          result = []
-          if !@lang.labled_arguments(clazz).any?{|f| 
-              context.element.getGenericAsArray(f.name).size > 0}
-            result += @lang.unlabled_arguments(clazz).
-              select{|f| f.name.index(context.prefix) == 0 && 
-                !context.element.eIsSet(f.name)}[0..0].collect do |f| 
-                CompletionOption.new("<#{f.name}>", "<#{f.eType.name}>")
-              end
-          end
+        end
+        if !context.after_label
           # label completion
           result += @lang.labled_arguments(clazz).
             select{|f| f.name.index(context.prefix) == 0 && 
               !context.element.eIsSet(f.name)}.collect do |f| 
               CompletionOption.new("#{f.name}:", "<#{f.eType.name}>")
             end 
-          result
         end
+        result
       else
         # missing comma, after curly brace, etc.
         []

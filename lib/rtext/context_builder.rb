@@ -26,7 +26,7 @@ module RText
 #
 module ContextBuilder
 
-  Context = Struct.new(:element, :feature, :prefix, :in_array, :in_block, :problem)
+  Context = Struct.new(:element, :feature, :prefix, :in_array, :in_block, :after_label, :problem)
 
   class << self
   include RText::Tokenizer
@@ -39,11 +39,20 @@ module ContextBuilder
     return nil unless context_info
     element = instantiate_context_element(language, context_info)
     if element
-      feature = context_info.role &&
-        element.class.ecore.eAllStructuralFeatures.find{|f| f.name == context_info.role}
-      Context.new(element, feature, context_info.prefix, context_info.in_array, context_info.in_block, context_info.problem)
+      after_label = false
+      if context_info.role
+        if context_info.role.is_a?(Integer)
+          feature = language.unlabled_arguments(element.class.ecore)[context_info.role] 
+        else
+          feature = element.class.ecore.eAllStructuralFeatures.find{|f| f.name == context_info.role}
+          after_label = true
+        end
+      else
+        feature = nil
+      end
+      Context.new(element, feature, context_info.prefix, context_info.in_array, context_info.in_block, after_label, context_info.problem)
     else
-      Context.new(nil, nil, context_info.prefix, context_info.in_array, context_info.in_block, context_info.problem)
+      Context.new(nil, nil, context_info.prefix, context_info.in_array, context_info.in_block, false, context_info.problem)
     end
   end
 
@@ -110,6 +119,7 @@ module ContextBuilder
         in_array = false
         role = nil
         missing_comma = false
+        unlabled_index = 0
         tokens[1..-1].each do |token|
           if token.kind == "["
             in_array = true
@@ -122,7 +132,17 @@ module ContextBuilder
           elsif token.kind == ","
             missing_comma = false
             role = nil unless in_array
+            unlabled_index += 1 unless in_array
           end
+        end
+        if ((tokens.size == 1 && line =~ /\s+$/) || 
+            tokens.last.kind == "," ||
+            in_array ||
+            ([:error, :string, :integer, :float, :boolean, :identifier, :reference].
+              include?(tokens.last.kind) && line !~ /\s$/)) &&
+            !tokens.any?{|t| t.kind == :label} &&
+            !(problem == :after_curly)
+          role ||= unlabled_index 
         end
         if [:string, :integer, :float, :boolean, :identifier, :reference].
             include?(tokens.last.kind) && line =~ /\s$/ && tokens.size > 1

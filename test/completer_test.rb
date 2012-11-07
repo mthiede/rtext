@@ -12,6 +12,7 @@ module TestMM
   extend RGen::MetamodelBuilder::ModuleExtension
   class TestNode2 < RGen::MetamodelBuilder::MMBase
     has_attr 'text', String
+    has_attr 'unlabled', String
   end
   class TestNode < RGen::MetamodelBuilder::MMBase
     has_attr 'text', String
@@ -40,7 +41,7 @@ def test_after_command
 TestNode |
   END
   assert_options([
-    ["<unlabled1>", "<EString>"],
+    ["\"\"", "[unlabled1] <EString>"],
     ["text:", "<EString>"],
     ["nums:", "<EInt>"],
     ["related:", "<TestNode>"],
@@ -71,7 +72,6 @@ def test_unlabled_prefix
 TestNode u|
   END
   assert_options([
-    ["<unlabled1>", "<EString>"]
   ], options)
 end
 
@@ -102,7 +102,7 @@ def test_after_unlabled_value
 TestNode "bla", |
   END
   assert_options([
-    ["<unlabled2>", "<EInt>"],
+    ["0", "[unlabled2] <EInt>"],
     ["text:", "<EString>"],
     ["nums:", "<EInt>"],
     ["related:", "<TestNode>"],
@@ -115,7 +115,7 @@ def test_after_unlabled_value_directly_after_comma
 TestNode "bla",|
   END
   assert_options([
-    ["<unlabled2>", "<EInt>"],
+    ["0", "[unlabled2] <EInt>"],
     ["text:", "<EString>"],
     ["nums:", "<EInt>"],
     ["related:", "<TestNode>"],
@@ -159,20 +159,16 @@ def test_value_int
 TestNode nums: | 
   END
   assert_options([
-    ["0", nil],
-    ["1", nil],
-    ["2", nil],
-    ["3", nil],
-    ["4", nil]
+    ["0", "<EInt>"],
   ], options)
 end
 
 def test_value_int_part
   options = complete TestMM, <<-END
-TestNode nums: 3| 
+TestNode nums: 0| 
   END
   assert_options([
-    ["3", nil],
+    ["0", "<EInt>"]
   ], options)
 end
 
@@ -181,8 +177,8 @@ def test_value_boolean
 TestNode3 bool: | 
   END
   assert_options([
-    ["true", nil],
-    ["false", nil],
+    ["true", "<EBoolean>"],
+    ["false", "<EBoolean>"],
   ], options)
 end
 
@@ -191,7 +187,7 @@ def test_value_boolean_part
 TestNode3 bool: t| 
   END
   assert_options([
-    ["true", nil],
+    ["true", "<EBoolean>"],
   ], options)
 end
 
@@ -200,7 +196,7 @@ def test_value_boolean_full
 TestNode3 bool: true| 
   END
   assert_options([
-    ["true", nil],
+    ["true", "<EBoolean>"],
   ], options)
 end
 
@@ -209,29 +205,25 @@ def test_value_float
 TestNode3 float: | 
   END
   assert_options([
-    ["0.0", nil],
-    ["1.0", nil],
-    ["2.0", nil],
-    ["3.0", nil],
-    ["4.0", nil]
+    ["0.0", "<EFloat>"],
   ], options)
 end
 
 def test_value_float_part
   options = complete TestMM, <<-END
-TestNode3 float: 1| 
+TestNode3 float: 0| 
   END
   assert_options([
-    ["1.0", nil],
+    ["0.0", "<EFloat>"],
   ], options)
 end
 
 def test_value_float_full
   options = complete TestMM, <<-END
-TestNode3 float: 1.0| 
+TestNode3 float: 0.0| 
   END
   assert_options([
-    ["1.0", nil],
+    ["0.0", "<EFloat>"],
   ], options)
 end
 
@@ -240,9 +232,9 @@ def test_value_enum
 TestNode3 enum: | 
   END
   assert_options([
-    ["A", nil],
-    ["B", nil],
-    ["non-word*chars", nil]
+    ["A", "<SomeEnum>"],
+    ["B", "<SomeEnum>"],
+    ["non-word*chars", "<SomeEnum>"]
   ], options)
 end
 
@@ -251,7 +243,7 @@ def test_value_enum_part
 TestNode3 enum: A| 
   END
   assert_options([
-    ["A", nil],
+    ["A", "<SomeEnum>"],
   ], options)
 end
 
@@ -260,11 +252,7 @@ def test_array_value
 TestNode nums: [|
   END
   assert_options([
-    ["0", nil],
-    ["1", nil],
-    ["2", nil],
-    ["3", nil],
-    ["4", nil]
+    ["0", "<EInt>"],
   ], options)
 end
 
@@ -273,11 +261,7 @@ def test_array_value2
 TestNode nums: [1,|
   END
   assert_options([
-    ["0", nil],
-    ["1", nil],
-    ["2", nil],
-    ["3", nil],
-    ["4", nil]
+    ["0", "<EInt>"],
   ], options)
 end
 
@@ -388,7 +372,7 @@ TestNode {
     |
   END
   assert_options([
-    ["TestNode2", ""],
+    ["TestNode2", "<unlabled>"],
   ], options)
 end
 
@@ -435,7 +419,7 @@ TestNode {
     |
   END
   assert_options([
-    ["TestNode2", ""],
+    ["TestNode2", "<unlabled>"],
   ], options)
 end
 
@@ -456,6 +440,7 @@ TestNode {
     TestNode2 | 
   END
   assert_options([
+    ["unlabled", "[unlabled] <EString>"],
     ["text:", "<EString>"]
   ], options)
 end
@@ -467,7 +452,19 @@ TestNode {
     TestNode2 | 
   END
   assert_options([
+    ["unlabled", "[unlabled] <EString>"],
     ["text:", "<EString>"]
+  ], options)
+end
+
+def test_unquoted_argument
+  options = complete TestMM, <<-END
+TestNode { 
+  child2RoleB: [
+    TestNode2 text: | 
+  END
+  assert_options([
+    ["text", "<EString>"]
   ], options)
 end
 
@@ -477,7 +474,7 @@ def test_root
   END
   assert_options([
     ["TestNode", "<unlabled1>, <unlabled2>"],
-    ["TestNode2", ""],
+    ["TestNode2", "<unlabled>"],
     ["TestNode3", ""],
     ["TextNode", ""]
   ], options)
@@ -487,7 +484,7 @@ def test_root_no_context_lines
   options = complete TestMM, ""
   assert_options([
     ["TestNode", "<unlabled1>, <unlabled2>"],
-    ["TestNode2", ""],
+    ["TestNode2", "<unlabled>"],
     ["TestNode3", ""],
     ["TextNode", ""]
   ], options)
@@ -517,7 +514,7 @@ def test_within_command2
 END
   assert_options([
     ["TestNode", "<unlabled1>, <unlabled2>"],
-    ["TestNode2", ""],
+    ["TestNode2", "<unlabled>"],
     ["TestNode3", ""],
     ["TextNode", ""]
   ], options)
@@ -535,7 +532,8 @@ def complete(mm, text, ref_comp_option_provider=nil)
   end
   lang = RText::Language.new(mm.ecore,
     :root_classes => mm.ecore.eAllClasses,
-    :unlabled_arguments => lambda {|c| ["unlabled1", "unlabled2"]})
+    :unlabled_arguments => lambda {|c| ["unlabled1", "unlabled2", "unlabled"]},
+    :unquoted_arguments => lambda {|c| c.name == "TestNode2" ? ["text", "unlabled"] : []})
   context = RText::ContextBuilder.build_context(lang, context_lines, pos_in_line)
   RText::Completer.new(lang).complete(context, ref_comp_option_provider)
 end

@@ -37,6 +37,7 @@ mm = RGen::ECore.ecore
 lang = RText::Language.new(mm, 
   :root_classes => [RGen::ECore::EPackage.ecore],
   :unlabled_arguments => lambda {|c| ["name"] },
+  :unquoted_arguments => lambda {|c| ["name"] },
   :line_number_attribute => "line_number",
   :fragment_ref_attribute => "fragment_ref"
 )

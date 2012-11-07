@@ -110,7 +110,7 @@ EPackage| StatemachineMM {
 EPackage |StatemachineMM {
   END
   assert_completions context, [
-    "<name>",
+    "name",
     "nsPrefix:",
     "nsURI:"
   ]
@@ -203,7 +203,7 @@ EPackage StatemachineMM {
   EClass |State, abstract: true {
   END
   assert_completions context, [
-    "<name>", 
+    "name", 
     "abstract:", 
     "interface:", 
     "eSuperTypes:", 
@@ -403,10 +403,6 @@ EPackage StatemachineMM {
   END
   assert_completions context, [
     "0",
-    "1",
-    "2",
-    "3",
-    "4"
   ]
   context = build_context <<-END
 EPackage StatemachineMM {
