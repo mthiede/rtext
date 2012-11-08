@@ -1303,7 +1303,7 @@ class InstantiatorTest < Test::Unit::TestCase
       TestNode text: bla>
       TestNode text: <a<b>
       TestNode text: <a>b>
-      ), TestMM)
+      ), TestMM, :enable_generics => true)
     assert_problems([
       [/parse error on token '<bla'/i, 2],
       [/parse error on token '>'/i, 3],
@@ -1317,7 +1317,7 @@ class InstantiatorTest < Test::Unit::TestCase
     root_elements = []
     env, problems = instantiate(%q(
       TestNode text: <bla>, nums: [<1>, <2>], boolean: <truthy>, enum: <option>, float: <precise>, related: <noderef>, others: [<other1>, <other2>]
-    ), TestMM, :root_elements => root_elements)
+    ), TestMM, :root_elements => root_elements, :enable_generics => true)
     assert_no_problems(problems)
     assert root_elements[0].text.is_a?(RText::Generic)
     assert_equal "bla", root_elements[0].text.string
@@ -1327,6 +1327,15 @@ class InstantiatorTest < Test::Unit::TestCase
     assert_equal "precise", root_elements[0].float.string
     assert_equal "noderef", root_elements[0].related.string
     assert_equal ["other1", "other2"], root_elements[0].others.collect{|n| n.string}
+  end
+
+  def test_generics_forbidden
+    env, problems = instantiate(%Q(\
+      TestNode text: <bla>
+      ), TestMM)
+    assert_problems([
+      [/generic value not allowed/i, 1],
+    ], problems)
   end
 
   #

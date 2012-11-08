@@ -124,6 +124,10 @@ class Language
   #     reference, the user must click on a value of this attribute)
   #     a value of nil means that the command name is used to follow the backward reference
   #     default: nil (command name)
+  #  
+  #  :enable_generics
+  #     if set to true, generics (<value>) are allowed, otherwise forbidden
+  #     default: false
   #
   def initialize(root_epackage, options={})
     @root_epackage = root_epackage
@@ -158,6 +162,7 @@ class Language
     @indent_string = options[:indent_string] || "  "
     @per_type_identifier = options[:per_type_identifier]
     @backward_ref_attribute = options[:backward_ref_attribute] || proc{|c| nil}
+    @generics_enabled = options[:enable_generics]
   end
 
   attr_reader :root_epackage
@@ -174,6 +179,7 @@ class Language
   attr_reader :indent_string
   attr_reader :per_type_identifier
   attr_reader :backward_ref_attribute
+  attr_reader :generics_enabled
 
   def class_by_command(command, context_class)
     map = @class_by_command[context_class]

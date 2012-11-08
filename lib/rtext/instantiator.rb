@@ -211,7 +211,11 @@ class Instantiator
     expected_kind = expected_token_kind(feature)
     value.each do |v|
       if v.kind == :generic
-        element.setOrAddGeneric(feature.name, v.value)
+        if @lang.generics_enabled
+          element.setOrAddGeneric(feature.name, v.value)
+        else
+          problem("Generic value not allowed", line)
+        end
       elsif !expected_kind.include?(v.kind)
         problem("Argument '#{name}' can not take a #{v.kind}, expected #{expected_kind.join(", ")}", line)
       elsif feature.eType.is_a?(RGen::ECore::EEnum) 
