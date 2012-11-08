@@ -262,10 +262,10 @@ class Instantiator
       annotation = annotation_desc.collect{|c| c.value}.join("\n")
       success = @lang.annotation_handler.call(annotation, element, @env)
       if !success 
-        problem("This kind of element can not take an annotation", line_number(element))
+        problem("Annotation not allowed", line_number(element))
       end
     else
-      problem("This language does not support annotations", line_number(element))
+      problem("Annotation not allowed", line_number(element))
     end
   end
 

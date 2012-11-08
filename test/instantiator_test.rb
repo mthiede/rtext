@@ -1216,7 +1216,7 @@ class InstantiatorTest < Test::Unit::TestCase
       @annotation 
       TestNode
       ), TestMM)
-    assert_problems([/this language does not support annotations/i], problems)
+    assert_problems([/annotation not allowed/i], problems)
   end
 
   def test_annotation_not_allowed
@@ -1226,7 +1226,7 @@ class InstantiatorTest < Test::Unit::TestCase
       ), TestMM, :annotation_handler => proc {|a,e,env|
         false
       })
-    assert_problems([/this kind of element can not take an annotation/i], problems)
+    assert_problems([/annotation not allowed/i], problems)
   end
 
   def test_annotation_in_wrong_places
