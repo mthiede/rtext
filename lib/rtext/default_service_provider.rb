@@ -13,6 +13,10 @@ class DefaultServiceProvider
     })
   end
 
+  def language
+    @lang
+  end
+
   def load_model(options={})
     if options[:on_progress]
       @loader.load(:after_load => options[:on_progress])

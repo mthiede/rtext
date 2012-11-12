@@ -22,10 +22,8 @@ class Service
   #  :logger
   #    a logger object on which the service will write its logging output
   #
-  def initialize(lang, service_provider, options={})
-    @lang = lang
+  def initialize(service_provider, options={})
     @service_provider = service_provider
-    @completer = RText::Completer.new(lang) 
     @timeout = options[:timeout] || 60
     @logger = options[:logger]
   end
@@ -146,10 +144,12 @@ class Service
     # column numbers start at 1
     linepos = request["column"]-1 
     lines = request["context"]
-    context = ContextBuilder.build_context(@lang, lines, linepos)
-    @logger.debug("context element: #{@lang.identifier_provider.call(context.element, nil)}") \
+    lang = @service_provider.language
+    context = ContextBuilder.build_context(lang, lines, linepos)
+    @logger.debug("context element: #{lang.identifier_provider.call(context.element, nil)}") \
       if context && context.element && @logger
-    options = @completer.complete(context, lambda {|ref| 
+    completer = RText::Completer.new(lang) 
+    options = completer.complete(context, lambda {|ref| 
         @service_provider.get_reference_completion_options(ref, context).collect {|o|
           Completer::CompletionOption.new(o.identifier, "<#{o.type}>")}
       })
@@ -162,7 +162,7 @@ class Service
     # column numbers start at 1
     linepos = request["column"]
     lines = request["context"]
-    link_descriptor = RText::LinkDetector.new(@lang).detect(lines, linepos)
+    link_descriptor = RText::LinkDetector.new(@service_provider.language).detect(lines, linepos)
     if link_descriptor
       response["begin_column"] = link_descriptor.scol
       response["end_column"] = link_descriptor.ecol

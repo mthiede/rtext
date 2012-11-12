@@ -46,5 +46,5 @@ model = RGen::Fragment::FragmentedModel.new(:env => RGen::Environment.new)
 loader = RText::DefaultLoader.new(lang, model, :pattern => dirs)
 service_provider = RText::DefaultServiceProvider.new(lang, model, loader)
 
-service = RText::Service.new(lang, service_provider, :logger => logger, :timeout => 3600)
+service = RText::Service.new(service_provider, :logger => logger, :timeout => 3600)
 service.run
