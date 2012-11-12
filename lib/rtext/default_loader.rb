@@ -169,7 +169,9 @@ class DefaultLoader
         :fragment_ref => fragment.fragment_ref,
         :file_name => fragment.location)
     end
-    fragment.data = {:problems => problems}
+    # data might have been created during instantiation (e.g. comment or annotation handler)
+    fragment.data ||= {}
+    fragment.data[:problems] = problems
     fragment.set_root_elements(root_elements,
       :unresolved_refs => urefs, 
       :elements => env.elements)
