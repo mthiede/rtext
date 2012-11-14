@@ -60,7 +60,7 @@ def create_connector(config, pattern)
 end
 
 def desc_key(config, pattern)
-  config.file + "," + pattern
+  config.file.downcase + "," + pattern
 end
 
 def config_checksum(config)
