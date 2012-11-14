@@ -152,7 +152,6 @@ class DefaultServiceProvider
     return @element_name_index if @element_name_index
     @element_name_index = {}
     @model.index.each_pair do |ident, elements|
-      puts [ident, elements].inspect
       last_part = ident.split(/\W/).last
       next unless last_part
       key = last_part[0..0].downcase
