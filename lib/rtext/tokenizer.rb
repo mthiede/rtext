@@ -71,7 +71,7 @@ module Tokenizer
             str = $'
             col += $&.size
             # ignore
-          when /\A<([^>]*)>/
+          when /\A<%((?:(?!%>).)*)%>/, /\A<([^>]*)>/
             str = $'
             result << Token.new(:generic, RText::Generic.new($1), idx, col, col+$&.size-1)
             col += $&.size

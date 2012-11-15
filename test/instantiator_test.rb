@@ -1303,20 +1303,28 @@ class InstantiatorTest < Test::Unit::TestCase
       TestNode text: bla>
       TestNode text: <a<b>
       TestNode text: <a>b>
+      TestNode text: <%a
+      TestNode text: <%a%
+      TestNode text: <%a%>b%>
       ), TestMM, :enable_generics => true)
     assert_problems([
       [/parse error on token '<bla'/i, 2],
       [/parse error on token '>'/i, 3],
       [/unexpected identifier 'b'/i, 5],
       [/parse error on token '>'/i, 5],
-      [/unexpected unlabled argument/i, 5]
+      [/unexpected unlabled argument/i, 5],
+      [/parse error on token '<%a'/i, 6],
+      [/parse error on token '<%a%'/i, 7],
+      [/unexpected identifier 'b'/i, 8],
+      [/unexpected unlabled argument/i, 8],
+      [/parse error on token '%>'/i, 8],
     ], problems)
   end
 
   def test_generics
     root_elements = []
     env, problems = instantiate(%q(
-      TestNode text: <bla>, nums: [<1>, <2>], boolean: <truthy>, enum: <option>, float: <precise>, related: <noderef>, others: [<other1>, <other2>]
+      TestNode text: <bla>, nums: [<1>, <%2%>], boolean: <truthy>, enum: <%option%>, float: <precise>, related: <%noderef%>, others: [<other1>, <%other2%>]
     ), TestMM, :root_elements => root_elements, :enable_generics => true)
     assert_no_problems(problems)
     assert root_elements[0].text.is_a?(RText::Generic)

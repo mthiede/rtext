@@ -410,6 +410,8 @@ TestNode enum: "2you"
   def test_generic
     testModel = [
       TestMM::TestNode.new(:text => RText::Generic.new("some text angel >bracket")),
+      TestMM::TestNode.new(:text => RText::Generic.new("some text percent angel %>bracket")),
+      TestMM::TestNode.new(:text => RText::Generic.new("some text > percent angel%>bracket")),
       TestMM::TestNode.new(:integer => RText::Generic.new("a number: 1")),
       TestMM::TestNode.new(:float => RText::Generic.new("precision")),
       TestMM::TestNode.new(:enum => RText::Generic.new("an option")),
@@ -418,7 +420,9 @@ TestNode enum: "2you"
     output = StringWriter.new
     serialize(testModel, TestMM, output) 
     assert_equal %Q(\
-TestNode text: <some text angel >
+TestNode text: <%some text angel >bracket%>
+TestNode text: <some text percent angel >
+TestNode text: <%some text > percent angel%>
 TestNode integer: <a number: 1>
 TestNode float: <precision>
 TestNode enum: <an option>

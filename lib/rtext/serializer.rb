@@ -120,7 +120,12 @@ class Serializer
     arg_format = @lang.argument_format(feature)
     values.each do |v|
       if v.is_a?(RText::Generic)
-        result << "<#{v.string.split(">").first}>"
+        str = v.string.split("%>").first
+        if str.index(">")
+          result << "<%#{str}%>"
+        else
+          result << "<#{str}>"
+        end
       elsif feature.eType.instanceClass == Integer
         if arg_format 
           result << sprintf(arg_format, v)

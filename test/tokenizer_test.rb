@@ -55,12 +55,52 @@ TestNode #comment2
 end
 
 def test_generic
-  tokens = tokenize("<name>", /\A\/[\/\w]+/)
+  tokens = do_tokenize("<name>")
   assert_equal :generic, tokens.first.kind
   assert_equal "name", tokens.first.value.string
   assert_equal 1, tokens.first.line
   assert_equal 1, tokens.first.scol
   assert_equal 6, tokens.first.ecol
+end
+
+def test_generic_bad
+  tokens = do_tokenize("<a>b>")
+  assert_equal :generic, tokens.first.kind
+  assert_equal "a", tokens.first.value.string
+  assert_equal 1, tokens.first.line
+  assert_equal 1, tokens.first.scol
+  assert_equal 3, tokens.first.ecol
+  assert_equal :identifier, tokens[1].kind
+  assert_equal :error, tokens[2].kind
+end
+
+def test_generic_percent
+  tokens = do_tokenize("<%name%>")
+  assert_equal :generic, tokens.first.kind
+  assert_equal "name", tokens.first.value.string
+  assert_equal 1, tokens.first.line
+  assert_equal 1, tokens.first.scol
+  assert_equal 8, tokens.first.ecol
+end
+
+def test_generic_percent_angle_close
+  tokens = do_tokenize("<% a > b < c %>")
+  assert_equal :generic, tokens.first.kind
+  assert_equal " a > b < c ", tokens.first.value.string
+  assert_equal 1, tokens.first.line
+  assert_equal 1, tokens.first.scol
+  assert_equal 15, tokens.first.ecol
+end
+
+def test_generic_percent_bad
+  tokens = do_tokenize("<%= a %> b %>")
+  assert_equal :generic, tokens.first.kind
+  assert_equal "= a ", tokens.first.value.string
+  assert_equal 1, tokens.first.line
+  assert_equal 1, tokens.first.scol
+  assert_equal 8, tokens.first.ecol
+  assert_equal :identifier, tokens[1].kind
+  assert_equal :error, tokens[2].kind
 end
 
 def test_error
@@ -70,6 +110,10 @@ def test_error
   ], <<-END
 "open
   END
+end
+
+def do_tokenize(str)
+  tokenize(str, /\A\/[\/\w]+/)
 end
 
 def assert_tokens(expected, str)
