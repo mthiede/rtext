@@ -146,7 +146,7 @@ class Service
     lines = request["context"]
     lang = @service_provider.language
     context = ContextBuilder.build_context(lang, lines, linepos)
-    @logger.debug("context element: #{lang.identifier_provider.call(context.element, nil)}") \
+    @logger.debug("context element: #{lang.identifier_provider.call(context.element, nil, nil, nil)}") \
       if context && context.element && @logger
     completer = RText::Completer.new(lang) 
     options = completer.complete(context, lambda {|ref| 

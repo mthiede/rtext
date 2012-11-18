@@ -44,11 +44,13 @@ class Language
   #     default: word characters separated by at least one slash (/) 
   #
   #  :identifier_provider
-  #     a Proc which receives an element and its containing element or nil and should return 
-  #     the element's identifier as a string
+  #     a Proc which receives an element, its containing element, the feature through which the
+  #     element is referenced and the index position of the reference within the feature's values.
+  #     the latter 3 argumnets may be nil. it should return the element's identifier as a string.
   #     the identifier must be unique for the element unless "per_type_identifier" is set to true,
-  #     in which case they must be unique for each element of the same type
-  #     identifiers may be relative to the given containing element. in this case a globally unique 
+  #     in which case they must be unique for each element of the same type.
+  #     identifiers may be relative to the given containing element, depending on the given
+  #     feature and index position. in this case a globally unique 
   #     identifer must be resonstructed by the proc specified using the :reference_qualifier option.
   #     if the containing element is nil, the identifier returned must be globally unique.
   #     default: identifiers calculated by QualifiedNameProvider
@@ -142,7 +144,7 @@ class Language
     setup_commands(root_epackage, command_name_provider)
     @reference_regexp = options[:reference_regexp] || /\A\w*(\/\w*)+/
     @identifier_provider = options[:identifier_provider] || 
-      proc { |element, context|
+      proc { |element, context, feature, index|
         @qualified_name_provider ||= RGen::Serializer::QualifiedNameProvider.new(options)
         name_attribute = options[:attribute_name] || "name"
         if element.is_a?(RGen::MetamodelBuilder::MMProxy) || element.respond_to?(name_attribute)

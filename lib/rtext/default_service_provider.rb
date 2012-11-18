@@ -33,8 +33,10 @@ class DefaultServiceProvider
       clazz = reference.eType.instanceClass
       targets = @model.index.values.flatten.select{|e| e.is_a?(clazz)}
     end
+    index = 0
     targets.collect{|t| 
-      ident = @lang.identifier_provider.call(t, context.element)
+      ident = @lang.identifier_provider.call(t, context.element, reference, index)
+      index += 1
       if ident
         ReferenceCompletionOption.new(ident, t.class.ecore.name)
       else
@@ -64,7 +66,7 @@ class DefaultServiceProvider
 
   def get_referencing_elements(identifier, element, feature)
     result = []
-    targets = @model.index[@lang.identifier_provider.call(element, nil)]
+    targets = @model.index[@lang.identifier_provider.call(element, nil, nil, nil)]
     if targets && @lang.per_type_identifier
       targets = targets.select{|t| t.class == element.class}
     end
@@ -77,7 +79,7 @@ class DefaultServiceProvider
         if @lang.fragment_ref(e)
           path = File.expand_path(@lang.fragment_ref(e).fragment.location)
           display_name = ""
-          ident = @lang.identifier_provider.call(e, nil)
+          ident = @lang.identifier_provider.call(e, nil, nil, nil)
           display_name += "#{ident} " if ident
           display_name += "[#{e.class.ecore.name}]"
           result << ReferenceTarget.new(path, @lang.line_number(e), display_name)

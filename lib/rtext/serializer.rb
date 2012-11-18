@@ -118,7 +118,7 @@ class Serializer
     values = element.getGenericAsArray(feature.name).compact
     result = []
     arg_format = @lang.argument_format(feature)
-    values.each do |v|
+    values.each_with_index do |v, index|
       if v.is_a?(RText::Generic)
         str = v.string.split("%>").first
         if str.index(">")
@@ -162,7 +162,7 @@ class Serializer
             gsub("\r","\\r").gsub("\t","\\t").gsub("\f","\\f").gsub("\b","\\b")}\""
         end
       elsif feature.is_a?(RGen::ECore::EReference)
-        result << @lang.identifier_provider.call(v, element) 
+        result << @lang.identifier_provider.call(v, element, feature, index) 
       end
     end
     if result.size > 1  

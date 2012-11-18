@@ -225,8 +225,10 @@ ____TestNode text: "child"
 
     output = StringWriter.new
     serialize(testModel, TestMMRef, output,
-      :identifier_provider => proc{|e, context| 
+      :identifier_provider => proc{|e, context, feature, index| 
         assert_equal testModel[0], context
+        assert_equal "refOne", feature.name
+        assert_equal 0, index
         "/target/ref"
       }
     )
@@ -234,6 +236,37 @@ ____TestNode text: "child"
     assert_equal %Q(\
 TestNode name: "Source", refOne: /target/ref
 TestNode name: "Target"
+),output
+  end
+
+  def test_identifier_provider_many
+    testModel = [
+      TestMMRef::TestNode.new(:name => "Source"),
+      TestMMRef::TestNode.new(:name => "Target1"),
+      TestMMRef::TestNode.new(:name => "Target2")]
+    testModel[0].addRefMany(testModel[1])
+    testModel[0].addRefMany(testModel[2])
+
+    output = StringWriter.new
+    call_index = 0
+    serialize(testModel, TestMMRef, output,
+      :identifier_provider => proc{|e, context, feature, index| 
+        assert_equal testModel[0], context
+        assert_equal "refMany", feature.name
+        if call_index == 0
+          call_index += 1
+          assert_equal 0, index
+          "/target/ref1"
+        else
+          assert_equal 1, index
+          "/target/ref2"
+        end
+      }
+    )
+    assert_equal %Q(\
+TestNode name: "Source", refMany: [/target/ref1, /target/ref2]
+TestNode name: "Target1"
+TestNode name: "Target2"
 ),output
   end
 
