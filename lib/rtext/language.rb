@@ -51,7 +51,7 @@ class Language
   #     in which case they must be unique for each element of the same type.
   #     identifiers may be relative to the given containing element, depending on the given
   #     feature and index position. in this case a globally unique 
-  #     identifer must be resonstructed by the proc specified using the :reference_qualifier option.
+  #     identifier must be resonstructed by the proc specified using the :reference_qualifier option.
   #     if the containing element is nil, the identifier returned must be globally unique.
   #     default: identifiers calculated by QualifiedNameProvider
   #              in this case options to QualifiedNameProvider may be provided and will be passed through
@@ -61,16 +61,11 @@ class Language
   #     default: false
   #
   #  :reference_qualifier
-  #     a Proc which receives an element identifier as returned by the identifier provider and 
-  #     another element which uses this identifier to reference the element.
-  #     it must return the globally unique version of the identifier.
-  #     in case the received identifier is already globally unique, it must be returned as is.
-  #     the received element might only be similar to the original referencing element. the reason
-  #     is that this element may need to be constructed using only partially parsable data.
-  #     it is garantueed though that the element's chain of containing elements is complete and
-  #     that (non-containment) references are resolved as far as possible.
-  #     default: no reference qualifier, i.e. all identifiers returned by the identifier provider 
-  #              must be globally unique
+  #     a Proc which receives RGen unresolved references and either a FragmentedModel or a ModelFragment.
+  #     it should modify the unresolved references' targetIdentifiers to make them globally unique.
+  #     the Proc is called for each fragment after it as been loaded and for the overall model.
+  #     this can be used to qualify context specific references returned by the identifier provider.
+  #     default: no reference qualifier
   #
   #  :root_classes
   #     an Array of EClass objects representing classes which can be used on root level
@@ -153,7 +148,7 @@ class Language
           nil
         end
       }
-    @reference_qualifier = options[:reference_qualifier]
+    @reference_qualifier = options[:reference_qualifier] || proc{|urefs, model_or_fragment| }
     @line_number_attribute = options[:line_number_attribute]
     @file_name_attribute = options[:file_name_attribute]
     @fragment_ref_attribute = options[:fragment_ref_attribute]
@@ -171,6 +166,7 @@ class Language
   attr_reader :root_classes
   attr_reader :reference_regexp
   attr_reader :identifier_provider
+  attr_reader :reference_qualifier
   attr_reader :line_number_attribute
   attr_reader :file_name_attribute
   attr_reader :fragment_ref_attribute
@@ -249,14 +245,6 @@ class Language
 
   def fragment_ref(element)
     @fragment_ref_attribute && element.respond_to?(@fragment_ref_attribute) && element.send(@fragment_ref_attribute)
-  end
-
-  def qualify_reference(identifier, element)
-    if @reference_qualifier
-      @reference_qualifier.call(identifier, element)
-    else
-      identifier
-    end
   end
 
   private

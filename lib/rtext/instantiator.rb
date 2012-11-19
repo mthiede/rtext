@@ -68,11 +68,6 @@ class Instantiator
     parser_problems.each do |p|
       problem(p.message, p.line)
     end
-    if @unresolved_refs
-      @unresolved_refs.each do |ur|
-        ur.proxy.targetIdentifier = @lang.qualify_reference(ur.proxy.targetIdentifier, ur.element)
-      end
-    end
   end
 
   private

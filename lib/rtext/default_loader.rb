@@ -67,6 +67,7 @@ class DefaultLoader
     files = @file_provider.call 
     @num_files = files.size
     @change_detector.check_files(files)
+    @lang.reference_qualifier.call(@model.unresolved_refs, @model)
     @model.resolve(:fragment_provider => method(:fragment_provider),
       :use_target_type => @lang.per_type_identifier)
   end
@@ -176,6 +177,7 @@ class DefaultLoader
       :unresolved_refs => urefs, 
       :elements => env.elements)
     fragment.build_index
+    @lang.reference_qualifier.call(urefs, fragment)
     fragment.resolve_local(:use_target_type => @lang.per_type_identifier)
   end
 
