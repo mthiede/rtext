@@ -29,4 +29,12 @@
 * Added generic value support
 * Added RText frontend support (for Ruby based RText plugins and testing)
 * Changed frontend/backend protocol to JSON over TCP
+* Generally improved completer and context builder, fixed bugs, added tests
+* Added automated frontend/backend tests
+* Added example language (ECore editor)
+* Added configurable backward reference attribute
+* Fixed backward reference resolution in case line ends with name attribute
+* Added more information to unlabled value completion options
+* Added backend service support for lanugage exchange at runtime
+* Extended support for relative reference calculation and resolution
 
