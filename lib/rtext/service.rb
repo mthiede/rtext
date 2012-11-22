@@ -41,6 +41,7 @@ class Service
     while !@stop_requested
       begin
         sock = server.accept_nonblock
+        sock.sync = true
         sockets << sock
         @logger.info "accepted connection" if @logger
       rescue Errno::EAGAIN, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR, Errno::EWOULDBLOCK
@@ -99,7 +100,8 @@ class Service
         response["command"] = obj["command"] 
       end
       @logger.debug("response: "+response.inspect) if response && @logger
-      sock.send(serialize_message(response), 0) if response
+      sock.puts(serialize_message(response), 0) if response
+      sock.flush if response
     end
   end
 
