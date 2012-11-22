@@ -1,5 +1,7 @@
 *.ect:
 ruby -I../../../../rgen/lib -I ../../../lib ../ecore_editor.rb "*.ect" 2>&1
+*.ect2:
+ruby -I../../../../rgen/lib -I ../../../lib ../ecore_editor.rb "*.ect2" 2>&1
 *.invalid_cmd_line:
 invalid_command_will_fail
 *.crashing_backend:
