@@ -41,7 +41,6 @@ class Service
     while !@stop_requested
       begin
         sock = server.accept_nonblock
-        sock.sync = true
         sockets << sock
         @logger.info "accepted connection" if @logger
       rescue Errno::EAGAIN, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR, Errno::EWOULDBLOCK
@@ -100,7 +99,7 @@ class Service
         response["command"] = obj["command"] 
       end
       @logger.debug("response: "+response.inspect) if response && @logger
-      sock.puts(serialize_message(response), 0) if response
+      sock.write(serialize_message(response)) if response
       sock.flush if response
     end
   end
@@ -125,11 +124,12 @@ class Service
       :on_progress => lambda do |frag, num_frags|
         progress_index += 1
         num_frags = 1 if num_frags < 1
-        sock.send(serialize_message( {
+        sock.write(serialize_message( {
           "type" => "progress",
           "invocation_id" => request["invocation_id"],
           "percentage" => progress_index*100/num_frags
-        }), 0)
+        }))
+        sock.flush
       end)
     total = 0
     response["problems"] = problems.collect do |fp|
