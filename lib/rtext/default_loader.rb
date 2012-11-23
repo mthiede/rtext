@@ -76,7 +76,7 @@ class DefaultLoader
 
   def file_added(file)
     fragment = RGen::Fragment::ModelFragment.new(file, 
-      :identifier_provider => lambda {|e| @lang.identifier_provider.call(e, nil, nil, nil)})
+      :identifier_provider => lambda {|e, c| @lang.identifier_provider.call(e, nil, nil, nil)})
     load_fragment_cached(fragment)
     @model.add_fragment(fragment)
     @fragment_by_file[file] = fragment
@@ -89,7 +89,7 @@ class DefaultLoader
 
   def file_changed(file)
     fragment = RGen::Fragment::ModelFragment.new(file, 
-      :identifier_provider => lambda {|e| @lang.identifier_provider.call(e, nil, nil, nil)})
+      :identifier_provider => lambda {|e, c| @lang.identifier_provider.call(e, nil, nil, nil)})
     load_fragment_cached(fragment)
     if @dont_reload_with_errors && fragment.data[:problems].size > 0
       # keep old fragment but attach new problems
