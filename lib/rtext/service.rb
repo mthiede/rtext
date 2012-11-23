@@ -22,15 +22,21 @@ class Service
   #  :logger
   #    a logger object on which the service will write its logging output
   #
+  #  :on_startup:
+  #    a Proc which is called right after the service has started up
+  #    can be used to output version information
+  #
   def initialize(service_provider, options={})
     @service_provider = service_provider
     @timeout = options[:timeout] || 60
     @logger = options[:logger]
+    @on_startup = options[:on_startup]
   end
 
   def run
     server = create_server 
     puts "RText service, listening on port #{server.addr[1]}"
+    @on_startup.call if @on_startup
     $stdout.flush
 
     last_access_time = Time.now
