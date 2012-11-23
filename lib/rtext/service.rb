@@ -41,6 +41,7 @@ class Service
     while !@stop_requested
       begin
         sock = server.accept_nonblock
+        sock.sync = true
         sockets << sock
         @logger.info "accepted connection" if @logger
       rescue Errno::EAGAIN, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR, Errno::EWOULDBLOCK
