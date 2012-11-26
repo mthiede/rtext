@@ -154,6 +154,7 @@ class Service
     linepos = request["column"]-1 
     lines = request["context"]
     lang = @service_provider.language
+    response["options"] = []
     return unless lang
     context = ContextBuilder.build_context(lang, lines, linepos)
     @logger.debug("context element: #{lang.identifier_provider.call(context.element, nil, nil, nil)}") \
@@ -173,6 +174,7 @@ class Service
     linepos = request["column"]
     lines = request["context"]
     lang = @service_provider.language
+    response["targets"] = []
     return unless lang
     link_descriptor = RText::LinkDetector.new(lang).detect(lines, linepos)
     if link_descriptor
