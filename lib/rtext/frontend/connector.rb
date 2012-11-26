@@ -77,7 +77,11 @@ def resume
 end
 
 def stop
-  if connected? || connecting?
+  while connecting?
+    do_work
+    sleep(0.1)
+  end
+  if connected?
     execute_command({"type" => "request", "command" => "stop"})
     while do_work 
       sleep(0.1)
