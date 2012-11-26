@@ -36,10 +36,13 @@ class DefaultLoader
   def initialize(language, fragmented_model, options={})
     @lang = language
     @model = fragmented_model
+    @files_added = []
+    @files_changed = []
+    @files_removed = []
     @change_detector = RGen::Util::FileChangeDetector.new(
-      :file_added => method(:file_added),
-      :file_removed => method(:file_removed),
-      :file_changed => method(:file_changed))
+      :file_added => lambda {|f| @files_added << f }, 
+      :file_removed => lambda {|f| @files_removed << f},
+      :file_changed => lambda {|f| @files_changed << f})
     @cache = options[:cache]
     @fragment_by_file = {}
     pattern = options[:pattern]
@@ -61,18 +64,71 @@ class DefaultLoader
   #    optionally, the proc may take second argument which is the overall number of files
   #    default: no after load proc
   #
+  #  :on_progress
+  #    a proc which is called when some progress is made 
+  #    receives the current fragment being loaded, the actual work done as an integer and
+  #    the overall work to be done as an integer
+  #    default: no on progress proc
+  #
   def load(options={})
     @before_load_proc = options[:before_load]
     @after_load_proc = options[:after_load]
     files = @file_provider.call 
     @num_files = files.size
+    @files_added = []
+    @files_changed = []
+    @files_removed = []
     @change_detector.check_files(files)
+    @progress_monitor = ProgressMonitor.new(options[:on_progress], @files_added + @files_changed)
+    @files_added.each {|f| file_added(f)}
+    @files_changed.each {|f| file_changed(f)}
+    @files_removed.each {|f| file_removed(f)}
     @lang.reference_qualifier.call(@model.unresolved_refs, @model)
     @model.resolve(:fragment_provider => method(:fragment_provider),
       :use_target_type => @lang.per_type_identifier)
   end
 
   private
+
+  class ProgressMonitor
+    def initialize(on_progress_proc, files)
+      @on_progress_proc = on_progress_proc || lambda {|frag, work_done, work_overall| }
+      # there is a progress call twice for each element (in tokenizer and instantiator)
+      @work_overall = num_elements(files)*2
+      @work_done = 0
+      @work_last_sent = 0
+    end
+
+    def before_fragment_load(frag, kind)
+      @loading_cached = (kind == :load_cached)
+    end
+
+    def after_fragment_load(frag)
+      @work_done += frag.elements.size*2 if @loading_cached
+      @on_progress_proc.call(frag, @work_done, @work_overall)
+      @work_last_sent = @work_done
+    end
+
+    def instantiator_progress(frag)
+      @work_done += 1
+      if @work_done > @work_last_sent + 100
+        @on_progress_proc.call(frag, @work_done, @work_overall)
+        @work_last_sent = @work_done
+      end
+    end
+
+    private
+
+    def num_elements(files)
+      result = 0
+      files.each do |f|
+        content = File.read(f)
+        result += content.scan(/\n\s*\w+\s+/).size
+        result += 1 if content =~ /^\s*\w+\s+/
+      end
+      result
+    end
+  end
 
   def file_added(file)
     fragment = RGen::Fragment::ModelFragment.new(file, 
@@ -136,6 +192,7 @@ class DefaultLoader
   end
 
   def call_before_load_proc(fragment, kind)
+    @progress_monitor.before_fragment_load(fragment, kind)
     if @before_load_proc
       if @before_load_proc.arity == 3
         @before_load_proc.call(fragment, kind, @num_files) 
@@ -146,6 +203,7 @@ class DefaultLoader
   end
 
   def call_after_load_proc(fragment)
+    @progress_monitor.after_fragment_load(fragment)
     if @after_load_proc
       if @after_load_proc.arity == 2
         @after_load_proc.call(fragment, @num_files) 
@@ -168,7 +226,10 @@ class DefaultLoader
         :problems => problems,
         :root_elements => root_elements,
         :fragment_ref => fragment.fragment_ref,
-        :file_name => fragment.location)
+        :file_name => fragment.location,
+        :on_progress => lambda do 
+          @progress_monitor.instantiator_progress(fragment)
+        end)
     end
     # data might have been created during instantiation (e.g. comment or annotation handler)
     fragment.data ||= {}

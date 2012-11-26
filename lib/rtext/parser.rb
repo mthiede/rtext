@@ -18,7 +18,7 @@ class Parser
     @problems = options[:problems] || []
     @non_consume_count = 0
     @consume_problem_reported = false
-    @tokens = tokenize(str, @reference_regexp)
+    @tokens = tokenize(str, @reference_regexp, :on_command_token => options[:on_command_token])
     @last_line = @tokens.last && @tokens.last.line 
     #@debug = true
     begin

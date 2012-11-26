@@ -6,8 +6,9 @@ module Tokenizer
 
   Token = Struct.new(:kind, :value, :line, :scol, :ecol)
    
-  def tokenize(str, reference_regexp)
+  def tokenize(str, reference_regexp, options={})
     result = []
+    on_command_token_proc = options[:on_command_token]
     str.split(/\r?\n/).each_with_index do |str, idx|
       idx += 1
       if str =~ /^\s*([\#@])(.*)/
@@ -18,7 +19,9 @@ module Tokenizer
         end
       else
         col = 1
+        first_token_in_line = true
         until str.empty?
+          whitespace = false
           case str
           when reference_regexp
             str = $'
@@ -58,6 +61,9 @@ module Tokenizer
               result << Token.new(:label, $1, idx, col, col+$&.size-1)
             else
               result << Token.new(:identifier, $&, idx, col, col+$&.size-1)
+              if first_token_in_line && on_command_token_proc
+                on_command_token_proc.call
+              end
             end
             col += $&.size
           when /\A[\{\}\[\]:,]/
@@ -70,6 +76,7 @@ module Tokenizer
           when /\A\s+/
             str = $'
             col += $&.size
+            whitespace = true
             # ignore
           when /\A<%((?:(?!%>).)*)%>/, /\A<([^>]*)>/
             str = $'
@@ -80,6 +87,7 @@ module Tokenizer
             result << Token.new(:error, $&, idx, col, col+$&.size-1)
             col += $&.size
           end
+          first_token_in_line = false unless whitespace
         end
       end
       result << Token.new(:newline, nil, idx) \

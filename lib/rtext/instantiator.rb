@@ -36,6 +36,10 @@ class Instantiator
   #  :fragment_ref
   #    object which references the fragment being instantiated, will be set on model elements 
   #
+  #  :on_progress
+  #    a proc which is called twice for each model element: 
+  #    when the command token is recognized and when the element is instantiated 
+  #
   def instantiate(str, options={})
     @line_numbers = {}
     @env = options[:env]
@@ -44,6 +48,7 @@ class Instantiator
     @root_elements = options[:root_elements] || []
     @file_name = options[:file_name]
     @fragment_ref = options[:fragment_ref]
+    @on_progress_proc = options[:on_progress]
     @context_class_stack = []
     parser = Parser.new(@lang.reference_regexp)
     @root_elements.clear
@@ -63,6 +68,9 @@ class Instantiator
         else
           unassociated_comments(args[3])
         end
+      end,
+      :on_command_token => @on_progress_proc && lambda do
+        @on_progress_proc.call
       end,
       :problems => parser_problems)
     parser_problems.each do |p|
@@ -99,6 +107,7 @@ class Instantiator
     element = clazz.new
     @env << element if @env
     @root_elements << element if is_root
+    @on_progress_proc.call if @on_progress_proc
     unlabled_args = @lang.unlabled_arguments(clazz.ecore).name
     di_index = 0
     defined_args = {}

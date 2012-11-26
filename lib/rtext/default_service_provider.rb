@@ -19,7 +19,7 @@ class DefaultServiceProvider
 
   def load_model(options={})
     if options[:on_progress]
-      @loader.load(:after_load => options[:on_progress])
+      @loader.load(:on_progress => options[:on_progress])
     else
       @loader.load
     end

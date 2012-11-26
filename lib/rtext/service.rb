@@ -126,16 +126,16 @@ class Service
   end
 
   def load_model(sock, request, response)
-    progress_index = 0
     problems = @service_provider.get_problems(
-      :on_progress => lambda do |frag, num_frags|
-        progress_index += 1
-        num_frags = 1 if num_frags < 1
+      :on_progress => lambda do |frag, work_done, work_overall|
+        work_overall = 1 if work_overall < 1
+        work_done = work_overall if work_done > work_overall
+        work_done = 0 if work_done < 0
         sock.write(serialize_message( {
           "type" => "progress",
           "invocation_id" => request["invocation_id"],
-          "percentage" => progress_index*100/num_frags
-        }))
+          "percentage" => work_done*100/work_overall
+        }), 0)
         sock.flush
       end)
     total = 0
