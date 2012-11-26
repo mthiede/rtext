@@ -154,6 +154,7 @@ class Service
     linepos = request["column"]-1 
     lines = request["context"]
     lang = @service_provider.language
+    return unless lang
     context = ContextBuilder.build_context(lang, lines, linepos)
     @logger.debug("context element: #{lang.identifier_provider.call(context.element, nil, nil, nil)}") \
       if context && context.element && @logger
@@ -171,7 +172,9 @@ class Service
     # column numbers start at 1
     linepos = request["column"]
     lines = request["context"]
-    link_descriptor = RText::LinkDetector.new(@service_provider.language).detect(lines, linepos)
+    lang = @service_provider.language
+    return unless lang
+    link_descriptor = RText::LinkDetector.new(lang).detect(lines, linepos)
     if link_descriptor
       response["begin_column"] = link_descriptor.scol
       response["end_column"] = link_descriptor.ecol
