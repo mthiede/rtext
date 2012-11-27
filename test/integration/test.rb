@@ -461,13 +461,13 @@ EPackage StatemachineMM {
   EClass State, abstract: true {
     EAttribute name, eType: /StatemachineMM/StringType|
   END
-  assert_link_targets context, :begin => nil, :end => nil, :targets => nil 
+  assert_link_targets context, :begin => nil, :end => nil, :targets => [] 
   context = build_context <<-END
 EPackage StatemachineMM {
   EClass State, abstract: true {
     EAttribute name, eType:| /StatemachineMM/StringType
   END
-  assert_link_targets context, :begin => nil, :end => nil, :targets => nil 
+  assert_link_targets context, :begin => nil, :end => nil, :targets => [] 
 end
 
 def test_link_targets_no_text_after_name
