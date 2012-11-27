@@ -135,7 +135,7 @@ class Service
           "type" => "progress",
           "invocation_id" => request["invocation_id"],
           "percentage" => work_done*100/work_overall
-        }), 0)
+        }))
         sock.flush
       end)
     total = 0
