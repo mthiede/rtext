@@ -10,7 +10,7 @@ def initialize(lang)
   @lang = lang
 end
 
-LinkDesc = Struct.new(:element, :feature, :backward, :value, :scol, :ecol)
+LinkDesc = Struct.new(:element, :feature, :index, :backward, :value, :scol, :ecol)
 
 # column numbers start at 1
 def detect(lines, column)
@@ -37,7 +37,10 @@ def detect(lines, column)
       is_backward = (token.kind == :identifier && line_prefix =~ /^\s*\w*$/)
     end
     is_backward = is_backward ? true : false
-    LinkDesc.new(context.element, context2.feature, is_backward, token.value, token.scol, token.ecol)
+    if context2.element && context2.feature
+      index = context2.element.getGenericAsArray(context2.feature.name).size
+    end
+    LinkDesc.new(context.element, context2.feature, index, is_backward, token.value, token.scol, token.ecol)
   else
     nil
   end

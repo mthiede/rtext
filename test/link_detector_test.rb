@@ -49,14 +49,14 @@ def test_in_name
   ld = build_link_desc TestMM, <<-END
 TestNode So|meNode, id: 1234, related: /Other/Node, others: [/NodeA, /Node/B] 
   END
-  assert_link_desc ld, :element => "TestNode", :feature => "name", :backward => false, :value => "SomeNode", :scol => 10, :ecol => 17
+  assert_link_desc ld, :element => "TestNode", :feature => "name", :index => 0, :backward => false, :value => "SomeNode", :scol => 10, :ecol => 17
 end
 
 def test_in_name_with_quotes
   ld = build_link_desc TestMM, <<-END
 TestNode "So|meNode", id: 1234, related: /Other/Node, others: [/NodeA, /Node/B] 
   END
-  assert_link_desc ld, :element => "TestNode", :feature => "name", :backward => false, :value => "SomeNode", :scol => 10, :ecol => 19
+  assert_link_desc ld, :element => "TestNode", :feature => "name", :index => 0, :backward => false, :value => "SomeNode", :scol => 10, :ecol => 19
 end
 
 def test_after_comma
@@ -77,14 +77,14 @@ def test_beginning_of_labled_argument
   ld = build_link_desc TestMM, <<-END
 TestNode SomeNode, id: |1234, related: /Other/Node, others: [/NodeA, /Node/B] 
   END
-  assert_link_desc ld, :element => "TestNode", :feature => "id", :backward => false, :value => 1234, :scol => 24, :ecol => 27
+  assert_link_desc ld, :element => "TestNode", :feature => "id", :index => 0, :backward => false, :value => 1234, :scol => 24, :ecol => 27
 end
 
 def test_in_labled_argument
   ld = build_link_desc TestMM, <<-END
 TestNode SomeNode, id: 123|4, related: /Other/Node, others: [/NodeA, /Node/B] 
   END
-  assert_link_desc ld, :element => "TestNode", :feature => "id", :backward => false, :value => 1234, :scol => 24, :ecol => 27
+  assert_link_desc ld, :element => "TestNode", :feature => "id", :index => 0, :backward => false, :value => 1234, :scol => 24, :ecol => 27
 end
 
 def test_after_labled_argument
@@ -105,7 +105,7 @@ def test_in_reference
   ld = build_link_desc TestMM, <<-END
 TestNode SomeNode, id: 1234, related: /O|ther/Node, others: [/NodeA, /Node/B] 
   END
-  assert_link_desc ld, :element => "TestNode", :feature => "related", :backward => false, :value => "/Other/Node", :scol => 39, :ecol => 49
+  assert_link_desc ld, :element => "TestNode", :feature => "related", :index => 0, :backward => false, :value => "/Other/Node", :scol => 39, :ecol => 49
 end
 
 def test_before_array
@@ -119,14 +119,14 @@ def test_ref_in_array
   ld = build_link_desc TestMM, <<-END
 TestNode SomeNode, id: 1234, related: /Other/Node, others: [|/NodeA, /Node/B] 
   END
-  assert_link_desc ld, :element => "TestNode", :feature => "others", :backward => false, :value => "/NodeA", :scol => 61, :ecol => 66 
+  assert_link_desc ld, :element => "TestNode", :feature => "others", :index => 0, :backward => false, :value => "/NodeA", :scol => 61, :ecol => 66 
 end
 
 def test_second_ref_in_array
   ld = build_link_desc TestMM, <<-END
 TestNode SomeNode, id: 1234, related: /Other/Node, others: [/NodeA, /Node/|B] 
   END
-  assert_link_desc ld, :element => "TestNode", :feature => "others", :backward => false, :value => "/Node/B", :scol => 69, :ecol => 75 
+  assert_link_desc ld, :element => "TestNode", :feature => "others", :index => 1, :backward => false, :value => "/Node/B", :scol => 69, :ecol => 75 
 end
 
 def test_backward_ref_name_in_command
@@ -142,7 +142,7 @@ def test_backward_ref_name_in_name
 TestNode Som|eNode, id: 1234, related: /Other/Node, others: [/NodeA, /Node/B] 
   END
   )
-  assert_link_desc ld, :element => "TestNode", :feature => "name", :backward => true, :value => "SomeNode", :scol => 10, :ecol => 17
+  assert_link_desc ld, :element => "TestNode", :feature => "name", :index => 0, :backward => true, :value => "SomeNode", :scol => 10, :ecol => 17
 end
 
 def test_backward_ref_name_with_quotes
@@ -150,7 +150,7 @@ def test_backward_ref_name_with_quotes
 TestNode "Som|eNode", id: 1234, related: /Other/Node, others: [/NodeA, /Node/B] 
   END
   )
-  assert_link_desc ld, :element => "TestNode", :feature => "name", :backward => true, :value => "SomeNode", :scol => 10, :ecol => 19
+  assert_link_desc ld, :element => "TestNode", :feature => "name", :index => 0, :backward => true, :value => "SomeNode", :scol => 10, :ecol => 19
 end
 
 def test_backward_ref_id_in_id
@@ -158,7 +158,7 @@ def test_backward_ref_id_in_id
 TestNode SomeNode, id: |1234, related: /Other/Node, others: [/NodeA, /Node/B] 
   END
   )
-  assert_link_desc ld, :element => "TestNode", :feature => "id", :backward => true, :value => 1234, :scol => 24, :ecol => 27
+  assert_link_desc ld, :element => "TestNode", :feature => "id", :index => 0, :backward => true, :value => 1234, :scol => 24, :ecol => 27
 end
 
 def test_command_only
@@ -174,7 +174,7 @@ def test_command_and_name_only
 TestNode |SomeNode
   END
   )
-  assert_link_desc ld, :element => "TestNode", :feature => "name", :backward => false, :value => "SomeNode", :scol => 10, :ecol => 17
+  assert_link_desc ld, :element => "TestNode", :feature => "name", :index => 0, :backward => false, :value => "SomeNode", :scol => 10, :ecol => 17
 end
 
 def test_command_and_name_only_backward_ref_name
@@ -182,7 +182,7 @@ def test_command_and_name_only_backward_ref_name
 TestNode |SomeNode
   END
   )
-  assert_link_desc ld, :element => "TestNode", :feature => "name", :backward => true, :value => "SomeNode", :scol => 10, :ecol => 17
+  assert_link_desc ld, :element => "TestNode", :feature => "name", :index => 0, :backward => true, :value => "SomeNode", :scol => 10, :ecol => 17
 end
 
 def build_link_desc(mm, text, text2=nil)
@@ -217,6 +217,11 @@ def assert_link_desc(ld, options)
     assert_equal options[:feature], ld.feature.name
   else
     assert_nil ld.feature
+  end
+  if options[:index]
+    assert_equal options[:index], ld.index
+  else
+    assert_nil ld.index
   end
   assert_equal options[:backward], ld.backward
   assert_equal options[:value], ld.value
