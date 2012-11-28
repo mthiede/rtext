@@ -51,14 +51,21 @@ class Service
         sockets << sock
         @logger.info "accepted connection" if @logger
       rescue Errno::EAGAIN, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR, Errno::EWOULDBLOCK
+      rescue Exception => e
+        @logger.warn "unexpected exception during socket accept: #{e.class}"
       end
       sockets.dup.each do |sock|
         data = nil
         begin
           data = sock.read_nonblock(100000)
         rescue Errno::EWOULDBLOCK
-        # catch Exception to make sure we don't crash due to unexpected exceptions
-        rescue IOError, EOFError, Errno::ECONNRESET, Exception
+        rescue IOError, EOFError, Errno::ECONNRESET, Errno::ECONNABORTED
+          sock.close
+          request_data[sock] = nil
+          sockets.delete(sock)
+        rescue Exception => e
+          # catch Exception to make sure we don't crash due to unexpected exceptions
+          @logger.warn "unexpected exception during socket read: #{e.class}"
           sock.close
           request_data[sock] = nil
           sockets.delete(sock)
@@ -106,8 +113,7 @@ class Service
         response["command"] = obj["command"] 
       end
       @logger.debug("response: "+response.inspect) if response && @logger
-      sock.write(serialize_message(response)) if response
-      sock.flush if response
+      send_response(sock, response)
     end
   end
 
@@ -131,12 +137,11 @@ class Service
         work_overall = 1 if work_overall < 1
         work_done = work_overall if work_done > work_overall
         work_done = 0 if work_done < 0
-        sock.write(serialize_message( {
+        send_response(sock, {
           "type" => "progress",
           "invocation_id" => request["invocation_id"],
           "percentage" => work_done*100/work_overall
-        }))
-        sock.flush
+        })
       end)
     total = 0
     response["problems"] = problems.collect do |fp|
@@ -204,6 +209,20 @@ class Service
       { "display" => c.display_name, "file" => c.file, "line" => c.line }
     end
     response["total_elements"] = total
+  end
+
+  def send_response(sock, response)
+    if response
+      begin
+        sock.write(serialize_message(response))
+        sock.flush
+      # if there is an exception, the next read should shutdown the connection properly
+      rescue IOError, EOFError, Errno::ECONNRESET, Errno::ECONNABORTED
+      rescue Exception => e
+        # catch Exception to make sure we don't crash due to unexpected exceptions
+        @logger.warn "unexpected exception during socket write: #{e.class}"
+      end
+    end
   end
 
   def create_server
