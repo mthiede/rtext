@@ -46,11 +46,11 @@ class DefaultServiceProvider
   end
 
   ReferenceTarget = Struct.new(:file, :line, :display_name)
-  def get_reference_targets(identifier, element, feature)
+  def get_reference_targets(identifier, element, feature, index)
     result = []
     urefs = [ 
       RGen::Instantiator::ReferenceResolver::UnresolvedReference.new(element, feature.name,
-        RGen::MetamodelBuilder::MMProxy.new(identifier)) ] 
+        element.getGenericAsArray(feature.name)[index]) ] 
     @lang.reference_qualifier.call(urefs, @model)
     identifier = urefs.first.proxy.targetIdentifier 
     targets = @model.index[identifier]
@@ -68,7 +68,7 @@ class DefaultServiceProvider
     result
   end
 
-  def get_referencing_elements(identifier, element, feature)
+  def get_referencing_elements(identifier, element, feature, index)
     result = []
     targets = @model.index[@lang.identifier_provider.call(element, nil, nil, nil)]
     if targets && @lang.per_type_identifier

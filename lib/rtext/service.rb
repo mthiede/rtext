@@ -188,12 +188,12 @@ class Service
       targets = []
       if link_descriptor.backward 
         @service_provider.get_referencing_elements(
-            link_descriptor.value, link_descriptor.element, link_descriptor.feature).each do |t|
+            link_descriptor.value, link_descriptor.element, link_descriptor.feature, link_descriptor.index).each do |t|
           targets << { "file" => t.file, "line" => t.line, "display" => t.display_name }
         end
       else
         @service_provider.get_reference_targets(
-            link_descriptor.value, link_descriptor.element, link_descriptor.feature).each do |t|
+            link_descriptor.value, link_descriptor.element, link_descriptor.feature, link_descriptor.index).each do |t|
           targets << { "file" => t.file, "line" => t.line, "display" => t.display_name }
         end
       end
