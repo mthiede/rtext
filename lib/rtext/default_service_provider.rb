@@ -76,9 +76,13 @@ class DefaultServiceProvider
     end
     if targets && targets.size == 1
       target = targets.first
-      elements = target.class.ecore.eAllReferences.select{|r|
-        r.eOpposite && !r.containment && !r.eOpposite.containment}.collect{|r|
-          target.getGenericAsArray(r.name)}.flatten
+      refs = target.class.ecore.eAllReferences.select{|r|
+        r.eOpposite && !r.containment && !r.eOpposite.containment}
+      # we only want references configured in the RText language that point to this element
+      # thus we don't follow references here which are configured in the language
+      # (because for those the other direction is not configured in the language)
+      refs -= @lang.non_containments(target.class.ecore)
+      elements = refs.collect{|r| target.getGenericAsArray(r.name)}.flatten
       elements.each do |e|
         if @lang.fragment_ref(e)
           path = File.expand_path(@lang.fragment_ref(e).fragment.location)

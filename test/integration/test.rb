@@ -534,6 +534,28 @@ EPackage StatemachineMM {
     EAttribute name, eType:| /StatemachineMM/StringType
   END
   assert_link_targets context, :begin => nil, :end => nil, :targets => [] 
+  # backward ref
+  context = build_context <<-END
+EPackage StatemachineMM {
+  E|Class State, abstract: true {
+  END
+  assert_link_targets context, :begin => 3, :end => 8, :targets => [
+    {"file"=> File.expand_path(@infile),
+     "line"=>6,
+     "display"=>"/StatemachineMM/SimpleState [EClass]"},
+    {"file"=> File.expand_path(@infile),
+     "line"=>7,
+     "display"=>"/StatemachineMM/CompositeState [EClass]"}
+  ]
+  context = build_context <<-END
+EPackage StatemachineMM {
+  EClass State, abstract: true {
+    EAttribute name, eType: /StatemachineMM/StringType
+    EReference parent, eType: /StatemachineMM/CompositeState, eOpposite: /StatemachineMM/CompositeState/substates
+  }
+  |EClass SimpleState, eSuperTypes: [/StatemachineMM/State]
+  END
+  assert_link_targets context, :begin => 3, :end => 8, :targets => []
 end
 
 def test_link_targets_no_text_after_name
