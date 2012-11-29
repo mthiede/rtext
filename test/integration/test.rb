@@ -8,6 +8,7 @@ class IntegrationTest < Test::Unit::TestCase
 
 ModelFile = File.dirname(__FILE__)+"/model/test_metamodel.ect"
 ModelFile2 = File.dirname(__FILE__)+"/model/test_metamodel2.ect"
+LargeWithErrorsFile = File.dirname(__FILE__)+"/model/test_large_with_errors.ect3"
 NotInRTextFile = File.dirname(__FILE__)+"/model/test.not_in_rtext"
 InvalidCmdLineFile = File.dirname(__FILE__)+"/model/test.invalid_cmd_line"
 CrashingBackendFile = File.dirname(__FILE__)+"/model/test.crashing_backend"
@@ -81,6 +82,13 @@ def test_loadmodel
   response = load_model
   assert_equal "response", response["type"]
   assert_equal [], response["problems"]
+end
+
+def test_loadmodel_large_with_errors
+  setup_connector(LargeWithErrorsFile)
+  response = load_model
+  assert_equal "response", response["type"]
+  assert_equal 43523, response["problems"].first["problems"].size
 end
 
 def test_unknown_command
