@@ -118,11 +118,19 @@ EPackage |StatemachineMM {
   context = build_context <<-END
 EPackage S|tatemachineMM {
   END
-  assert_completions context, []
+  assert_completions context, [
+    "name",
+    "nsPrefix:",
+    "nsURI:"
+  ]
   context = build_context <<-END
 EPackage StatemachineMM| {
   END
-  assert_completions context, []
+  assert_completions context, [
+    "name",
+    "nsPrefix:",
+    "nsURI:"
+  ]
   context = build_context <<-END
 EPackage StatemachineMM |{
   END
@@ -188,16 +196,26 @@ EPackage StatemachineMM {
   EC|lass State, abstract: true {
   END
   assert_completions context, [
+    "EAnnotation",
     "EClass",
-    "EClassifier"
+    "EClassifier",
+    "EDataType",
+    "EEnum",
+    "EGenericType",
+    "EPackage"
   ]
   context = build_context <<-END
 EPackage StatemachineMM {
   EClass| State, abstract: true {
   END
   assert_completions context, [
+    "EAnnotation",
     "EClass",
-    "EClassifier"
+    "EClassifier",
+    "EDataType",
+    "EEnum",
+    "EGenericType",
+    "EPackage"
   ]
   context = build_context <<-END
 EPackage StatemachineMM {
@@ -214,12 +232,24 @@ EPackage StatemachineMM {
 EPackage StatemachineMM {
   EClass S|tate, abstract: true {
   END
-  assert_completions context, []
+  assert_completions context, [
+    "name", 
+    "abstract:", 
+    "interface:", 
+    "eSuperTypes:", 
+    "instanceClassName:"
+  ]
   context = build_context <<-END
 EPackage StatemachineMM {
   EClass State|, abstract: true {
   END
-  assert_completions context, []
+  assert_completions context, [
+    "name", 
+    "abstract:", 
+    "interface:", 
+    "eSuperTypes:", 
+    "instanceClassName:"
+  ]
   context = build_context <<-END
 EPackage StatemachineMM {
   EClass State,| abstract: true {
@@ -245,7 +275,10 @@ EPackage StatemachineMM {
   EClass State, a|bstract: true {
   END
   assert_completions context, [
-    "abstract:"
+    "abstract:", 
+    "interface:", 
+    "eSuperTypes:", 
+    "instanceClassName:"
   ]
   context = build_context <<-END
 EPackage StatemachineMM {
@@ -268,14 +301,16 @@ EPackage StatemachineMM {
   EClass State, abstract: t|rue {
   END
   assert_completions context, [
-    "true"
+    "true",
+    "false"
   ]
   context = build_context <<-END
 EPackage StatemachineMM {
   EClass State, abstract: true| {
   END
   assert_completions context, [
-    "true"
+    "true",
+    "false"
   ]
   context = build_context <<-END
 EPackage StatemachineMM {
@@ -318,7 +353,9 @@ EPackage StatemachineMM {
     "/StatemachineMM/SimpleState",
     "/StatemachineMM/State",
     "/StatemachineMM/StringType",
-    "/StatemachineMM/Transition"
+    "/StatemachineMM/Transition",
+    "/StatemachineMM2/SimpleState",
+    "/StatemachineMM2/State",
   ]
   context = build_context <<-END
 EPackage StatemachineMM {
@@ -326,8 +363,13 @@ EPackage StatemachineMM {
     EAttribute name, eType: /StatemachineMM/St|ringType
   END
   assert_completions context, [
+    "/StatemachineMM/CompositeState",
+    "/StatemachineMM/SimpleState",
     "/StatemachineMM/State",
     "/StatemachineMM/StringType",
+    "/StatemachineMM/Transition",
+    "/StatemachineMM2/SimpleState",
+    "/StatemachineMM2/State",
   ]
   context = build_context <<-END
 EPackage StatemachineMM {
@@ -335,7 +377,13 @@ EPackage StatemachineMM {
     EAttribute name, eType: /StatemachineMM/StringType|
   END
   assert_completions context, [
+    "/StatemachineMM/CompositeState",
+    "/StatemachineMM/SimpleState",
+    "/StatemachineMM/State",
     "/StatemachineMM/StringType",
+    "/StatemachineMM/Transition",
+    "/StatemachineMM2/SimpleState",
+    "/StatemachineMM2/State",
   ]
 end
 
@@ -367,8 +415,12 @@ EPackage StatemachineMM {
   EClass SimpleState, eSuperTypes: [/StatemachineMM/S|tate]
   END
   assert_completions context, [
+    "/StatemachineMM/CompositeState",
     "/StatemachineMM/SimpleState",
     "/StatemachineMM/State",
+    "/StatemachineMM/Transition",
+    "/StatemachineMM2/SimpleState",
+    "/StatemachineMM2/State",
   ]
   context = build_context <<-END
 EPackage StatemachineMM {
@@ -379,7 +431,12 @@ EPackage StatemachineMM {
   EClass SimpleState, eSuperTypes: [/StatemachineMM/State|]
   END
   assert_completions context, [
+    "/StatemachineMM/CompositeState",
+    "/StatemachineMM/SimpleState",
     "/StatemachineMM/State",
+    "/StatemachineMM/Transition",
+    "/StatemachineMM2/SimpleState",
+    "/StatemachineMM2/State",
   ]
   context = build_context <<-END
 EPackage StatemachineMM {
@@ -420,6 +477,7 @@ EPackage StatemachineMM {
     EReference substates, upperBound: -1|, containment: true, eType: /StatemachineMM/State, eOpposite: /StatemachineMM/State/parent
   END
   assert_completions context, [
+    "0",
   ]
 end
 

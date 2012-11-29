@@ -54,7 +54,11 @@ def test_lable_prefix
 TestNode t|
   END
   assert_options([
-    ["text:", "<EString>"]
+    ["\"\"", "[unlabled1] <EString>"],
+    ["text:", "<EString>"],
+    ["nums:", "<EInt>"],
+    ["related:", "<TestNode>"],
+    ["others:", "<TestNode>"]
   ], options)
 end
 
@@ -63,7 +67,11 @@ def test_lable_within
 TestNode t|ext
   END
   assert_options([
-    ["text:", "<EString>"]
+    ["\"\"", "[unlabled1] <EString>"],
+    ["text:", "<EString>"],
+    ["nums:", "<EInt>"],
+    ["related:", "<TestNode>"],
+    ["others:", "<TestNode>"]
   ], options)
 end
 
@@ -72,6 +80,11 @@ def test_unlabled_prefix
 TestNode u|
   END
   assert_options([
+    ["\"\"", "[unlabled1] <EString>"],
+    ["text:", "<EString>"],
+    ["nums:", "<EInt>"],
+    ["related:", "<TestNode>"],
+    ["others:", "<TestNode>"]
   ], options)
 end
 
@@ -188,6 +201,7 @@ TestNode3 bool: t|
   END
   assert_options([
     ["true", "<EBoolean>"],
+    ["false", "<EBoolean>"],
   ], options)
 end
 
@@ -197,6 +211,7 @@ TestNode3 bool: true|
   END
   assert_options([
     ["true", "<EBoolean>"],
+    ["false", "<EBoolean>"],
   ], options)
 end
 
@@ -244,6 +259,8 @@ TestNode3 enum: A|
   END
   assert_options([
     ["A", "<SomeEnum>"],
+    ["B", "<SomeEnum>"],
+    ["non-word*chars", "<SomeEnum>"]
   ], options)
 end
 
@@ -285,6 +302,7 @@ TestNode related: /My/|\
     RText::Completer::CompletionOption.new("/MyOther/Target", "b") ] })
   assert_options([
     ["/My/Target", "a"],
+    ["/MyOther/Target", "b"]
   ], options)
 end
 
@@ -430,6 +448,7 @@ TestNode {
     X|
   END
   assert_options([
+    ["TestNode2", "<unlabled>"],
   ], options)
 end
 
@@ -495,6 +514,9 @@ def test_root_prefix
 Text|
 END
   assert_options([
+    ["TestNode", "<unlabled1>, <unlabled2>"],
+    ["TestNode2", "<unlabled>"],
+    ["TestNode3", ""],
     ["TextNode", ""]
   ], options)
 end
@@ -504,6 +526,9 @@ def test_within_command
 Text|Node
 END
   assert_options([
+    ["TestNode", "<unlabled1>, <unlabled2>"],
+    ["TestNode2", "<unlabled>"],
+    ["TestNode3", ""],
     ["TextNode", ""]
   ], options)
 end
