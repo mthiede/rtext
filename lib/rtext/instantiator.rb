@@ -88,6 +88,7 @@ class Instantiator
 
   def create_element(command, arg_list, element_list, comments, annotation, is_root)
     clazz = @context_class_stack.last 
+    @on_progress_proc.call if @on_progress_proc
     if !@lang.has_command(command.value)
       problem("Unknown command '#{command.value}'", command.line)
       return
@@ -107,7 +108,6 @@ class Instantiator
     element = clazz.new
     @env << element if @env
     @root_elements << element if is_root
-    @on_progress_proc.call if @on_progress_proc
     unlabled_args = @lang.unlabled_arguments(clazz.ecore).name
     di_index = 0
     defined_args = {}
