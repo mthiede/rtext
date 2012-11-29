@@ -110,6 +110,16 @@ TestNode nums: 1,|
   ], options)
 end
 
+def test_after_second_labled_value_directly_after_comma
+  options = complete TestMM, <<-END
+TestNode nums: 1, text: "a",|
+  END
+  assert_options([
+    ["related:", "<TestNode>"],
+    ["others:", "<TestNode>"]
+  ], options)
+end
+
 def test_after_unlabled_value
   options = complete TestMM, <<-END
 TestNode "bla", |
@@ -139,6 +149,18 @@ end
 def test_after_unlabled_value2
   options = complete TestMM, <<-END
 TestNode "bla", 1, |
+  END
+  assert_options([
+    ["text:", "<EString>"],
+    ["nums:", "<EInt>"],
+    ["related:", "<TestNode>"],
+    ["others:", "<TestNode>"]
+  ], options)
+end
+
+def test_after_unlabled_value3
+  options = complete TestMM, <<-END
+TestNode "bla", 1,|
   END
   assert_options([
     ["text:", "<EString>"],
