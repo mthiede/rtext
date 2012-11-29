@@ -836,6 +836,7 @@ def test_below_single_label_after_command
           TestNode | 
   END
   assert_context c, :prefix => "", :feature => "unlabled", :in_array => false, :in_block => false
+  assert_equal [3], c.element.parent.parent.nums
 end
 
 def test_below_multi_label
@@ -873,6 +874,7 @@ def test_below_multi_label_after_command
           TestNode | 
   END
   assert_context c, :prefix => "", :feature => "unlabled", :in_array => false, :in_block => false
+  assert_equal [3], c.element.parent.parent.nums
 end
 
 def test_in_new_line

@@ -30,6 +30,12 @@ def detect(lines, column)
       line_prefix = ""
     end
     context2 = ContextBuilder.build_context(@lang, lines, line_prefix.size) 
+    # for command prefixes nested below a lable, the context element and feature are
+    # the parent element and feature, this is not what's expected here
+    if line_prefix =~ /^\s*\w*$/
+      context2.element = nil
+      context2.feature = nil
+    end
     bwref_attr = @lang.backward_ref_attribute.call(context.element.class.ecore)
     if bwref_attr
       is_backward = (context2.feature && context2.feature.name == bwref_attr)

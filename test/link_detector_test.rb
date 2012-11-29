@@ -9,11 +9,15 @@ class LinkDetectorTest < Test::Unit::TestCase
 
 module TestMM
   extend RGen::MetamodelBuilder::ModuleExtension
+  class TestNode2 < RGen::MetamodelBuilder::MMBase
+    has_attr 'name', String
+  end
   class TestNode < RGen::MetamodelBuilder::MMBase
     has_attr 'name', String
     has_attr 'id', Integer
     has_one 'related', TestNode
     has_many 'others', TestNode
+    contains_many 'children', TestNode2, 'parent'
   end
 end
 
@@ -183,6 +187,45 @@ TestNode |SomeNode
   END
   )
   assert_link_desc ld, :element => "TestNode", :feature => "name", :index => 0, :backward => true, :value => "SomeNode", :scol => 10, :ecol => 17
+end
+
+def test_child_within_command
+  ld = build_link_desc(TestMM, {:backward_ref => "name"}, <<-END
+TestNode SomeNode {
+  Test|Node2 SomeOtherNode
+  END
+  )
+  assert_link_desc ld, :element => "TestNode2", :feature => nil, :backward => false, :value => "TestNode2", :scol => 3, :ecol => 11
+end
+
+def test_child_with_label_after_command
+  ld = build_link_desc(TestMM, {:backward_ref => "name"}, <<-END
+TestNode SomeNode {
+  children:
+    TestNode2 |SomeOtherNode
+  END
+  )
+  assert_link_desc ld, :element => "TestNode2", :feature => "name", :index => 0, :backward => true, :value => "SomeOtherNode", :scol => 15, :ecol => 27
+end
+
+def test_child_with_label_within_command
+  ld = build_link_desc(TestMM, {:backward_ref => "name"}, <<-END
+TestNode SomeNode {
+  children:
+    Test|Node2 SomeOtherNode
+  END
+  )
+  assert_link_desc ld, :element => "TestNode2", :feature => nil, :backward => false, :value => "TestNode2", :scol => 5, :ecol => 13
+end
+
+def test_child_with_label_within_command_square_brackets
+  ld = build_link_desc(TestMM, {:backward_ref => "name"}, <<-END
+TestNode SomeNode {
+  children: [
+    Test|Node2 SomeOtherNode
+  END
+  )
+  assert_link_desc ld, :element => "TestNode2", :feature => nil, :backward => false, :value => "TestNode2", :scol => 5, :ecol => 13
 end
 
 def build_link_desc(mm, text, text2=nil)
