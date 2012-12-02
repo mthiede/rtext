@@ -38,4 +38,5 @@
 * Added backend service support for lanugage exchange at runtime
 * Extended support for relative reference calculation and resolution
 * Added on_progress hook to default_loader
+* Added explicit handling of encoding
 

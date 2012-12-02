@@ -1464,6 +1464,20 @@ class InstantiatorTest < Test::Unit::TestCase
     assert_equal "for sure", env.elements.first.notTheBuiltin
   end
 
+  #
+  # encoding
+  #
+
+  def test_encodings
+    input = %Q(TestNode text: "iso-8859-1 AE Umlaut: \xc4")
+    # force encoding to binary in order to prevent exceptions on invalid byte sequences
+    # if the encoding would be utf-8, there would be an exception with the string above
+    input.force_encoding("binary")
+    env, problems = instantiate(input, TestMM)
+    assert_no_problems(problems)
+    assert_match env.elements.first.text, /AE Umlaut: /
+  end
+
   private
 
   def instantiate(text, mm, options={})

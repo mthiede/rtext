@@ -122,7 +122,7 @@ class DefaultLoader
     def num_elements(files)
       result = 0
       files.each do |f|
-        content = File.read(f)
+        content = File.open(f, "rb"){|fh| fh.read}
         result += content.scan(/\n\s*\w+\s+/).size
         result += 1 if content =~ /^\s*\w+\s+/
       end
@@ -219,7 +219,7 @@ class DefaultLoader
     problems = []
     root_elements = []
     inst = RText::Instantiator.new(@lang)
-    File.open(fragment.location) do |f|
+    File.open(fragment.location, "rb") do |f|
       inst.instantiate(f.read,
         :env => env,
         :unresolved_refs => urefs,

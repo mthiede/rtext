@@ -1,3 +1,4 @@
+# encoding: binary
 $:.unshift(File.dirname(__FILE__)+"/../../lib")
 require 'test/unit'
 require 'rtext/frontend/connector_manager'
@@ -9,6 +10,7 @@ class IntegrationTest < Test::Unit::TestCase
 ModelFile = File.dirname(__FILE__)+"/model/test_metamodel.ect"
 ModelFile2 = File.dirname(__FILE__)+"/model/test_metamodel2.ect"
 LargeWithErrorsFile = File.dirname(__FILE__)+"/model/test_large_with_errors.ect3"
+InvalidEncodingFile = File.dirname(__FILE__)+"/model/invalid_encoding.invenc"
 NotInRTextFile = File.dirname(__FILE__)+"/model/test.not_in_rtext"
 InvalidCmdLineFile = File.dirname(__FILE__)+"/model/test.invalid_cmd_line"
 CrashingBackendFile = File.dirname(__FILE__)+"/model/test.crashing_backend"
@@ -75,6 +77,20 @@ def test_backend_crash_on_request
   assert_equal [], response["problems"]
   response = @con.execute_command({"command" => "link_targets", "context" => [], "column" => 1})
   assert_equal :timeout, response
+end
+
+# simulate external encoding utf-8 (-E in .rext) containing a iso-8859-1 character
+def test_invalid_encoding
+  setup_connector(InvalidEncodingFile)
+  response = load_model
+  assert_equal "response", response["type"]
+  assert_equal [], response["problems"]
+  text = %Q(EPackage "iso-8859-1 umlaut: \xe4",| nsPrefix: "")
+  context = build_context(text)
+  assert_completions context, [
+    "nsPrefix:",
+    "nsURI:"
+  ]
 end
 
 def test_loadmodel
@@ -620,7 +636,8 @@ def build_context(text, text2=nil)
   context_lines.last.sub!("|", "")
 
   # check that the context data actally matches the real file in the filesystem
-  ref_lines = File.read(infile).split(/\r?\n/)[0..context_lines.size-1]
+  content = File.open(infile, "rb"){|f| f.read}
+  ref_lines = content.split(/\r?\n/)[0..context_lines.size-1]
   raise "inconsistent test data, expected\n:#{ref_lines.join("\n")}\ngot:\n#{context_lines.join("\n")}\n" \
     unless ref_lines == context_lines
 
@@ -630,7 +647,8 @@ end
 
 def assert_link_targets(context, options)
   infile = options[:file] || @infile
-  lines = File.read(infile).split(/\r?\n/)[0..context.line-1]
+  content = File.open(infile, "rb") {|f| f.read}
+  lines = content.split(/\r?\n/)[0..context.line-1]
   lines =  RText::Frontend::Context.extract(lines)
   response = @con.execute_command( 
     {"command" => "link_targets", "context" => lines, "column" => context.col})
@@ -640,7 +658,8 @@ def assert_link_targets(context, options)
 end
 
 def assert_completions(context, expected)
-  lines = File.read(@infile).split(/\r?\n/)[0..context.line-1]
+  content = File.open(@infile, "rb"){|f| f.read}
+  lines = content.split(/\r?\n/)[0..context.line-1]
   lines =  RText::Frontend::Context.extract(lines)
   response = @con.execute_command( 
     {"command" => "content_complete", "context" => lines, "column" => context.col})

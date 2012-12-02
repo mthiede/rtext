@@ -7,4 +7,4 @@ require 'completer_test'
 require 'tokenizer_test'
 require 'link_detector_test'
 require 'integration/test'
-
+require 'message_helper_test'

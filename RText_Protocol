@@ -5,6 +5,30 @@ Normally the frontend invokes a backend command by means of a request message an
 backend will eventually reply with a response message. 
 
 
+== Encoding
+
+As the RText protocol uses JSON, the encoding of messages is UTF-8 by definition.
+However, the protocol further restricts UTF-8 to only 7-BIT-ASCII characters, which
+effectively makes the protocol encoding 7-BIT-ASCII (or US-ASCII), which is valid UTF-8.
+
+Frontends and backends should not apply any transcoding to the data found in RText files.
+The reason is, that most often information about an input file's encoding is not reliable.
+If the source encoding is wrong, transcoding just makes things worse: either data is
+misinterpreted or information is lost due to character replacement.
+
+Instead, data should be passed as is, or in other words: it should be interpreted as
+"binary" data. Since the RText protocol is restricted to 7-BIT-ASCII, all non 7-BIT-ASCII
+characters are escaped using the following pattern: Each byte with a value of 0x80 or higher
+results in three 7-BIT-ASCII characters: a leading "%" and two hexadecimal figures in lower case.
+In addition, the character "%" is escaped in the same way, i.e. "%" will always be escaped as
+"%25" ("%" has byte value 0x25 in 7-BIT-ASCII).
+
+Example:
+
+The word "Übung" (german: exercise), encoded in ISO-8859-1 would result in the string:
+"%dcbung" (the "Ü" Umlaut has a byte value of 0xdc is ISO-8859-1).
+
+
 == Request Messages
 
 Each request message contains a field ``command`` and a field ``invocation_id``.
