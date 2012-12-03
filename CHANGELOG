@@ -39,4 +39,7 @@
 * Extended support for relative reference calculation and resolution
 * Added on_progress hook to default_loader
 * Added explicit handling of encoding
+* Improved backend service progress reporting
+* Fixed backward reference list to not include opposites of forward references
+* Fixed problem with backend service socket connection on some machines
 
