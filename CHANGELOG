@@ -43,3 +43,7 @@
 * Fixed backward reference list to not include opposites of forward references
 * Fixed problem with backend service socket connection on some machines
 
+=0.5.1
+
+* Fixed service connection problem when ports are in use by other processes
+

@@ -229,18 +229,8 @@ class Service
     port = PortRangeStart
     serv = nil
     begin
-      serv = TCPServer.new("localhost", port)
-      if serv.addr[0] == "AF_INET6"
-        # we need to make sure that two RText server won't connect on the same port but with IPv4 and IPv6
-        # therefore we always use the IPv4 interface, try again to get the IPv4 interface
-        # note that using "127.0.0.1" instead of localhost would always get us the IPv4 interface on the 
-        # first try, however, on some machines using the IP address instead of localhost doesn't work
-        # (EACCES error was seen, possibly due to some specific firewall setup)
-        serv2 = TCPServer.new("localhost", port)
-        serv.close
-        serv = serv2
-      end
-    rescue Errno::EADDRINUSE, Errno::EAFNOSUPPORT
+      serv = TCPServer.new("127.0.0.1", port)
+    rescue Errno::EADDRINUSE, Errno::EAFNOSUPPORT, Errno::EACCES
       port += 1
       retry if port <= PortRangeEnd
       raise
