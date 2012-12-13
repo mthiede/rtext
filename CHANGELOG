@@ -47,3 +47,7 @@
 
 * Fixed service connection problem when ports are in use by other processes
 
+=0.5.2
+
+* Fixed exception in default service provider when trying to follow a reference on an attribute value
+

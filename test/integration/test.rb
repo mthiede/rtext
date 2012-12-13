@@ -572,6 +572,11 @@ EPackage StatemachineMM {
   |EClass SimpleState, eSuperTypes: [/StatemachineMM/State]
   END
   assert_link_targets context, :begin => 3, :end => 8, :targets => []
+  # bad location
+  context = build_context <<-END
+EPackage S|tatemachineMM {
+  END
+  assert_link_targets context, :begin => 10, :end => 23, :targets => []
 end
 
 def test_link_targets_no_text_after_name
@@ -652,6 +657,7 @@ def assert_link_targets(context, options)
   lines =  RText::Frontend::Context.extract(lines)
   response = @con.execute_command( 
     {"command" => "link_targets", "context" => lines, "column" => context.col})
+  assert_equal "response", response["type"]
   assert_equal options[:targets], response["targets"]
   assert_equal options[:begin], response["begin_column"]
   assert_equal options[:end], response["end_column"]

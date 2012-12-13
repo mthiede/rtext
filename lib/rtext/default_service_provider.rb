@@ -48,21 +48,24 @@ class DefaultServiceProvider
   ReferenceTarget = Struct.new(:file, :line, :display_name)
   def get_reference_targets(identifier, element, feature, index)
     result = []
-    urefs = [ 
-      RGen::Instantiator::ReferenceResolver::UnresolvedReference.new(element, feature.name,
-        element.getGenericAsArray(feature.name)[index]) ] 
-    @lang.reference_qualifier.call(urefs, @model)
-    identifier = urefs.first.proxy.targetIdentifier 
-    targets = @model.index[identifier]
-    if targets && @lang.per_type_identifier
-      if feature
-        targets = targets.select{|t| t.is_a?(feature.eType.instanceClass)}
-      end
-    end 
-    targets && targets.each do |t|
-      if @lang.fragment_ref(t)
-        path = File.expand_path(@lang.fragment_ref(t).fragment.location)
-        result << ReferenceTarget.new(path, @lang.line_number(t), "#{identifier} [#{t.class.ecore.name}]")
+    ref_value = element.getGenericAsArray(feature.name)[index]
+    if ref_value.is_a?(RGen::MetamodelBuilder::MMProxy)
+      urefs = [ 
+        RGen::Instantiator::ReferenceResolver::UnresolvedReference.new(
+          element, feature.name, ref_value) ] 
+      @lang.reference_qualifier.call(urefs, @model)
+      identifier = urefs.first.proxy.targetIdentifier 
+      targets = @model.index[identifier]
+      if targets && @lang.per_type_identifier
+        if feature
+          targets = targets.select{|t| t.is_a?(feature.eType.instanceClass)}
+        end
+      end 
+      targets && targets.each do |t|
+        if @lang.fragment_ref(t)
+          path = File.expand_path(@lang.fragment_ref(t).fragment.location)
+          result << ReferenceTarget.new(path, @lang.line_number(t), "#{identifier} [#{t.class.ecore.name}]")
+        end
       end
     end
     result
