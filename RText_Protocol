@@ -312,7 +312,7 @@ in command list request, it should not be send in the new command invocation.
 
 On first invocation, the frontend will not send any parameters with the command request.
 Instead, the backend's response may ask for parameters to be included into the next request.
-In this case, the frontend should will prompt the user to enter the required information and then 
+In this case, the frontend should prompt the user to enter the required information and then 
 reinvoke the command with the parameters included. This process of asking for more parameters 
 may be repeated several times.
 
