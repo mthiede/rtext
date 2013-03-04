@@ -286,7 +286,8 @@ class Instantiator
       { String => [:string, :identifier],
         Integer => [:integer],
         Float => [:float],
-        RGen::MetamodelBuilder::DataTypes::Boolean => [:boolean]
+        RGen::MetamodelBuilder::DataTypes::Boolean => [:boolean],
+        Object => [:string, :identifier, :integer, :float, :boolean]
       }[feature.eType.instanceClass] 
     end
   end
