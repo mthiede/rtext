@@ -1444,6 +1444,17 @@ class InstantiatorTest < Test::Unit::TestCase
     assert_equal [:A, :B, :'non-word*chars', :'2you'], env.find(:text => "root").first.childs.collect{|c| c.enum}
   end
 
+  def test_with_bom
+    env, problems = instantiate(%Q(\xEF\xBB\xBF
+      TestNode text: "some text", nums: [1,2] {
+        TestNode text: "child"
+        TestNode text: "child2"
+      }
+      ), TestMM)
+    assert_no_problems(problems)
+    assert_model_simple(env, :with_nums)
+  end
+
   #
   # conflicts with builtins
   # 

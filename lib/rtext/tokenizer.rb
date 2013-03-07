@@ -11,6 +11,13 @@ module Tokenizer
     on_command_token_proc = options[:on_command_token]
     str.split(/\r?\n/).each_with_index do |str, idx|
       idx += 1
+      if idx == 1
+        # remove UTF-8 BOM if present
+        enc = str.encoding
+        str.force_encoding("binary")
+        str = str[3..-1] if str.index("\xEF\xBB\xBF".force_encoding("binary")) == 0
+        str.force_encoding(enc)
+      end
       if str =~ /^\s*([\#@])(.*)/
         if $1 == "#"
           result << Token.new(:comment, $2, idx, str.size-$2.size, str.size) 

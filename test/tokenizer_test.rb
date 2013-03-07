@@ -112,6 +112,14 @@ def test_error
   END
 end
 
+def test_with_bom
+  assert_tokens [
+    Token.new(:identifier, "TestNode", 1, 1, 8),
+    Token.new(:integer, 1, 1, 10, 10),
+    Token.new(:newline, nil, 1, nil, nil) 
+  ], "\xEF\xBB\xBFTestNode 1"
+end
+
 def do_tokenize(str)
   tokenize(str, /\A\/[\/\w]+/)
 end
