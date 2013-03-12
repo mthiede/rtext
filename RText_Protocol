@@ -407,7 +407,7 @@ the parent commands wrapped around it. Any sibling commands can be omitted as we
 any lines containing closing braces and brackets. The order of lines is the same as in the 
 RText file.
 
-Here is an example. Consider the following RText file with the cursor in the line of "Command3" 
+Here is an example. Consider the following RText file with the cursor in the line of "Command5"
 at the time when the auto completion command is issued.
 
   Command1 {
