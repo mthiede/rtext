@@ -283,12 +283,14 @@ class Instantiator
     elsif feature.eType.is_a?(RGen::ECore::EEnum)
       [:identifier, :string]
     else
-      { String => [:string, :identifier],
+      expected = { String => [:string, :identifier],
         Integer => [:integer],
         Float => [:float],
         RGen::MetamodelBuilder::DataTypes::Boolean => [:boolean],
         Object => [:string, :identifier, :integer, :float, :boolean]
       }[feature.eType.instanceClass] 
+      raise "unsupported EType instance class: #{feature.eType.instanceClass}" unless expected
+      expected
     end
   end
 
