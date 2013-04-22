@@ -1,4 +1,5 @@
 require 'rtext/generic'
+require 'bigdecimal'
 
 module RText
 
@@ -36,7 +37,15 @@ module Tokenizer
             col += $&.size
           when /\A[-+]?\d+\.\d+(?:e[+-]\d+)?\b/
             str = $'
-            result << Token.new(:float, $&.to_f, idx, col, col+$&.size-1)
+            val = $&
+            # if string size isn't more than 16, Float precision will be sufficient
+            # otherwise use BigDecimal even though the value might still fit in a Float
+            if val.size <= 16
+              val = val.to_f
+            else
+              val = BigDecimal.new(val)
+            end
+            result << Token.new(:float, val, idx, col, col+$&.size-1)
             col += $&.size
           when /\A0[xX][0-9a-fA-F]+\b/
             str = $'

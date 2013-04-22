@@ -1,6 +1,7 @@
 $:.unshift File.join(File.dirname(__FILE__),"..","lib")
 
 require 'test/unit'
+require 'bigdecimal'
 require 'rgen/environment'
 require 'rgen/metamodel_builder'
 require 'rtext/serializer'
@@ -421,6 +422,13 @@ TestNode {
         nil
       end}) 
     assert_equal %q(TestNode float: 1.2)+"\n", output
+  end
+
+  def test_float_big_decimal
+    testModel = TestMM::TestNode.new(:float => BigDecimal.new("1234567890.123456789"))
+    output = StringWriter.new
+    serialize(testModel, TestMM, output) 
+    assert_equal %q(TestNode float: 1234567890.123456789)+"\n", output 
   end
 
   def test_enum

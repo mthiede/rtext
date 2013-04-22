@@ -55,3 +55,5 @@
 =0.5.3
 
 * Fixed completion of enum values which need to be quoted
+* Added support for BigDecimal
+

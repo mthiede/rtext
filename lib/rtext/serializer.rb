@@ -1,3 +1,4 @@
+require 'bigdecimal'
 require 'rtext/language'
 require 'rtext/generic'
 
@@ -142,10 +143,15 @@ class Serializer
       elsif feature.eType.instanceClass == RGen::MetamodelBuilder::DataTypes::Boolean
         result << v.to_s
       elsif feature.eType.instanceClass == Float
-        if arg_format 
-          result << sprintf(arg_format, v)
+        if v.is_a?(BigDecimal)
+          result << v.to_s("F")
+          # formatting not available for BigDecimals
         else
-          result << v.to_s
+          if arg_format 
+            result << sprintf(arg_format, v)
+          else
+            result << v.to_s
+          end
         end
       elsif feature.eType.is_a?(RGen::ECore::EEnum)
         if v.to_s =~ /^\d|\W/ || v.to_s == "true" || v.to_s == "false"

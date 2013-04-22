@@ -236,7 +236,16 @@ class Instantiator
         end
         element.setOrAddGeneric(feature.name, proxy)
       else
-        element.setOrAddGeneric(feature.name, v.value)
+        begin
+          element.setOrAddGeneric(feature.name, v.value)
+        rescue StandardError
+          # backward compatibility for RGen versions not supporting BigDecimal
+          if v.value.is_a?(BigDecimal)
+            element.setOrAddGeneric(feature.name, v.value.to_f)
+          else
+            raise
+          end
+        end
       end
     end
     defined_args[name] = true

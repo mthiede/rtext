@@ -2,6 +2,7 @@
 $:.unshift File.join(File.dirname(__FILE__),"..","lib")
 
 require 'test/unit'
+require 'bigdecimal'
 require 'rgen/environment'
 require 'rgen/metamodel_builder'
 require 'rtext/instantiator'
@@ -1413,11 +1414,14 @@ class InstantiatorTest < Test::Unit::TestCase
       TestNode float: 1.23 
       TestNode float: 1.23e-08 
       TestNode float: 1.23e+10 
+      TestNode float: 1234567890.123456789
     ), TestMM)
     assert_no_problems(problems)
     assert_equal 1.23, env.elements[0].float
     assert_equal 1.23e-08, env.elements[1].float
     assert_equal 1.23e+10, env.elements[2].float
+    assert env.elements[3].float.is_a?(BigDecimal)
+    assert_equal "1234567890.123456789", env.elements[3].float.to_s("F")
   end
 
   def test_boolean
