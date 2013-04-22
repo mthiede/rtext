@@ -52,3 +52,6 @@
 * Fixed exception in default service provider when trying to follow a reference on an attribute value
 * Ignore BOM in instantiator
 
+=0.5.3
+
+* Fixed completion of enum values which need to be quoted

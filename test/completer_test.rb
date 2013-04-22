@@ -271,7 +271,7 @@ TestNode3 enum: |
   assert_options([
     ["A", "<SomeEnum>"],
     ["B", "<SomeEnum>"],
-    ["non-word*chars", "<SomeEnum>"]
+    ["\"non-word*chars\"", "<SomeEnum>"]
   ], options)
 end
 
@@ -282,7 +282,7 @@ TestNode3 enum: A|
   assert_options([
     ["A", "<SomeEnum>"],
     ["B", "<SomeEnum>"],
-    ["non-word*chars", "<SomeEnum>"]
+    ["\"non-word*chars\"", "<SomeEnum>"]
   ], options)
 end
 

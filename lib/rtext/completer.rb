@@ -70,7 +70,12 @@ class Completer
               end
             elsif context.feature.eType.is_a?(RGen::ECore::EEnum)
               result += context.feature.eType.eLiterals.collect do |l|
-                CompletionOption.new("#{l.name}", "<#{context.feature.eType.name}>")
+                lname = l.name
+                if lname =~ /^\d|\W/ || lname == "true" || lname == "false"
+                  lname =  "\"#{lname.gsub("\\","\\\\\\\\").gsub("\"","\\\"").gsub("\n","\\n").
+                    gsub("\r","\\r").gsub("\t","\\t").gsub("\f","\\f").gsub("\b","\\b")}\""
+                end
+                CompletionOption.new("#{lname}", "<#{context.feature.eType.name}>")
               end 
             elsif context.feature.eType.instanceClass == String
               if @lang.unquoted?(context.feature)
