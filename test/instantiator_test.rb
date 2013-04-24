@@ -1420,8 +1420,13 @@ class InstantiatorTest < Test::Unit::TestCase
     assert_equal 1.23, env.elements[0].float
     assert_equal 1.23e-08, env.elements[1].float
     assert_equal 1.23e+10, env.elements[2].float
-    assert env.elements[3].float.is_a?(BigDecimal)
-    assert_equal "1234567890.123456789", env.elements[3].float.to_s("F")
+    if rgen_with_bigdecimal?
+      assert env.elements[3].float.is_a?(BigDecimal)
+      assert_equal "1234567890.123456789", env.elements[3].float.to_s("F")
+    else
+      assert env.elements[3].float.is_a?(Float)
+      assert_equal "1234567890.1234567", env.elements[3].float.to_s
+    end
   end
 
   def test_boolean
@@ -1540,6 +1545,15 @@ class InstantiatorTest < Test::Unit::TestCase
     if opts.include?(:with_nums)
       assert_equal [1, 2], root.nums
     end
+  end
+
+  def rgen_with_bigdecimal?
+    begin
+      TestMM::TestNode.new.float = BigDecimal.new("0.0")
+    rescue StandardError
+      return false
+    end
+    true
   end
 
 end
