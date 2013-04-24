@@ -8,7 +8,7 @@ DocFiles = [
 
 RTextGemSpec = Gem::Specification.new do |s|
   s.name = %q{rtext}
-  s.version = "0.5.2"
+  s.version = "0.5.3"
   s.date = Time.now.strftime("%Y-%m-%d")
   s.summary = %q{Ruby Textual Modelling}
   s.email = %q{martin dot thiede at gmx de}
