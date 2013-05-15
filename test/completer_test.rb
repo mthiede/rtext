@@ -4,7 +4,7 @@ require 'test/unit'
 require 'rgen/metamodel_builder'
 require 'rtext/language'
 require 'rtext/context_builder'
-require 'rtext/completer'
+require 'rtext/default_completer'
 
 class CompleterTest < Test::Unit::TestCase
 
@@ -308,8 +308,8 @@ def test_reference_value
   options = complete(TestMM, %Q(\
 TestNode related: |\
   ), lambda { |r| [
-    RText::Completer::CompletionOption.new("A", "a"),
-    RText::Completer::CompletionOption.new("B", "b") ] })
+    RText::DefaultCompleter::CompletionOption.new("A", "a"),
+    RText::DefaultCompleter::CompletionOption.new("B", "b") ] })
   assert_options([
     ["A", "a"],
     ["B", "b"],
@@ -320,8 +320,8 @@ def test_reference_value_part
   options = complete(TestMM, %Q(\
 TestNode related: /My/|\
   ), lambda { |r| [
-    RText::Completer::CompletionOption.new("/My/Target", "a"),
-    RText::Completer::CompletionOption.new("/MyOther/Target", "b") ] })
+    RText::DefaultCompleter::CompletionOption.new("/My/Target", "a"),
+    RText::DefaultCompleter::CompletionOption.new("/MyOther/Target", "b") ] })
   assert_options([
     ["/My/Target", "a"],
     ["/MyOther/Target", "b"]
@@ -340,8 +340,8 @@ def test_reference_value_in_array
   options = complete(TestMM, %Q(\
 TestNode others: |
 ), lambda { |r| [
-    RText::Completer::CompletionOption.new("A", "a"),
-    RText::Completer::CompletionOption.new("B", "b") ] })
+    RText::DefaultCompleter::CompletionOption.new("A", "a"),
+    RText::DefaultCompleter::CompletionOption.new("B", "b") ] })
   assert_options([
     ["A", "a"],
     ["B", "b"],
@@ -352,8 +352,8 @@ def test_reference_value_in_array_after_bracket
   options = complete(TestMM, %Q(\
 TestNode others: [|
 ), lambda { |r| [
-    RText::Completer::CompletionOption.new("A", "a"),
-    RText::Completer::CompletionOption.new("B", "b") ] })
+    RText::DefaultCompleter::CompletionOption.new("A", "a"),
+    RText::DefaultCompleter::CompletionOption.new("B", "b") ] })
   assert_options([
     ["A", "a"],
     ["B", "b"],
@@ -364,8 +364,8 @@ def test_reference_value_in_array_second_value
   options = complete(TestMM, %Q(\
 TestNode others: [xxx, |
 ), lambda { |r| [
-    RText::Completer::CompletionOption.new("A", "a"),
-    RText::Completer::CompletionOption.new("B", "b") ] })
+    RText::DefaultCompleter::CompletionOption.new("A", "a"),
+    RText::DefaultCompleter::CompletionOption.new("B", "b") ] })
   assert_options([
     ["A", "a"],
     ["B", "b"],
@@ -377,8 +377,8 @@ def test_reference_value_nested
 TestNode {
   TestNode SimpleState, others: [|/StatemachineMM/State]
 ), lambda { |r| [
-    RText::Completer::CompletionOption.new("A", "a"),
-    RText::Completer::CompletionOption.new("B", "b") ] })
+    RText::DefaultCompleter::CompletionOption.new("A", "a"),
+    RText::DefaultCompleter::CompletionOption.new("B", "b") ] })
   assert_options([
     ["A", "a"],
     ["B", "b"],
@@ -582,7 +582,19 @@ def complete(mm, text, ref_comp_option_provider=nil)
     :unlabled_arguments => lambda {|c| ["unlabled1", "unlabled2", "unlabled"]},
     :unquoted_arguments => lambda {|c| c.name == "TestNode2" ? ["text", "unlabled"] : []})
   context = RText::ContextBuilder.build_context(lang, context_lines, pos_in_line)
-  RText::Completer.new(lang).complete(context, ref_comp_option_provider)
+  completer = RText::DefaultCompleter.new(lang)
+  class << completer
+    attr_accessor :ref_comp_option_provider
+    def reference_options(context)
+      if ref_comp_option_provider
+        ref_comp_option_provider.call(context.feature)
+      else
+        super
+      end
+    end
+  end
+  completer.ref_comp_option_provider = ref_comp_option_provider
+  completer.complete(context)
 end
 
 end

@@ -1,4 +1,4 @@
-require 'rtext/completer'
+require 'rtext/default_completer'
 
 module RText
 
@@ -28,25 +28,29 @@ class DefaultServiceProvider
   end
 
   def get_completion_options(context)
-    completer = RText::Completer.new(@lang) 
-    options = completer.complete(context, lambda {|ref| 
-        get_reference_completion_options(ref, context).collect {|o|
-          Completer::CompletionOption.new(o.identifier, "<#{o.type}>")}
-      })
-    options
+    completer = RText::DefaultCompleter.new(@lang) 
+    class << completer
+      attr_accessor :service_provider
+      def reference_options(context) 
+        service_provider.get_reference_completion_options(context).collect {|o|
+          DefaultCompleter::CompletionOption.new(o.identifier, "<#{o.type}>")}
+      end
+    end
+    completer.service_provider = self
+    completer.complete(context)
   end
 
   ReferenceCompletionOption = Struct.new(:identifier, :type)
-  def get_reference_completion_options(reference, context)
+  def get_reference_completion_options(context)
     if @model.environment
-      targets = @model.environment.find(:class => reference.eType.instanceClass)
+      targets = @model.environment.find(:class => context.feature.eType.instanceClass)
     else
-      clazz = reference.eType.instanceClass
+      clazz = context.feature.eType.instanceClass
       targets = @model.index.values.flatten.select{|e| e.is_a?(clazz)}
     end
     index = 0
     targets.collect{|t| 
-      ident = @lang.identifier_provider.call(t, context.element, reference, index)
+      ident = @lang.identifier_provider.call(t, context.element, context.feature, index)
       index += 1
       if ident
         ReferenceCompletionOption.new(ident, t.class.ecore.name)
