@@ -1,5 +1,4 @@
 require 'socket'
-require 'rtext/completer'
 require 'rtext/context_builder'
 require 'rtext/message_helper'
 require 'rtext/link_detector'
@@ -164,11 +163,7 @@ class Service
     context = ContextBuilder.build_context(lang, lines, linepos)
     @logger.debug("context element: #{lang.identifier_provider.call(context.element, nil, nil, nil)}") \
       if context && context.element && @logger
-    completer = RText::Completer.new(lang) 
-    options = completer.complete(context, lambda {|ref| 
-        @service_provider.get_reference_completion_options(ref, context).collect {|o|
-          Completer::CompletionOption.new(o.identifier, "<#{o.type}>")}
-      })
+    options = @service_provider.get_completion_options(context)
     response["options"] = options.collect do |o|
       { "insert" => o.text, "display" => "#{o.text} #{o.extra}" }
     end
@@ -186,16 +181,8 @@ class Service
       response["begin_column"] = link_descriptor.scol
       response["end_column"] = link_descriptor.ecol
       targets = []
-      if link_descriptor.backward 
-        @service_provider.get_referencing_elements(
-            link_descriptor.value, link_descriptor.element, link_descriptor.feature, link_descriptor.index).each do |t|
-          targets << { "file" => t.file, "line" => t.line, "display" => t.display_name }
-        end
-      else
-        @service_provider.get_reference_targets(
-            link_descriptor.value, link_descriptor.element, link_descriptor.feature, link_descriptor.index).each do |t|
-          targets << { "file" => t.file, "line" => t.line, "display" => t.display_name }
-        end
+      @service_provider.get_link_targets(link_descriptor).each do |t|
+        targets << { "file" => t.file, "line" => t.line, "display" => t.display_name }
       end
       response["targets"] = targets
     end

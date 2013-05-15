@@ -1,3 +1,5 @@
+require 'rtext/completer'
+
 module RText
 
 class DefaultServiceProvider
@@ -25,6 +27,15 @@ class DefaultServiceProvider
     end
   end
 
+  def get_completion_options(context)
+    completer = RText::Completer.new(@lang) 
+    options = completer.complete(context, lambda {|ref| 
+        get_reference_completion_options(ref, context).collect {|o|
+          Completer::CompletionOption.new(o.identifier, "<#{o.type}>")}
+      })
+    options
+  end
+
   ReferenceCompletionOption = Struct.new(:identifier, :type)
   def get_reference_completion_options(reference, context)
     if @model.environment
@@ -46,7 +57,17 @@ class DefaultServiceProvider
   end
 
   ReferenceTarget = Struct.new(:file, :line, :display_name)
-  def get_reference_targets(identifier, element, feature, index)
+  def get_link_targets(link_descriptor)
+    if link_descriptor.backward 
+      get_backward_reference_targets(link_descriptor.value, 
+        link_descriptor.element, link_descriptor.feature, link_descriptor.index)
+    else
+      get_forward_reference_targets(link_descriptor.value, 
+        link_descriptor.element, link_descriptor.feature, link_descriptor.index)
+    end
+  end
+
+  def get_forward_reference_targets(identifier, element, feature, index)
     result = []
     ref_value = element.getGenericAsArray(feature.name)[index]
     if ref_value.is_a?(RGen::MetamodelBuilder::MMProxy)
@@ -71,7 +92,7 @@ class DefaultServiceProvider
     result
   end
 
-  def get_referencing_elements(identifier, element, feature, index)
+  def get_backward_reference_targets(identifier, element, feature, index)
     result = []
     targets = @model.index[@lang.identifier_provider.call(element, nil, nil, nil)]
     if targets && @lang.per_type_identifier
