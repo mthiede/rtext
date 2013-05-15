@@ -57,3 +57,8 @@
 * Fixed completion of enum values which need to be quoted
 * Added support for BigDecimal
 
+=0.6.0
+
+* Changed service provider interface to allow for more customization
+* Changed Completer into DefaultCompleter to allow for customization
+
