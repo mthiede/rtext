@@ -296,92 +296,143 @@ This information can be used to show the commands in a hierarchical menu, e.g. a
     ]
   }
 
-=== Custom Command Invocation
+=== Custom Command Parameters
 
-Custom commands are invoked just like the predefined commands. The frontend uses the command
-identifier returned by the "Custom Commands" request as the value of the ``command`` field in 
-the new invocation request. If the command id was returned by a "Costum Commands" request which
-included context information, the frontend should send the same context information in the new
-invocation request and all repeated requests (see below). If this information was not present 
-in command list request, it should not be send in the new command invocation.
+Before a custom command can be invoked, the frontend must check with the backend if parameters
+are required. This is done by means of the command
 
   {
     "type": "request",
-    "command": <command id>
+    "command": "check_custom_command_parameters",
+    "command_id": <custom command id>
+    "context": <context lines, optional>,
+    "column": <cursor column, optional>
+    "parameters": [
+      { 
+        "name": <parameter name>,
+        "value": <parameter value>
+      }
+      ...
+    ]
   }
 
-On first invocation, the frontend will not send any parameters with the command request.
-Instead, the backend's response may ask for parameters to be included into the next request.
-In this case, the frontend should prompt the user to enter the required information and then 
-reinvoke the command with the parameters included. This process of asking for more parameters 
-may be repeated several times.
+If the command id was returned by a "Costum Commands" request which
+included context information, the frontend should send the same context information in the new
+invocation request and all repeated requests (see below). If this information was not sent 
+in command list request (non-context sensitive command), it should neither be send in the new 
+command invocation.
 
-More generally, the backend will tell the frontend to display dialogs to the user.
-Dialogs may contain input fields, output fields and hidden fields. 
-Fields may be marked to indicate that their value should be sent to the backend on next invocation.
+If a command requires parameters, the response will have the field `success` set to false and
+will include information for building a user dialog.
 
 The dialogs contain elements of certain types:
 
-* text: text as a string 
-* text 
-* element_list field
-* element_table field
+* label: text presented to the user
+* text: text input field
+* table: table view/input
+* hidden: hidden field used to hold state information
 
-Each dialog element has the following attributes:
+The frontend should keep repeating requests as long as the field ``success`` is set to ``false``.
 
-* name: user visible title of the field [String]
-* desc: an optional description of the field [String]
-* editable: if the user can edit the field [Boolean]
-* visible: if the field is visible, there may be hidden fields for internal purpose [Boolean]
-* return: if the value should be sent back with the next request [Boolean]
-* error: an error description, if present the field should be marked to have an error [String]
-* value: the preset value of the field, type is field type specific 
+Note that the backend doesn't hold any state, so that commands can easily be canceled by just 
+not making any additional requests (and not actually invoking the command).
 
-The frontend should keep repeating requests as long as the field ``repeat`` is set to ``true``.
+If the response contains step information (number of steps, current step), the the frontend
+should display buttons for moving forward and backward in a wizard.
+
+When the frontend receives dialog information, it should display the dialog filled with the
+widgets as specified and with widget content set up properly (text fields preset with strings,
+rows selected in table, etc).
+
+When the user has finished the dialog, the frontend should send all input information back to
+the backend as name/value pairs. This includes:
+
+* hidden fields
+* text fields unless disabled
+* table fields unless disabled
 
   {
     "type": "response",
-    "repeat": <if command should be repeated>, 
+    "success": <true|false, true if command is finshed>, 
+    "num_steps", <number of steps of this (wizard) command, optional>,
+    "current_step", <current wizard step, optional>,
     "dialog": {
       "title": <dialog title>,
-      "desc": <description what to do>,
       "elements": [
         {
-          "type": "text_input",
+          "type": "lable",
+          "text": <text to display>
+        },
+        {
+          "type": "hidden",
+          "name": <parameter name>,
+          "value": <value of hidden filed [string]>
+        },
+        {
+          "type": "text",
           "name": <parameter name>,
           "value": <preset value>,
           "error": <error text>
+          "description: <discription of parameter, optional>
+          "disabled:" <true|false, if set to false the input widget can't be changed>
         },
         {
-          "type": "choice_input",
+          "type": "table",
+          "name": <parameter name>,
           "num_min": <min number of elements to choose, default: 1>,
-          "num_max": <max mumber of elements to choose, default: 1>,
-          "choices": [
-            "display": <display name>,
-            "id": <identifier to be sent back>,
-          ],
-          "value": [ <selected choice>, <selected choice>, ...],
-          "error": <error text>
-        },
-        {
-          "type": "element_input",
-          "num_min": <min number of elements to choose, default: 1>,
-          "num_max": <max mumber of elements to choose, default: 1>,
-          "choices": [
+          "num_max": <max mumber of elements to choose, or * for unlimited, default: 1>,
+          "columns": [
             {
-              "display": <display name>,
-              "id": <identifier to be sent back>,
-              "file": <fully qualfied file name, optional>,
-              "line": <line number, optional>,
-              "ancestors": <parent hierarchy, optional",
+              "name": <column name>,
+              "description: <discription of parameter, optional>
             }
             ...
           ],
-          "value": [ <selected choice>, <selected choice>, ...],
-          "error": <error text>
+          "rows": [
+            {
+              "id": <identifier to be sent back>,
+              "values" [
+                {
+                  "display": <display name>,
+                  "file": <fully qualfied file name, optional>,
+                  "line": <line number, optional>,
+                }
+                ...
+              ]
+            }
+            ...
+          ],
+          "selected": [ <row id>, <row id>, ...],
+          "error": <error text>,
+          "description: <discription of parameter, optional>
+          "disabled:" <true|false, if set to false, no selection can be made>
         }
       ]
     }
+  }
+
+=== Custom Command Invocation
+
+Custom commands are invoked using the command id returned by the "Custom Commands" request.
+Before a command can be invoked, the parameters must be figured out by means of the "Check
+Custom Command Parameters" command. Once figured out, the parameters will be sent with the 
+command invocation as a name/value list. 
+
+The context information should be sent as with the "Check Custom Command Parameters" command.
+
+  {
+    "type": "request",
+    "command": "invoke_custom_command",
+    "command_id": <custom command id>
+    "context": <context lines, optional>,
+    "column": <cursor column, optional>
+    "parameters": [
+      { 
+        "name": <parameter name>,
+        "value": <parameter value>
+      }
+      ...
+    ]
   }
 
 === Stop Service
