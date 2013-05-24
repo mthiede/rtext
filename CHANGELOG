@@ -61,4 +61,5 @@
 
 * Changed service provider interface to allow for more customization
 * Changed Completer into DefaultCompleter to allow for customization
+* Added labeled_containments language parameter
 

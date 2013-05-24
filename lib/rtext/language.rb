@@ -29,6 +29,11 @@ class Language
   #     the serializer will take care to insert quotes if the data is not a valid identifier
   #     the features must also occur in :feature_provider if :feature_provider is provided
   #     default: no unquoted arguments
+  #
+  #  :labeled_containments
+  #     a Proc which receives an EClass and should return this EClass's containment references
+  #     which are to be serialized with a lable
+  #     default: use lables when references can't be uniquely derived from contained element
   #  
   #  :argument_format_provider
   #     a Proc which receives an EAttribute and should return a format specification string
@@ -133,6 +138,7 @@ class Language
         reject{|f| f.derived} }
     @unlabled_arguments = options[:unlabled_arguments]
     @unquoted_arguments = options[:unquoted_arguments]
+    @labeled_containments = options[:labeled_containments]
     @argument_format_provider = options[:argument_format_provider]
     @root_classes = options[:root_classes] || default_root_classes(root_epackage)
     command_name_provider = options[:command_name_provider] || proc{|c| c.name}
@@ -215,6 +221,11 @@ class Language
     @unquoted_arguments.call(feature.eContainingClass).include?(feature.name)
   end
 
+  def labeled_containment?(feature)
+    return false unless @labeled_containments
+    @labeled_containments.call(feature.eContainingClass).include?(feature.name)
+  end
+
   def argument_format(feature)
     @argument_format_provider && @argument_format_provider.call(feature)
   end
@@ -292,6 +303,7 @@ class Language
     :unlabled_arguments,
     :labled_arguments,
     :unquoted?,
+    :labeled_containment?,
     :argument_format,
     :concrete_types,
     :containments_by_target_type,

@@ -14,6 +14,8 @@ module TestMM
     has_attr 'text', String
     has_attr 'unlabled', String
   end
+  class TestNode3 < RGen::MetamodelBuilder::MMBase
+  end
   class TestNode < RGen::MetamodelBuilder::MMBase
     has_attr 'text', String
     has_attr 'unlabled1', String
@@ -24,6 +26,7 @@ module TestMM
     contains_many 'childs', TestNode, 'parent'
     contains_one 'child2RoleA', TestNode2, 'parentA'
     contains_many 'child2RoleB', TestNode2, 'parentB'
+    contains_one_uni 'testNode3', TestNode3
   end
   SomeEnum = RGen::MetamodelBuilder::DataTypes::Enum.new(
     :name => "SomeEnum", :literals => [:A, :B, :'non-word*chars'])
@@ -401,7 +404,8 @@ TestNode {
   assert_options([
     ["TestNode", "<unlabled1>, <unlabled2>"],
     ["child2RoleA:", "<TestNode2>"],
-    ["child2RoleB:", "<TestNode2>"]
+    ["child2RoleB:", "<TestNode2>"],
+    ["testNode3:", "<TestNode3>"]
   ], options)
 end
 
@@ -580,7 +584,8 @@ def complete(mm, text, ref_comp_option_provider=nil)
   lang = RText::Language.new(mm.ecore,
     :root_classes => mm.ecore.eAllClasses,
     :unlabled_arguments => lambda {|c| ["unlabled1", "unlabled2", "unlabled"]},
-    :unquoted_arguments => lambda {|c| c.name == "TestNode2" ? ["text", "unlabled"] : []})
+    :unquoted_arguments => lambda {|c| c.name == "TestNode2" ? ["text", "unlabled"] : []},
+    :labeled_containments => lambda {|c| ["testNode3"]})
   context = RText::ContextBuilder.build_context(lang, context_lines, pos_in_line)
   completer = RText::DefaultCompleter.new(lang)
   class << completer

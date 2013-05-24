@@ -371,6 +371,23 @@ TestNode {
 ), output 
   end
 
+  def test_labeled_containment
+    testModel = TestMM::TestNode.new(:text => "some text", :childs => [
+      TestMM::TestNode.new(:text => "child")])
+
+    output = StringWriter.new
+    serialize(testModel, TestMM, output, :labeled_containments => proc {|c|
+      ["childs"]
+    })
+
+    assert_equal %Q(\
+TestNode text: "some text" {
+  childs:
+    TestNode text: "child"
+}
+), output 
+  end
+
   def test_escapes
     testModel = TestMM::TestNode.new(:text => %Q(some " \\ \\" text \r xx \n xx \r\n xx \t xx \b xx \f))
     output = StringWriter.new

@@ -90,7 +90,8 @@ class Serializer
         childs = contained_elements[f]
         if childs.size > 0
           child_classes = childs.collect{|c| c.class.ecore}.uniq
-          if child_classes.any?{|c| @lang.containments_by_target_type(element.class.ecore, c).size > 1}
+          if @lang.labeled_containment?(f) ||
+              child_classes.any?{|c| @lang.containments_by_target_type(element.class.ecore, c).size > 1}
             if childs.size > 1
               write("#{f.name}: [")
               iinc
