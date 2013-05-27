@@ -219,17 +219,21 @@ class DefaultLoader
     problems = []
     root_elements = []
     inst = RText::Instantiator.new(@lang)
-    File.open(fragment.location, "rb") do |f|
-      inst.instantiate(f.read,
-        :env => env,
-        :unresolved_refs => urefs,
-        :problems => problems,
-        :root_elements => root_elements,
-        :fragment_ref => fragment.fragment_ref,
-        :file_name => fragment.location,
-        :on_progress => lambda do 
-          @progress_monitor.instantiator_progress(fragment)
-        end)
+    begin
+      File.open(fragment.location, "rb") do |f|
+        inst.instantiate(f.read,
+          :env => env,
+          :unresolved_refs => urefs,
+          :problems => problems,
+          :root_elements => root_elements,
+          :fragment_ref => fragment.fragment_ref,
+          :file_name => fragment.location,
+          :on_progress => lambda do 
+            @progress_monitor.instantiator_progress(fragment)
+          end)
+      end
+    rescue Errno::ENOENT
+      # missing file, treat as empty
     end
     # data might have been created during instantiation (e.g. comment or annotation handler)
     fragment.data ||= {}
