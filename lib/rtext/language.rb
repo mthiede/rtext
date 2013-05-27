@@ -221,9 +221,9 @@ class Language
     @unquoted_arguments.call(feature.eContainingClass).include?(feature.name)
   end
 
-  def labeled_containment?(feature)
+  def labeled_containment?(clazz, feature)
     return false unless @labeled_containments
-    @labeled_containments.call(feature.eContainingClass).include?(feature.name)
+    @labeled_containments.call(clazz).include?(feature.name)
   end
 
   def argument_format(feature)
