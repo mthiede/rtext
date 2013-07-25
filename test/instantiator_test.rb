@@ -1495,7 +1495,7 @@ class InstantiatorTest < Test::Unit::TestCase
     input.force_encoding("binary")
     env, problems = instantiate(input, TestMM)
     assert_no_problems(problems)
-    assert_match env.elements.first.text, /AE Umlaut: /
+    assert_match /AE Umlaut: /, env.elements.first.text
   end
 
   private

@@ -71,18 +71,18 @@ def test_extract
   # a iso-8859-1 'ä' 
   obj = extract_message('19{"key":"umlaut%e4"}'.force_encoding("binary"))
   assert_equal "ASCII-8BIT", obj["key"].encoding.name
-  assert_equal "umlaut\xe4", obj["key"]
+  assert_equal "umlaut\xe4".force_encoding("ascii-8bit"), obj["key"]
   obj = extract_message('19{"key":"umlaut%e4"}'.force_encoding("utf-8"))
   assert_equal "ASCII-8BIT", obj["key"].encoding.name
-  assert_equal "umlaut\xe4", obj["key"]
+  assert_equal "umlaut\xe4".force_encoding("ascii-8bit"), obj["key"]
 
   # a utf-8 'ä'
   obj = extract_message('22{"key":"umlaut%c3%a4"}'.force_encoding("binary"))
   assert_equal "ASCII-8BIT", obj["key"].encoding.name
-  assert_equal "umlaut\xc3\xa4", obj["key"]
+  assert_equal "umlaut\xc3\xa4".force_encoding("ascii-8bit"), obj["key"]
   obj = extract_message('22{"key":"umlaut%c3%a4"}'.force_encoding("utf-8"))
   assert_equal "ASCII-8BIT", obj["key"].encoding.name
-  assert_equal "umlaut\xc3\xa4", obj["key"]
+  assert_equal "umlaut\xc3\xa4".force_encoding("ascii-8bit"), obj["key"]
 
   # %
   obj = extract_message('13{"key":"%25"}')
