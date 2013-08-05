@@ -1,24 +1,17 @@
 require 'rtext/generic'
-require 'rtext/tokenizer'
 
 module RText 
 
 class Parser
-  include RText::Tokenizer
-
   Problem = Struct.new(:message, :line)
 
-  def initialize(reference_regexp)
-    @reference_regexp = reference_regexp
-  end
-
-  def parse(str, options)
+  def parse(tokens, options)
     @dsc_visitor = options[:descent_visitor]
     @asc_visitor = options[:ascent_visitor]
     @problems = options[:problems] || []
     @non_consume_count = 0
     @consume_problem_reported = false
-    @tokens = tokenize(str, @reference_regexp, :on_command_token => options[:on_command_token])
+    @tokens = tokens
     @last_line = @tokens.last && @tokens.last.line 
     #@debug = true
     begin

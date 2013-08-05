@@ -1,10 +1,12 @@
 require 'rgen/ecore/ecore_ext'
 require 'rgen/instantiator/reference_resolver'
+require 'rtext/tokenizer'
 require 'rtext/parser'
 
 module RText
 
 class Instantiator
+  include RText::Tokenizer
 
   # A problem found during instantiation
   # if the file is not known, it will be nil
@@ -50,10 +52,14 @@ class Instantiator
     @fragment_ref = options[:fragment_ref]
     @on_progress_proc = options[:on_progress]
     @context_class_stack = []
-    parser = Parser.new(@lang.reference_regexp)
+    parser = Parser.new
     @root_elements.clear
     parser_problems = []
-    parser.parse(str, 
+    tokens = tokenize(str, @lang.reference_regexp, 
+      :on_command_token => @on_progress_proc && lambda do
+        @on_progress_proc.call
+      end)
+    parser.parse(tokens, 
       :descent_visitor => lambda do |command|
         clazz = @lang.class_by_command(command.value, @context_class_stack.last)
         # in case no class is found, nil will be pushed, this will case the next command
@@ -68,9 +74,6 @@ class Instantiator
         else
           unassociated_comments(args[3])
         end
-      end,
-      :on_command_token => @on_progress_proc && lambda do
-        @on_progress_proc.call
       end,
       :problems => parser_problems)
     parser_problems.each do |p|
