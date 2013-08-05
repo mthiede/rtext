@@ -45,9 +45,7 @@ class Parser
         if next_token == "{"
           parse_statement_block(element_list, comments)
         end
-        eol_comment = parse_eol_comment
-        comments << [ eol_comment, :eol ] if eol_comment
-        consume(:newline)
+        parse_eol_comment(comments)
         @asc_visitor.call(command, arg_list, element_list, comments, annotation, is_root)
       else
         discard_until(:newline)
@@ -86,19 +84,18 @@ class Parser
     result
   end
 
-  def parse_eol_comment
+  def parse_eol_comment(comments)
     if next_token == :comment
-      consume(:comment)
-    else
-      nil
+      comment = consume(:comment)
+      comments << [comment, :eol]
     end
+    nl = consume(:newline)
+    discard_until(:newline) unless nl
   end
 
   def parse_statement_block(element_list, comments)
     consume("{")
-    eol_comment = parse_eol_comment
-    comments << [ eol_comment, :eol ] if eol_comment
-    consume(:newline)
+    parse_eol_comment(comments)
     while next_token && next_token != "}"
       parse_block_element(element_list, comments)
     end
@@ -119,29 +116,21 @@ class Parser
     if next_token == "["
       parse_element_list(comments)
     else
-      eol_comment = parse_eol_comment
-      comments << [ eol_comment, :eol ] if eol_comment
-      nl = consume(:newline)
-      discard_until(:newline) unless nl
+      parse_eol_comment(comments)
       parse_statement
     end
   end
 
   def parse_element_list(comments)
     consume("[")
-    eol_comment = parse_eol_comment
-    comments << [ eol_comment, :eol ] if eol_comment
-    nl = consume(:newline)
-    discard_until(:newline) unless nl
+    parse_eol_comment(comments)
     result = []
     while next_token && next_token != "]"
       statement = parse_statement(false, true)
       result << statement if statement 
     end
     consume("]")
-    eol_comment = parse_eol_comment
-    comments << [ eol_comment, :eol ] if eol_comment
-    consume(:newline)
+    parse_eol_comment(comments)
     result
   end
 
