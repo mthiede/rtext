@@ -15,7 +15,7 @@ class Parser
     @last_line = @tokens.last && @tokens.last.line 
     #@debug = true
     begin
-      while next_token
+      while next_token_kind
         statement = parse_statement(true, true)
       end
     rescue InternalError
@@ -27,7 +27,7 @@ class Parser
     comments = [] 
     comment = parse_comment 
     annotation = parse_annotation
-    if (next_token && next_token == :identifier) || !allow_unassociated_comment
+    if (next_token_kind && next_token_kind == :identifier) || !allow_unassociated_comment
       comments << [ comment, :above] if comment
       command = consume(:identifier)
       if command
@@ -35,7 +35,7 @@ class Parser
         arg_list = []
         parse_argument_list(arg_list)
         element_list = []
-        if next_token == "{"
+        if next_token_kind == "{"
           parse_statement_block(element_list, comments)
         end
         parse_eol_comment(comments)
@@ -59,7 +59,7 @@ class Parser
 
   def parse_comment
     result = nil 
-    while next_token == :comment
+    while next_token_kind == :comment
       result ||= []
       result << consume(:comment)
       consume(:newline)
@@ -69,7 +69,7 @@ class Parser
 
   def parse_annotation
     result = nil
-    while next_token == :annotation
+    while next_token_kind == :annotation
       result ||= []
       result << consume(:annotation)
       consume(:newline)
@@ -78,7 +78,7 @@ class Parser
   end
 
   def parse_eol_comment(comments)
-    if next_token == :comment
+    if next_token_kind == :comment
       comment = consume(:comment)
       comments << [comment, :eol]
     end
@@ -89,14 +89,14 @@ class Parser
   def parse_statement_block(element_list, comments)
     consume("{")
     parse_eol_comment(comments)
-    while next_token && next_token != "}"
+    while next_token_kind && next_token_kind != "}"
       parse_block_element(element_list, comments)
     end
     consume("}")
   end
 
   def parse_block_element(element_list, comments)
-    if next_token == :label
+    if next_token_kind == :label
       label = consume(:label)
       element_list << [label, parse_labeled_block_element(comments)]
     else
@@ -106,7 +106,7 @@ class Parser
   end
 
   def parse_labeled_block_element(comments)
-    if next_token == "["
+    if next_token_kind == "["
       parse_element_list(comments)
     else
       parse_eol_comment(comments)
@@ -118,7 +118,7 @@ class Parser
     consume("[")
     parse_eol_comment(comments)
     result = []
-    while next_token && next_token != "]"
+    while next_token_kind && next_token_kind != "]"
       statement = parse_statement(false, true)
       result << statement if statement 
     end
@@ -129,7 +129,7 @@ class Parser
 
   def parse_argument_list(arg_list)
     first = true
-    while (AnyValue + [",", "[", :label, :error]).include?(next_token)
+    while (AnyValue + [",", "[", :label, :error]).include?(next_token_kind)
       consume(",") unless first
       first = false
       parse_argument(arg_list)
@@ -137,7 +137,7 @@ class Parser
   end
 
   def parse_argument(arg_list)
-    if next_token == :label
+    if next_token_kind == :label
       label = consume(:label)
       arg_list << [label, parse_argument_value]
     else
@@ -146,7 +146,7 @@ class Parser
   end
 
   def parse_argument_value
-    if next_token == "["
+    if next_token_kind == "["
       parse_argument_value_list
     else
       parse_value
@@ -157,7 +157,7 @@ class Parser
     consume("[")
     first = true
     result = []
-    while (AnyValue + [",", :error]).include?(next_token)
+    while (AnyValue + [",", :error]).include?(next_token_kind)
       consume(",") unless first
       first = false
       result << parse_value
@@ -172,7 +172,7 @@ class Parser
     consume(*AnyValue)
   end
 
-  def next_token
+  def next_token_kind
     @tokens.first && @tokens.first.kind
   end
 
