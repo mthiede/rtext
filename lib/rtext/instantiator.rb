@@ -164,12 +164,13 @@ class Instantiator
         problem("Only one child allowed in role '#{role}'", line_number(children[0]))
         return
       end
-      expected_type = @lang.concrete_types(feature.eType)
+      expected_type = nil
       children.each do |c|
-        if !expected_type.include?(c.class.ecore)
-          problem("Role '#{role}' can not take a #{c.class.ecore.name}, expected #{expected_type.name.join(", ")}", line_number(c))
-        else
+        begin
           element.setOrAddGeneric(feature.name, c)
+        rescue StandardError
+          expected_type ||= @lang.concrete_types(feature.eType)
+          problem("Role '#{role}' can not take a #{c.class.ecore.name}, expected #{expected_type.name.join(", ")}", line_number(c))
         end
       end
     else
