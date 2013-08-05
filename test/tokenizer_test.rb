@@ -120,6 +120,29 @@ def test_with_bom
   ], "\xEF\xBB\xBFTestNode 1"
 end
 
+def test_excessive_newline
+  assert_tokens [
+    Token.new(:identifier, "TestNode", 3, 1, 8),
+    Token.new(:newline, nil, 3, nil, nil),
+    Token.new(:identifier, "TestNode", 5, 1, 8),
+    Token.new(:newline, nil, 5, nil, nil) 
+  ], %Q(
+
+TestNode
+
+TestNode
+
+)
+end
+
+def test_only_newline
+  assert_tokens [
+  ], %Q(
+
+
+)
+end
+
 def do_tokenize(str)
   tokenize(str, /\A\/[\/\w]+/)
 end
