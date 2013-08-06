@@ -376,6 +376,7 @@ class InstantiatorTest < Test::Unit::TestCase
     ]
     assert_equal ref_targets, env.find(:text => "root").first.childs.collect{|c| c.related.targetIdentifier}
     assert_equal ref_targets, unresolved_refs.collect{|ur| ur.proxy.targetIdentifier}
+    assert unresolved_refs.all?{|ur| ur.feature_name == "related"}
   end
 
   def test_references_many
