@@ -121,6 +121,7 @@ module ContextBuilder
         missing_comma = false
         unlabled_index = 0
         tokens[1..-1].each do |token|
+          break if token.kind == :error
           if token.kind == "["
             in_array = true
           elsif token.kind == "]"
@@ -151,7 +152,13 @@ module ContextBuilder
         end
         if [:error, :string, :integer, :float, :boolean, :identifier, :reference].
             include?(tokens.last.kind) && line !~ /\s$/
-          prefix = tokens.last.value.to_s
+          last_error = tokens.rindex{|t| t.kind == :error && t.value == '"'}
+          last_string = tokens.rindex{|t| t.kind == :string}
+          if last_error && (!last_string || last_error > last_string)
+            prefix = line[tokens[last_error].scol-1..-1]
+          else
+            prefix = line[tokens.last.scol-1..-1]
+          end
         else
           prefix = ""
         end

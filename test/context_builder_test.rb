@@ -108,7 +108,7 @@ def test_root_after_unlabled
   c = build_context TestMM, <<-END
 TestNode "bla"| 
   END
-  assert_context c, :prefix => "bla", :feature => "unlabled", :in_array => false, :in_block => false
+  assert_context c, :prefix => "\"bla\"", :feature => "unlabled", :in_array => false, :in_block => false
   assert(c.element.is_a?(TestMM::TestNode))
   assert_nil(c.element.unlabled)
 end
@@ -117,7 +117,7 @@ def test_root_after_unlabled_string_with_comma
   c = build_context TestMM, <<-END
 TestNode "a,b"| 
   END
-  assert_context c, :prefix => "a,b", :feature => "unlabled", :in_array => false, :in_block => false
+  assert_context c, :prefix => "\"a,b\"", :feature => "unlabled", :in_array => false, :in_block => false
   assert(c.element.is_a?(TestMM::TestNode))
   assert_nil(c.element.unlabled)
 end
@@ -126,7 +126,7 @@ def test_root_after_unlabled_string_with_quoted_quote
   c = build_context TestMM, <<-END
 TestNode "a,\\"b"| 
   END
-  assert_context c, :prefix => "a,\"b", :feature => "unlabled", :in_array => false, :in_block => false
+  assert_context c, :prefix => "\"a,\\\"b\"", :feature => "unlabled", :in_array => false, :in_block => false
   assert(c.element.is_a?(TestMM::TestNode))
   assert_nil(c.element.unlabled)
 end
@@ -218,7 +218,7 @@ def test_root_unlabled_array_first_value_quoted
   c = build_context TestMM, <<-END
 TestNode "bla", ["a"|
   END
-  assert_context c, :prefix => "a", :feature => "unlabled_array", :in_array => true, :in_block => false
+  assert_context c, :prefix => "\"a\"", :feature => "unlabled_array", :in_array => true, :in_block => false
   assert(c.element.is_a?(TestMM::TestNode))
   assert_equal("bla", c.element.unlabled)
   assert_equal([], c.element.unlabled_array)
@@ -270,7 +270,7 @@ def test_root_unlabled_array_second_value_quoted
   c = build_context TestMM, <<-END
 TestNode "bla", ["a", "b"|
   END
-  assert_context c, :prefix => "b", :feature => "unlabled_array", :in_array => true, :in_block => false
+  assert_context c, :prefix => "\"b\"", :feature => "unlabled_array", :in_array => true, :in_block => false
   assert(c.element.is_a?(TestMM::TestNode))
   assert_equal("bla", c.element.unlabled)
   assert_equal(["a"], c.element.unlabled_array)
@@ -330,7 +330,7 @@ def test_root_labled_string_value
   c = build_context TestMM, <<-END
 TestNode text: "a,b"| 
   END
-  assert_context c, :prefix => "a,b", :feature => "text", :in_array => false, :in_block => false, :after_label => true
+  assert_context c, :prefix => "\"a,b\"", :feature => "text", :in_array => false, :in_block => false, :after_label => true
   assert(c.element.is_a?(TestMM::TestNode))
   assert_nil(c.element.text)
 end
@@ -643,7 +643,7 @@ def test_in_cmd_in_array_after_second_string_value
     TestNode nums: 3 {
       TestNode strings: ["a,b", "c,d"|
   END
-  assert_context c, :prefix => "c,d", :feature => "strings", :in_array => true, :in_block => false, :after_label => true
+  assert_context c, :prefix => "\"c,d\"", :feature => "strings", :in_array => true, :in_block => false, :after_label => true
   assert_simple_model(c.element)
   assert_equal(["a,b"], c.element.strings)
 end

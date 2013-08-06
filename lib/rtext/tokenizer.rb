@@ -98,7 +98,7 @@ module Tokenizer
             str = $'
             result << Token.new(:generic, RText::Generic.new($1), idx, col, col+$&.size-1)
             col += $&.size
-          when /\A\S+/
+          when /\A\S/
             str = $'
             result << Token.new(:error, $&, idx, col, col+$&.size-1)
             col += $&.size

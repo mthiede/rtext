@@ -105,7 +105,8 @@ end
 
 def test_error
   assert_tokens [
-    Token.new(:error, "\"open", 1, 1, 5),
+    Token.new(:error, "\"", 1, 1, 1),
+    Token.new(:identifier, "open", 1, 2, 5),
     Token.new(:newline, nil, 1, nil, nil)
   ], <<-END
 "open

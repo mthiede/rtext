@@ -918,12 +918,12 @@ class InstantiatorTest < Test::Unit::TestCase
     assert_equal [1], root_elements[0].nums
     assert_equal "bla", root_elements[1].text
     assert_equal [1], root_elements[1].nums
+    assert_equal "bla", root_elements[2].text
     assert_equal [1, 3], root_elements[3].nums
     assert_problems([
       [/parse error on token '\*'/i, 2],
       [/parse error on token '\*'/i, 3],
-      [/parse error on token '\?text:'/i, 4],
-      [/unexpected unlabled argument/i, 4],
+      [/parse error on token '\?'/i, 4],
       [/parse error on token '\*'/i, 5],
     ], problems)
   end
@@ -1309,16 +1309,20 @@ class InstantiatorTest < Test::Unit::TestCase
       TestNode text: <%a%>b%>
       ), TestMM, :enable_generics => true)
     assert_problems([
-      [/parse error on token '<bla'/i, 2],
+      [/parse error on token '<'/i, 2],
+      [/unexpected unlabled argument/i, 2],
       [/parse error on token '>'/i, 3],
       [/unexpected identifier 'b'/i, 5],
       [/parse error on token '>'/i, 5],
       [/unexpected unlabled argument/i, 5],
-      [/parse error on token '<%a'/i, 6],
-      [/parse error on token '<%a%'/i, 7],
+      [/parse error on token '<'/i, 6],
+      [/unexpected unlabled argument/i, 6],
+      [/parse error on token '<'/i, 7],
+      [/unexpected unlabled argument/i, 7],
+      [/parse error on token '%'/i, 7],
       [/unexpected identifier 'b'/i, 8],
       [/unexpected unlabled argument/i, 8],
-      [/parse error on token '%>'/i, 8],
+      [/parse error on token '%'/i, 8],
     ], problems)
   end
 
