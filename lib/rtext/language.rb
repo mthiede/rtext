@@ -236,7 +236,7 @@ class Language
 
   def containments_by_target_type(clazz, type)
     map = {}
-    clazz.eAllReferences.select{|r| r.containment}.each do |r|
+    containments(clazz).each do |r|
       concrete_types(r.eType).each {|t| (map[t] ||= []) << r}
     end
     ([type]+type.eAllSuperTypes).inject([]){|m,t| m + (map[t] || []) }.uniq
@@ -271,7 +271,7 @@ class Language
       @has_command[cmd] = true
       clazz = c.instanceClass
       @class_by_command[clazz] ||= {} 
-      c.eAllReferences.select{|r| r.containment}.collect{|r|
+      containments(c).collect{|r|
           [r.eType] + r.eType.eAllSubTypes}.flatten.uniq.each do |t|
         next if t.abstract
         cmw = command_name_provider.call(t)
@@ -298,7 +298,8 @@ class Language
   end
 
   # caching
-  [ :containments,
+  [ :features,
+    :containments,
     :non_containments,
     :unlabled_arguments,
     :labled_arguments,
