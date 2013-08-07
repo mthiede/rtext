@@ -109,8 +109,8 @@ class DefaultLoader
       @work_last_sent = @work_done
     end
 
-    def instantiator_progress(frag)
-      @work_done += 1
+    def instantiator_progress(frag, steps)
+      @work_done += steps
       if @work_done > @work_last_sent + 100
         @on_progress_proc.call(frag, @work_done, @work_overall)
         @work_last_sent = @work_done
@@ -228,8 +228,8 @@ class DefaultLoader
           :root_elements => root_elements,
           :fragment_ref => fragment.fragment_ref,
           :file_name => fragment.location,
-          :on_progress => lambda do 
-            @progress_monitor.instantiator_progress(fragment)
+          :on_progress => lambda do |steps|
+            @progress_monitor.instantiator_progress(fragment, steps)
           end)
       end
     rescue Errno::ENOENT

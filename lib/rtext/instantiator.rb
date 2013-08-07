@@ -39,8 +39,9 @@ class Instantiator
   #    object which references the fragment being instantiated, will be set on model elements 
   #
   #  :on_progress
-  #    a proc which is called twice for each model element: 
-  #    when the command token is recognized and when the element is instantiated 
+  #    a proc which is called with a number measuring the progress made since the last call;
+  #    progress is measured by the number of command tokens recognized plus the number of
+  #    model elements instantiated.
   #
   def instantiate(str, options={})
     @line_numbers = {}
@@ -57,7 +58,7 @@ class Instantiator
     parser_problems = []
     tokens = tokenize(str, @lang.reference_regexp, 
       :on_command_token => @on_progress_proc && lambda do
-        @on_progress_proc.call
+        @on_progress_proc.call(1)
       end)
     parser.parse(tokens, 
       :descent_visitor => lambda do |command|
@@ -91,7 +92,7 @@ class Instantiator
 
   def create_element(command, arg_list, element_list, comments, annotation, is_root)
     clazz = @context_class_stack.last 
-    @on_progress_proc.call if @on_progress_proc
+    @on_progress_proc.call(1) if @on_progress_proc
     if !@lang.has_command(command.value)
       problem("Unknown command '#{command.value}'", command.line)
       return
