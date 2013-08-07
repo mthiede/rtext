@@ -3,6 +3,8 @@ require 'rtext/context_builder'
 require 'rtext/message_helper'
 require 'rtext/link_detector'
 
+# optimization: garbage collect while service is idle
+
 module RText
 
 class Service
