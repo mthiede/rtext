@@ -43,12 +43,13 @@ class InstantiatorTest < Test::Unit::TestCase
     TestNode.contains_one 'singleChild2b', TestNode2, 'parentB'
   end
 
-  module TestMMLinenoFilename
+  module TestMMLinenoFilenameFragment
     extend RGen::MetamodelBuilder::ModuleExtension
     class TestNode < RGen::MetamodelBuilder::MMBase
       has_attr 'text', String
       has_attr 'lineno', Integer
       has_attr 'filename', String
+      has_attr 'fragmentr', String
       contains_many 'childs', TestNode, 'parent'
     end
   end
@@ -175,12 +176,20 @@ class InstantiatorTest < Test::Unit::TestCase
         TestNode text: "node3"
       }
       TestNode text: "node4"
-    ), TestMMLinenoFilename, :line_number_attribute => "lineno")
+    ), TestMMLinenoFilenameFragment, :line_number_attribute => "lineno")
     assert_no_problems(problems)
     assert_equal 2, env.find(:text => "node1").first.lineno
     assert_equal 3, env.find(:text => "node2").first.lineno
     assert_equal 6, env.find(:text => "node3").first.lineno
     assert_equal 8, env.find(:text => "node4").first.lineno
+  end
+
+  def test_missing_line_number_setter
+    env, problems = instantiate(%Q(
+      TestNode text: A
+    ), TestMMLinenoFilenameFragment, :line_number_attribute => "wrong_attribute_name")
+    assert_no_problems(problems)
+    assert_nil env.elements.first.lineno
   end
 
   def test_root_elements
@@ -206,8 +215,31 @@ class InstantiatorTest < Test::Unit::TestCase
   def test_file_name_setter
     env, problems = instantiate(%Q(
       TestNode text: A
-    ), TestMMLinenoFilename, :file_name => "some_file", :file_name_attribute => "filename")
+    ), TestMMLinenoFilenameFragment, :file_name => "some_file", :file_name_attribute => "filename")
     assert_equal "some_file", env.elements.first.filename 
+  end
+
+  def test_missing_file_name_setter
+    env, problems = instantiate(%Q(
+      TestNode text: A
+    ), TestMMLinenoFilenameFragment, :file_name => "some_file", :file_name_attribute => "wrong_attribute_name")
+    assert_nil env.elements.first.filename 
+  end
+
+  def test_fragment_ref_setter
+    the_ref = "is a string here but would normally be an RGen fragment"
+    env, problems = instantiate(%Q(
+      TestNode text: A
+    ), TestMMLinenoFilenameFragment, :fragment_ref => the_ref, :fragment_ref_attribute => "fragmentr")
+    assert_equal the_ref.object_id, env.elements.first.fragmentr.object_id
+  end
+
+  def test_missing_fragment_ref_setter
+    the_ref = "is a string here but would normally be an RGen fragment"
+    env, problems = instantiate(%Q(
+      TestNode text: A
+    ), TestMMLinenoFilenameFragment, :fragment_ref => the_ref, :fragment_ref_attribute => "wrong_attribute_name")
+    assert_nil env.elements.first.fragmentr
   end
 
   #
