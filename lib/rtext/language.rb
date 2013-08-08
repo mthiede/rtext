@@ -239,6 +239,7 @@ class Language
     containments(clazz).each do |r|
       concrete_types(r.eType).each {|t| (map[t] ||= []) << r}
     end
+    # the following line should be unnecessary with exception of "uniq"
     ([type]+type.eAllSuperTypes).inject([]){|m,t| m + (map[t] || []) }.uniq
   end
 
