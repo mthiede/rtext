@@ -604,12 +604,14 @@ class InstantiatorTest < Test::Unit::TestCase
       TestNode {
         singleChild:
           TestNode
+        singleChild: [
+        ]
         singleChild:
           TestNode
       }
     ), TestMM2)
     assert_problems([
-      [/only one child allowed in role 'singleChild'/i, 6]
+      [/only one child allowed in role 'singleChild'/i, 8]
     ], problems)
   end
 
