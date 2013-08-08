@@ -536,28 +536,28 @@ class InstantiatorTest < Test::Unit::TestCase
     env, problems = instantiate(%Q(
       TestNode text: "some text" {
     ), TestMM)
-    assert_problems([/unexpected end of file, expected \}/i], problems)
+    assert_problems([[/unexpected end of file, expected \}/i, 2]], problems)
   end
 
   def test_unknown_command
     env, problems = instantiate(%Q(
       NotDefined 
     ), TestMM)
-    assert_problems([/unknown command 'NotDefined'/i], problems)
+    assert_problems([[/unknown command 'NotDefined'/i, 2]], problems)
   end
 
   def test_unknown_command_abstract
     env, problems = instantiate(%Q(
       TestNode
     ), TestMMAbstract)
-    assert_problems([/unknown command 'TestNode'/i], problems)
+    assert_problems([[/unknown command 'TestNode'/i, 2]], problems)
   end
 
   def test_unexpected_unlabled_argument
     env, problems = instantiate(%Q(
       TestNode "more text"
     ), TestMM)
-    assert_problems([/unexpected unlabled argument, 0 unlabled arguments expected/i], problems)
+    assert_problems([[/unexpected unlabled argument, 0 unlabled arguments expected/i, 2]], problems)
   end
 
   def test_unknown_child_role
@@ -567,7 +567,7 @@ class InstantiatorTest < Test::Unit::TestCase
           TestNode
       }
     ), TestMM)
-    assert_problems([/unknown child role 'notdefined'/i], problems)
+    assert_problems([[/unknown child role 'notdefined'/i, 3]], problems)
   end
 
   def test_not_a_child_role
@@ -580,8 +580,8 @@ class InstantiatorTest < Test::Unit::TestCase
       }
     ), TestMM)
     assert_problems([
-      /role 'text' can not take child elements/i,
-      /role 'others' can not take child elements/i
+      [/role 'text' can not take child elements/i, 3],
+      [/role 'others' can not take child elements/i, 5]
     ], problems)
   end
 
@@ -595,7 +595,7 @@ class InstantiatorTest < Test::Unit::TestCase
       }
     ), TestMM2)
     assert_problems([
-      /only one child allowed in role 'singleChild'/i,
+      [/only one child allowed in role 'singleChild'/i, 5]
     ], problems)
   end
 
@@ -609,7 +609,7 @@ class InstantiatorTest < Test::Unit::TestCase
       }
     ), TestMM2)
     assert_problems([
-      /only one child allowed in role 'singleChild'/i,
+      [/only one child allowed in role 'singleChild'/i, 6]
     ], problems)
   end
 
@@ -621,7 +621,7 @@ class InstantiatorTest < Test::Unit::TestCase
       }
     ), TestMM2)
     assert_problems([
-      /role 'singleChild' can not take a TestNode2, expected TestNode/i,
+      [/role 'singleChild' can not take a TestNode2, expected TestNode/i, 4]
     ], problems)
   end
 
@@ -632,7 +632,7 @@ class InstantiatorTest < Test::Unit::TestCase
       }
     ), TestMM2)
     assert_problems([
-      /unexpected \}, expected identifier/i
+      [/unexpected \}, expected identifier/i, 4]
     ], problems)
   end
 
@@ -643,7 +643,7 @@ class InstantiatorTest < Test::Unit::TestCase
       }
     ), TestMM2)
     assert_problems([
-      /command 'TestNode3' can not be used in this context/i,
+      [/command 'TestNode3' can not be used in this context/i, 3]
     ], problems)
   end
 
@@ -654,7 +654,7 @@ class InstantiatorTest < Test::Unit::TestCase
       }
     ), TestMM2)
     assert_problems([
-      /role of element is ambiguous, use a role label/i,
+      [/role of element is ambiguous, use a role label/i, 3]
     ], problems)
   end
 
@@ -675,7 +675,7 @@ class InstantiatorTest < Test::Unit::TestCase
       }
     ), TestMM2)
     assert_problems([
-      /only one child allowed in role 'singleChild'/i,
+      [/only one child allowed in role 'singleChild'/i, 4]
     ], problems)
   end
 
@@ -683,35 +683,35 @@ class InstantiatorTest < Test::Unit::TestCase
     env, problems = instantiate(%Q(
       TestNode unknown: "some text"
     ), TestMM)
-    assert_problems([/unknown argument 'unknown'/i], problems)
+    assert_problems([[/unknown argument 'unknown'/i, 2]], problems)
   end
 
   def test_attribute_in_child_reference
     env, problems = instantiate(%Q(
       TestNode singleChild: "some text"
     ), TestMM2)
-    assert_problems([/argument 'singleChild' can only take child elements/i], problems)
+    assert_problems([[/argument 'singleChild' can only take child elements/i, 2]], problems)
   end
 
   def test_arguments_duplicate
     env, problems = instantiate(%Q(
       TestNode text: "some text", text: "more text"
     ), TestMM)
-    assert_problems([/argument 'text' already defined/i], problems)
+    assert_problems([[/argument 'text' already defined/i, 2]], problems)
   end
 
   def test_unlabled_arguments_duplicate
     env, problems = instantiate(%Q(
       TestNode text: "some text", "more text"
     ), TestMM, :unlabled_arguments => proc {|c| ["text"]})
-    assert_problems([/argument 'text' already defined/i], problems)
+    assert_problems([[/argument 'text' already defined/i, 2]], problems)
   end
 
   def test_multiple_arguments_in_non_many_attribute
     env, problems = instantiate(%Q(
       TestNode text: ["text1", "text2"]
     ), TestMM)
-    assert_problems([/argument 'text' can take only one value/i], problems)
+    assert_problems([[/argument 'text' can take only one value/i, 2]], problems)
   end
 
   def test_wrong_argument_type
@@ -727,15 +727,15 @@ class InstantiatorTest < Test::Unit::TestCase
       TestNode related: 1
     ), TestMM)
     assert_problems([
-      /argument 'text' can not take a integer, expected string/i,
-      /argument 'integer' can not take a string, expected integer/i,
-      /argument 'integer' can not take a boolean, expected integer/i,
-      /argument 'integer' can not take a float, expected integer/i,
-      /argument 'integer' can not take a identifier, expected integer/i,
-      /argument 'integer' can not take a reference, expected integer/i,
-      /argument 'enum' can not take a integer, expected identifier/i,
-      /argument 'enum' can not take value x, expected A, B/i,
-      /argument 'related' can not take a integer, expected reference, identifier/i
+      [/argument 'text' can not take a integer, expected string/i, 2],
+      [/argument 'integer' can not take a string, expected integer/i, 3],
+      [/argument 'integer' can not take a boolean, expected integer/i, 4],
+      [/argument 'integer' can not take a float, expected integer/i, 5],
+      [/argument 'integer' can not take a identifier, expected integer/i, 6],
+      [/argument 'integer' can not take a reference, expected integer/i, 7],
+      [/argument 'enum' can not take a integer, expected identifier/i, 8],
+      [/argument 'enum' can not take value x, expected A, B/i, 9],
+      [/argument 'related' can not take a integer, expected reference, identifier/i, 10]
     ], problems)
   end
 
@@ -744,14 +744,14 @@ class InstantiatorTest < Test::Unit::TestCase
       TestNode 
       }
     ), TestMM)
-    assert_problems([/unexpected \}, expected identifier/i], problems)
+    assert_problems([[/unexpected \}, expected identifier/i, 3]], problems)
   end
 
   def test_invalid_root
     env, problems = instantiate(%Q(
       NonRootClass
     ), TestMMNonRootClass)
-    assert_problems([/command 'NonRootClass' can not be used on root level/i], problems)
+    assert_problems([[/command 'NonRootClass' can not be used on root level/i, 2]], problems)
   end
 
   #
@@ -797,7 +797,7 @@ class InstantiatorTest < Test::Unit::TestCase
     assert_equal [1], root_elements[0].nums
     assert_equal "bla", root_elements[0].text
     assert_problems([
-      /unexpected label .*, expected ,/i,
+      [/unexpected label .*, expected ,/i, 2],
     ], problems)
   end
 
@@ -809,8 +809,8 @@ class InstantiatorTest < Test::Unit::TestCase
     assert_equal 1, root_elements.size
     assert_equal [1], root_elements[0].nums
     assert_problems([
-      /unexpected string 'bla', expected ,/i,
-      /unexpected unlabled argument/i
+      [/unexpected string 'bla', expected ,/i, 2],
+      [/unexpected unlabled argument/i, 2]
     ], problems)
   end
 
@@ -1229,7 +1229,7 @@ class InstantiatorTest < Test::Unit::TestCase
     ), TestMM, :comment_handler => proc {|c,k,e,env|
       false
     })
-    assert_problems([/element can not take this comment/], problems)
+    assert_problems([[/element can not take this comment/, 3]], problems)
   end
 
   def test_comment_handler_comment_not_allowed_unassociated
@@ -1238,7 +1238,7 @@ class InstantiatorTest < Test::Unit::TestCase
     ), TestMM, :comment_handler => proc {|c,k,e,env|
       false
     })
-    assert_problems([/Unassociated comment not allowed/], problems)
+    assert_problems([[/Unassociated comment not allowed/, 2]], problems)
   end
 
   #
@@ -1250,7 +1250,7 @@ class InstantiatorTest < Test::Unit::TestCase
       @annotation 
       TestNode
       ), TestMM)
-    assert_problems([/annotation not allowed/i], problems)
+    assert_problems([[/annotation not allowed/i, 3]], problems)
   end
 
   def test_annotation_not_allowed
@@ -1260,7 +1260,7 @@ class InstantiatorTest < Test::Unit::TestCase
       ), TestMM, :annotation_handler => proc {|a,e,env|
         false
       })
-    assert_problems([/annotation not allowed/i], problems)
+    assert_problems([[/annotation not allowed/i, 3]], problems)
   end
 
   def test_annotation_in_wrong_places

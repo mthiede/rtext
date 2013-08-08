@@ -162,7 +162,12 @@ class Instantiator
       end
       if !feature.many && 
         (element.getGenericAsArray(role).size > 0 || children.size > 1)
-        problem("Only one child allowed in role '#{role}'", line_number(children[0]))
+        if children.size == 1
+          # other child was created under another role lable with same name
+          problem("Only one child allowed in role '#{role}'", line_number(children[0]))
+        else
+          problem("Only one child allowed in role '#{role}'", line_number(children[1]))
+        end
         return
       end
       expected_type = nil
