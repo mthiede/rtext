@@ -94,6 +94,7 @@ class Service
 
   def message_received(sock, obj)
     if check_request(obj) 
+      request_start = Time.now
       @logger.debug("request: "+obj.inspect) if @logger
       response = { "type" => "response", "invocation_id" => obj["invocation_id"] }
       case obj["command"]
@@ -113,8 +114,10 @@ class Service
         response["type"] = "unknown_command_error"
         response["command"] = obj["command"] 
       end
-      @logger.debug("response: "+response.inspect) if response && @logger
+      @logger.debug("response: "+truncate_response_for_debug_output(response).inspect) \
+        if response && @logger
       send_response(sock, response)
+      @logger.info("request complete (#{Time.now-request_start}s)")
     end
   end
 
@@ -155,6 +158,9 @@ class Service
     response["total_problems"] = total
   end
 
+  InsertString = "insert"
+  DisplayString = "display"
+
   def content_complete(sock, request, response)
     # column numbers start at 1
     linepos = request["column"]-1 
@@ -166,8 +172,10 @@ class Service
     @logger.debug("context element: #{lang.identifier_provider.call(context.element, nil, nil, nil)}") \
       if context && context.element && @logger
     options = @service_provider.get_completion_options(context)
+    insert_str = "insert"
+    display_str = "display"
     response["options"] = options.collect do |o|
-      { "insert" => o.text, "display" => "#{o.text} #{o.extra}" }
+      { insert_str => o.text, display_str => "#{o.text} #{o.extra}" }
     end
   end
 
@@ -212,6 +220,18 @@ class Service
         @logger.warn "unexpected exception during socket write: #{e.class}"
       end
     end
+  end
+
+  def truncate_response_for_debug_output(response_hash)
+    result = {}
+    response_hash.each_pair do |k,v|
+      if v.is_a?(Array) && v.size > 100
+        result[k] = v[0..99] + ["<truncated>"]
+      else
+        result[k] = v
+      end
+    end
+    result
   end
 
   def create_server

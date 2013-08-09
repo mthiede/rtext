@@ -5,25 +5,13 @@ module RText
 module MessageHelper
 
 def serialize_message(obj)
-  each_json_object_string(obj) do |s|
-    s.force_encoding("binary")
-    bytes = s.bytes.to_a
-    s.clear
-    bytes.each do |b|
-      if b >= 128 || b == 0x25 # %
-        s << "%#{b.to_s(16)}".force_encoding("binary")
-      else
-        s << b.chr("binary")
-      end
-    end
-    # there are no non ascii-7-bit characters left
-    s.force_encoding("utf-8")
-  end
-  json = JSON(obj)
+  escape_all_strings(obj)
+  json = object_to_json(obj)
   # the JSON method outputs data in UTF-8 encoding
   # the RText protocol expects message lengths measured in bytes
   # there shouldn't be any non-ascii-7-bit characters, though, so json.size would also be ok
-  "#{json.bytesize}#{json}"
+  json.prepend(json.bytesize.to_s) 
+  json
 end
 
 def extract_message(data)
@@ -53,6 +41,28 @@ def extract_message(data)
     end
   end
   obj
+end
+
+# override this method to use other JSON implementations
+def object_to_json(obj)
+  JSON(obj)
+end
+
+def escape_all_strings(obj)
+  each_json_object_string(obj) do |s|
+    s.force_encoding("binary")
+    bytes = s.bytes.to_a
+    s.clear
+    bytes.each do |b|
+      if b >= 128 || b == 0x25 # %
+        s << "%#{b.to_s(16)}".force_encoding("binary")
+      else
+        s << b.chr("binary")
+      end
+    end
+    # there are no non ascii-7-bit characters left
+    s.force_encoding("utf-8")
+  end
 end
 
 def each_json_object_string(object, &block)
