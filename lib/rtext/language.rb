@@ -256,7 +256,11 @@ class Language
   end
 
   def fragment_ref(element)
-    @fragment_ref_attribute && element.respond_to?(@fragment_ref_attribute) && element.send(@fragment_ref_attribute)
+    begin
+      @fragment_ref_attribute && element.send(@fragment_ref_attribute) 
+    rescue NoMethodError
+      false
+    end
   end
 
   private
