@@ -1,9 +1,16 @@
 require 'rtext/default_completer'
+require 'rtext/default_resolver'
 
 module RText
 
 class DefaultServiceProvider
 
+  # Creates a DefaultServiceProvider. Options:
+  #
+  #  :resolver
+  #    a reference resolver responding to the methods provided by DefaultResolver
+  #    default: DefaultResolver
+  #
   def initialize(language, fragmented_model, model_loader, options={})
     @lang = language
     @model = fragmented_model
@@ -13,6 +20,7 @@ class DefaultServiceProvider
     @model.add_fragment_change_listener(proc {|fragment, kind|
       @element_name_index = nil
     })
+    @resolver = options[:resolver] || DefaultResolver.new(language)
   end
 
   def language
@@ -75,18 +83,10 @@ class DefaultServiceProvider
     result = []
     ref_value = element.getGenericAsArray(feature.name)[index]
     if ref_value.is_a?(RGen::MetamodelBuilder::MMProxy)
-      urefs = [ 
-        RGen::Instantiator::ReferenceResolver::UnresolvedReference.new(
-          element, feature.name, ref_value) ] 
-      @lang.reference_qualifier.call(urefs, @model)
-      identifier = urefs.first.proxy.targetIdentifier 
-      targets = @model.index[identifier]
-      if targets && @lang.per_type_identifier
-        if feature
-          targets = targets.select{|t| t.is_a?(feature.eType.instanceClass)}
-        end
-      end 
-      targets && targets.each do |t|
+      uref =  RGen::Instantiator::ReferenceResolver::UnresolvedReference.new(
+          element, feature.name, ref_value)
+      targets = @resolver.find_targets(uref, @model)
+      targets.each do |t|
         if @lang.fragment_ref(t)
           path = File.expand_path(@lang.fragment_ref(t).fragment.location)
           result << ReferenceTarget.new(path, @lang.line_number(t), "#{identifier} [#{t.class.ecore.name}]")

@@ -2,6 +2,7 @@ require 'rgen/environment'
 require 'rgen/util/file_change_detector'
 require 'rgen/fragment/model_fragment'
 require 'rtext/instantiator'
+require 'rtext/default_resolver'
 
 module RText
 
@@ -33,6 +34,10 @@ class DefaultLoader
   #    if set to true, don't reload fragments which have parse errors 
   #    instead keep the existing fragment but attach the new problem list
   #
+  #  :resolver
+  #    a reference resolver responding to the methods provided by DefaultResolver
+  #    default: DefaultResolver
+  #
   def initialize(language, fragmented_model, options={})
     @lang = language
     @model = fragmented_model
@@ -48,6 +53,7 @@ class DefaultLoader
     pattern = options[:pattern]
     @file_provider = options[:file_provider] || proc { Dir.glob(pattern) }
     @dont_reload_with_errors = options[:dont_reload_with_errors]
+    @resolver = options[:resolver] || DefaultResolver.new(language)
   end
 
   # Loads or reloads model fragments from files using the file patterns or file provider 
@@ -83,9 +89,7 @@ class DefaultLoader
     @files_added.each {|f| file_added(f)}
     @files_changed.each {|f| file_changed(f)}
     @files_removed.each {|f| file_removed(f)}
-    @lang.reference_qualifier.call(@model.unresolved_refs, @model)
-    @model.resolve(:fragment_provider => method(:fragment_provider),
-      :use_target_type => @lang.per_type_identifier)
+    @resolver.resolve_model(@model)
   end
 
   private
@@ -242,8 +246,7 @@ class DefaultLoader
       :unresolved_refs => urefs, 
       :elements => env.elements)
     fragment.build_index
-    @lang.reference_qualifier.call(urefs, fragment)
-    fragment.resolve_local(:use_target_type => @lang.per_type_identifier)
+    @resolver.resolve_fragment(fragment)
   end
 
 end
