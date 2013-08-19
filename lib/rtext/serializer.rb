@@ -48,6 +48,7 @@ class Serializer
   end
   
   def serialize_element(element)
+    # TODO: remove setting of fragment ref (doesn't belong into serializer)
     set_fragment_ref(element)
     set_line_number(element, @line_number) if @set_line_number
     clazz = element.class.ecore
