@@ -31,9 +31,11 @@ class Language
   #     default: no unquoted arguments
   #
   #  :labeled_containments
-  #     a Proc which receives an EClass and should return this EClass's containment references
-  #     which are to be serialized with a lable
-  #     default: use lables when references can't be uniquely derived from contained element
+  #     a Proc which receives an EClass and should return the names of this EClass's containment 
+  #     references which are to be serialized with a label.
+  #     note that labels will always automatically be used when references can't be uniquely 
+  #     derived from contained elements
+  #     default: no additional labeled containments
   #  
   #  :argument_format_provider
   #     a Proc which receives an EAttribute and should return a format specification string
