@@ -1011,7 +1011,7 @@ class InstantiatorTest < Test::Unit::TestCase
     ], problems)
   end
 
-  def test_unclosed_bracket
+  def test_unclosed_child_bracket
     root_elements = []
     env, problems = instantiate(%Q(
       TestNode { 
