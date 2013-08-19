@@ -127,8 +127,9 @@ TestNode unquoted: "//"
     testModel = TestMMComment::TestNode.new(
       :comment => "this is a comment",
       :childs => [
-        TestMMComment::TestNode.new(:comment => "comment of a child node\n  multiline"),
-        TestMMComment::TestNode.new(:comment => "don't show")])
+        TestMMComment::TestNode.new(:comment => "\n\ncomment of a child node\n  multiline\n\n\nanother\n\n\n"),
+        TestMMComment::TestNode.new(:comment => "don't show"),
+        TestMMComment::TestNode.new(:comment => "")])
 
     output = StringWriter.new
     serialize(testModel, TestMMComment, output,
@@ -145,10 +146,16 @@ TestNode unquoted: "//"
     assert_equal %Q(\
 #this is a comment
 TestNode {
+  #
+  #
   #comment of a child node
   #  multiline
+  #
+  #
+  #another
   TestNode
   TestNode comment: "don't show"
+  TestNode
 }
 ), output 
   end
