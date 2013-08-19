@@ -64,3 +64,13 @@
 * Added labeled_containments language parameter
 * Made DefaultLoader robust against missing files
 
+=0.7.0
+
+* Added DefaultResolver and support for custom resolvers for DefaultLoader and DefaultServiceProvider
+* Changed instantiator on_progress proc to take a second argument with the number of progress steps
+* Changed tokenizer to start new tokens immediately after error tokens
+* Fixed line number in instantiator problem report for multiple childs in one-role
+* Fixed unit tests for Ruby 2.0
+* Fixed context builder prefixes for strings
+* Minor performance improvements, mainly for instantiator and when passing large RText messages
+
