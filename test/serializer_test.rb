@@ -378,19 +378,40 @@ TestNode {
 ), output 
   end
 
+  module TestMMLabeledContainment
+    extend RGen::MetamodelBuilder::ModuleExtension
+    class TestNode < RGen::MetamodelBuilder::MMBase
+      abstract
+      has_attr 'text', String
+      contains_many 'childs', TestNode, 'parent'
+    end
+    class TestNode1 < TestNode
+    end
+    class TestNode2 < TestNode
+    end
+  end
+
   def test_labeled_containment
-    testModel = TestMM::TestNode.new(:text => "some text", :childs => [
-      TestMM::TestNode.new(:text => "child")])
+    testModel = TestMMLabeledContainment::TestNode1.new(:text => "some text", :childs => [
+      TestMMLabeledContainment::TestNode2.new(:text => "child", :childs => [
+      TestMMLabeledContainment::TestNode1.new(:text => "nested child")
+      ])])
 
     output = StringWriter.new
-    serialize(testModel, TestMM, output, :labeled_containments => proc {|c|
-      ["childs"]
+    serialize(testModel, TestMMLabeledContainment, output, :labeled_containments => proc {|c|
+      if c == TestMMLabeledContainment::TestNode2.ecore
+        ["childs"]
+      else
+        []
+      end
     })
 
     assert_equal %Q(\
-TestNode text: "some text" {
-  childs:
-    TestNode text: "child"
+TestNode1 text: "some text" {
+  TestNode2 text: "child" {
+    childs:
+      TestNode1 text: "nested child"
+  }
 }
 ), output 
   end
