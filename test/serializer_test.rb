@@ -2,12 +2,19 @@ $:.unshift File.join(File.dirname(__FILE__),"..","lib")
 
 require 'test/unit'
 require 'bigdecimal'
+require 'fileutils'
+require 'stringio'
 require 'rgen/environment'
 require 'rgen/metamodel_builder'
 require 'rtext/serializer'
 require 'rtext/language'
 
 class SerializerTest < Test::Unit::TestCase
+  TestOutputFile = ".serializer_test_file"
+
+  def teardown
+    FileUtils.rm_f TestOutputFile
+  end
 
   class StringWriter < String
     alias write concat
@@ -562,6 +569,29 @@ TestNodeX text: "some text" {
   TestNodeX text: "child"
 }
 ), output 
+  end
+
+  def test_file_output
+    testModel = TestMM::TestNode.new(:text => "some text")
+
+    File.open(TestOutputFile, "w") do |f|
+      serialize(testModel, TestMM, f)
+    end
+
+    assert_equal %Q(\
+TestNode text: "some text"
+), File.read(TestOutputFile)
+  end
+
+  def test_stringio_output
+    testModel = TestMM::TestNode.new(:text => "some text")
+
+    output = StringIO.new
+    serialize(testModel, TestMM, output)
+
+    assert_equal %Q(\
+TestNode text: "some text"
+), output.string
   end
 
   def serialize(model, mm, output, options={})
