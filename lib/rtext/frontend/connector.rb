@@ -160,6 +160,7 @@ def do_work
       @logger.info "connecting to #{port}" if @logger
       begin
         @socket = TCPSocket.new("127.0.0.1", port)
+        @socket.setsockopt(:SOCKET, :RCVBUF, 1000000)
       rescue Errno::ECONNREFUSED
         cleanup
         @connection_listener.call(:timeout) if @connection_listener
@@ -187,7 +188,7 @@ def do_work
       repeat = false
       data = nil
       begin
-        data = @socket.read_nonblock(100000)
+        data = @socket.read_nonblock(1000000)
       rescue Errno::EWOULDBLOCK
       rescue IOError, EOFError, Errno::ECONNRESET
         socket_closed = true
