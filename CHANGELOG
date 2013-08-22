@@ -72,5 +72,6 @@
 * Fixed line number in instantiator problem report for multiple childs in one-role
 * Fixed unit tests for Ruby 2.0
 * Fixed context builder prefixes for strings
+* Fixed DefaultLoader to let fragments calculate their elements list by themselves
 * Minor performance improvements, mainly for instantiator and when passing large RText messages
 

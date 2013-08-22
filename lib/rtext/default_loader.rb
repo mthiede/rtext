@@ -242,9 +242,10 @@ class DefaultLoader
     # data might have been created during instantiation (e.g. comment or annotation handler)
     fragment.data ||= {}
     fragment.data[:problems] = problems
+    # let the fragment calculate the elements, elements might have been added during
+    # instantiation (e.g. comment or annotation handler)
     fragment.set_root_elements(root_elements,
-      :unresolved_refs => urefs, 
-      :elements => env.elements)
+      :unresolved_refs => urefs)
     fragment.build_index
     @resolver.resolve_fragment(fragment)
   end
