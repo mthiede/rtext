@@ -28,17 +28,11 @@ def extract_message(data)
       # encode from binary to utf-8 with :undef => :replace turns all non-ascii-7-bit bytes
       # into the replacement character (\uFFFD)
       json.encode!("utf-8", :undef => :replace)
-      obj = JSON(json)
+      obj = json_to_object(json)
     end
   end
   if obj
-    each_json_object_string(obj) do |s|
-      # change encoding back to binary 
-      # there could still be replacement characters (\uFFFD), turn them into "?"
-      s.encode!("binary", :undef => :replace)
-      s.gsub!(/%[0-9a-fA-F][0-9a-fA-F]/){|m| m[1..2].to_i(16).chr("binary")}
-      s.force_encoding("binary")
-    end
+    unescape_all_strings(obj)
   end
   obj
 end
@@ -46,6 +40,11 @@ end
 # override this method to use other JSON implementations
 def object_to_json(obj)
   JSON(obj)
+end
+
+# override this method to use other JSON implementations
+def json_to_object(json)
+  JSON(json)
 end
 
 def escape_all_strings(obj)
@@ -62,6 +61,16 @@ def escape_all_strings(obj)
     end
     # there are no non ascii-7-bit characters left
     s.force_encoding("utf-8")
+  end
+end
+
+def unescape_all_strings(obj)
+  each_json_object_string(obj) do |s|
+    # change encoding back to binary 
+    # there could still be replacement characters (\uFFFD), turn them into "?"
+    s.encode!("binary", :undef => :replace)
+    s.gsub!(/%[0-9a-fA-F][0-9a-fA-F]/){|m| m[1..2].to_i(16).chr("binary")}
+    s.force_encoding("binary")
   end
 end
 
