@@ -26,6 +26,7 @@ class SerializerTest < Test::Unit::TestCase
       :name => "SomeEnum", :literals => [:A, :B, :'non-word*chars', :'2you'])
     class TestNode < RGen::MetamodelBuilder::MMBase
       has_attr 'text', String
+      has_many_attr 'texts', String
       has_attr 'integer', Integer
       has_attr 'float', Float
       has_attr 'enum', SomeEnum
@@ -45,6 +46,17 @@ class SerializerTest < Test::Unit::TestCase
 TestNode text: "some text" {
   TestNode text: "child"
 }
+), output 
+  end
+
+  def test_many_attr
+    testModel = TestMM::TestNode.new(:texts => ["a", "b", "c"])
+
+    output = StringWriter.new
+    serialize(testModel, TestMM, output)
+
+    assert_equal %Q(\
+TestNode texts: ["a", "b", "c"]
 ), output 
   end
 
