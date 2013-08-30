@@ -74,4 +74,5 @@
 * Fixed context builder prefixes for strings
 * Fixed DefaultLoader to let fragments calculate their elements list by themselves
 * Minor performance improvements, mainly for instantiator and when passing large RText messages
+* Improved performance of frontend connector especially for large amounts of data
 
