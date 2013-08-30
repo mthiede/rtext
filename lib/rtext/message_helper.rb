@@ -1,8 +1,9 @@
-require 'json'
+require 'rtext/json_interface'
 
 module RText
 
 module MessageHelper
+include JsonInterface
 
 def serialize_message(obj)
   escape_all_strings(obj)
@@ -35,16 +36,6 @@ def extract_message(data)
     unescape_all_strings(obj)
   end
   obj
-end
-
-# override this method to use other JSON implementations
-def object_to_json(obj)
-  JSON(obj)
-end
-
-# override this method to use other JSON implementations
-def json_to_object(json)
-  JSON(json)
 end
 
 def escape_all_strings(obj)
