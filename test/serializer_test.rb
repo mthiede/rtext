@@ -450,6 +450,13 @@ TestNode1 text: "some text" {
     assert_equal %q(TestNode integer: 7)+"\n", output
   end
 
+  def test_integer_big
+    testModel = TestMM::TestNode.new(:integer => 12345678901234567890)
+    output = StringWriter.new
+    serialize(testModel, TestMM, output) 
+    assert_equal %q(TestNode integer: 12345678901234567890)+"\n", output
+  end
+
   def test_integer_format_spec
     testModel = TestMM::TestNode.new(:integer => 10)
     output = StringWriter.new
@@ -460,6 +467,18 @@ TestNode1 text: "some text" {
         nil
       end}) 
     assert_equal %q(TestNode integer: 0x0A)+"\n", output
+  end
+
+  def test_integer_format_spec_big
+    testModel = TestMM::TestNode.new(:integer => 0xabcdefabcdefabcdef)
+    output = StringWriter.new
+    serialize(testModel, TestMM, output, :argument_format_provider => proc {|a|
+      if a.name == "integer"
+        "0x%x"
+      else
+        nil
+      end}) 
+    assert_equal %q(TestNode integer: 0xabcdefabcdefabcdef)+"\n", output
   end
 
   def test_float

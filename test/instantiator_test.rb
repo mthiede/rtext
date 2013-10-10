@@ -1429,9 +1429,13 @@ class InstantiatorTest < Test::Unit::TestCase
   def test_integer
     env, problems = instantiate(%q(
       TestNode integer: 7 
+      TestNode integer: 4294967296
+      TestNode integer: 12345678901234567890
     ), TestMM)
     assert_no_problems(problems)
-    assert_equal 7, env.elements.first.integer
+    assert_equal 7, env.elements[0].integer
+    assert_equal 4294967296, env.elements[1].integer
+    assert_equal 12345678901234567890, env.elements[2].integer
   end
 
   def test_integer_hex
@@ -1442,10 +1446,11 @@ class InstantiatorTest < Test::Unit::TestCase
         TestNode integer: 0x007 
         TestNode integer: 0x77
         TestNode integer: 0xabCDEF
+        TestNode integer: 0xabcdefabcdefabcdef
       }
     ), TestMM)
     assert_no_problems(problems)
-    assert_equal [7, 7, 7, 0x77, 0xABCDEF], env.find(:text => "root").first.childs.collect{|c| c.integer}
+    assert_equal [7, 7, 7, 0x77, 0xABCDEF, 0xabcdefabcdefabcdef], env.find(:text => "root").first.childs.collect{|c| c.integer}
   end
 
   def test_float
