@@ -297,6 +297,25 @@ TestNode name: "Target2"
 ),output
   end
 
+  def test_identifier_provider_nil
+    testModel = [
+      TestMMRef::TestNode.new(:name => "Source"),
+      TestMMRef::TestNode.new(:name => "Target")]
+    testModel[0].refOne = testModel[1]
+
+    output = StringWriter.new
+    serialize(testModel, TestMMRef, output,
+      :identifier_provider => proc{|e, context, feature, index| 
+        nil
+      }
+    )
+
+    assert_equal %Q(\
+TestNode name: "Source"
+TestNode name: "Target"
+),output
+  end
+
   def test_references
     testModel = [ 
       TestMMRef::TestNode.new(:name => "Source"),
