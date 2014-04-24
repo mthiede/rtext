@@ -130,7 +130,10 @@ class Parser
   def parse_argument_list(arg_list)
     first = true
     while (AnyValue + [",", "[", :label, :error]).include?(next_token_kind)
-      consume(",") unless first
+      unless first
+        success = consume(",")
+        consume(:newline) if success && next_token_kind == :newline
+      end
       first = false
       parse_argument(arg_list)
     end
@@ -155,13 +158,18 @@ class Parser
 
   def parse_argument_value_list
     consume("[")
+    consume(:newline) if next_token_kind == :newline
     first = true
     result = []
     while (AnyValue + [",", :error]).include?(next_token_kind)
-      consume(",") unless first
+      unless first
+        success = consume(",")
+        consume(:newline) if success && next_token_kind == :newline
+      end
       first = false
       result << parse_value
     end
+    consume(:newline) if next_token_kind == :newline && next_token_kind(1) == "]"
     consume("]")
     result
   end
@@ -172,8 +180,8 @@ class Parser
     consume(*AnyValue)
   end
 
-  def next_token_kind
-    @tokens.first && @tokens.first.kind
+  def next_token_kind(idx=0)
+    @tokens[idx] && @tokens[idx].kind
   end
 
   def discard_until(kind)

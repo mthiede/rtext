@@ -144,6 +144,22 @@ def test_only_newline
 )
 end
 
+def test_linebreak
+  assert_tokens [
+    Token.new(:identifier, "TestNode", 2, 1, 8),
+    Token.new(:identifier, "someNode", 2, 10, 17),
+    Token.new(",", nil, 2, 18, 18),
+    Token.new(:newline, nil, 2, nil, nil),
+    Token.new(:label, "label", 3, 3, 8),
+    Token.new(:identifier, "x", 3, 10, 10),
+    Token.new(:newline, nil, 3, nil, nil),
+  ], %Q(
+TestNode someNode,
+  label: x
+)
+
+end
+
 def do_tokenize(str)
   tokenize(str, /\A\/[\/\w]+/)
 end

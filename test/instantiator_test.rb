@@ -816,46 +816,100 @@ class InstantiatorTest < Test::Unit::TestCase
     ], problems)
   end
 
-  def test_unclosed_bracket
+  def test_unclosed_bracket1
     root_elements = []
     env, problems = instantiate(%Q(
       TestNode nums: [1, "bla"
-      TestNode nums: [1, text: "bla"
-      TestNode nums: [1 text: "bla"
-      TestNode nums: [1 "bla"
-      TestNode [1, "bla"
-      TestNode [1, "bla" [
-      TestNode [1, "bla", [
     ), TestMM, :root_elements => root_elements)
-    assert_equal 7, root_elements.size
+    assert_equal 1, root_elements.size
     assert_equal [1], root_elements[0].nums
     assert_nil root_elements[0].text
-    assert_equal [1], root_elements[1].nums
-    assert_equal "bla", root_elements[1].text
-    assert_equal [1], root_elements[2].nums
-    assert_equal "bla", root_elements[2].text
-    assert_equal [1], root_elements[3].nums
-    assert_nil root_elements[3].text
-    assert_equal [], root_elements[4].nums
-    assert_nil root_elements[4].text
     assert_problems([
       [/unexpected newline, expected \]/i, 2],
       [/argument 'nums' can not take a string, expected integer/i, 2],
-      [/unexpected label 'text', expected identifier/i, 3],
-      [/unexpected label 'text', expected \]/i, 4],
-      [/unexpected string 'bla', expected ,/i, 5],
-      [/argument 'nums' can not take a string, expected integer/i, 5],
-      [/unexpected newline, expected \]/i, 5],
-      [/unexpected newline, expected \]/i, 6],
-      [/unexpected unlabled argument/i, 6],
-      [/unexpected \[, expected \]/i, 7],
-      [/unexpected newline, expected \]/i, 7],
-      [/unexpected unlabled argument/i, 7],
-      [/unexpected unlabled argument/i, 7],
-      [/unexpected \[, expected identifier/i, 8],
-      [/unexpected unlabled argument/i, 8],
-      [/unexpected unlabled argument/i, 8],
-      [/unexpected newline, expected \]/i, 8],
+    ], problems)
+  end
+
+  def test_unclosed_bracket2
+    root_elements = []
+    env, problems = instantiate(%Q(
+      TestNode nums: [1, text: "bla"
+    ), TestMM, :root_elements => root_elements)
+    assert_equal 1, root_elements.size
+    assert_equal [1], root_elements[0].nums
+    assert_equal "bla", root_elements[0].text
+    assert_problems([
+      [/unexpected label 'text', expected identifier/i, 2],
+    ], problems)
+  end
+
+  def test_unclosed_bracket3
+    root_elements = []
+    env, problems = instantiate(%Q(
+      TestNode nums: [1 text: "bla"
+    ), TestMM, :root_elements => root_elements)
+    assert_equal 1, root_elements.size
+    assert_equal [1], root_elements[0].nums
+    assert_equal "bla", root_elements[0].text
+    assert_problems([
+      [/unexpected label 'text', expected \]/i, 2],
+    ], problems)
+  end
+
+  def test_unclosed_bracket4
+    root_elements = []
+    env, problems = instantiate(%Q(
+      TestNode nums: [1 "bla"
+    ), TestMM, :root_elements => root_elements)
+    assert_equal 1, root_elements.size
+    assert_equal [1], root_elements[0].nums
+    assert_nil root_elements[0].text
+    assert_problems([
+      [/unexpected string 'bla', expected ,/i, 2],
+      [/argument 'nums' can not take a string, expected integer/i, 2],
+      [/unexpected newline, expected \]/i, 2],
+    ], problems)
+  end
+
+  def test_unclosed_bracket5
+    root_elements = []
+    env, problems = instantiate(%Q(
+      TestNode [1, "bla"
+    ), TestMM, :root_elements => root_elements)
+    assert_equal 1, root_elements.size
+    assert_equal [], root_elements[0].nums
+    assert_nil root_elements[0].text
+    assert_problems([
+      [/unexpected newline, expected \]/i, 2],
+      [/unexpected unlabled argument/i, 2],
+    ], problems)
+  end
+
+  def test_unclosed_bracket6
+    root_elements = []
+    env, problems = instantiate(%Q(
+      TestNode [1, "bla" [
+    ), TestMM, :root_elements => root_elements)
+    assert_equal 1, root_elements.size
+    assert_problems([
+      [/unexpected \[, expected \]/i, 2],
+      [/unexpected end of file, expected \]/i, 2],
+      [/unexpected unlabled argument/i, 2],
+      [/unexpected unlabled argument/i, 2],
+    ], problems)
+  end
+
+  def test_unclosed_bracket7
+    root_elements = []
+    env, problems = instantiate(%Q(
+      TestNode [1, "bla", [
+    ), TestMM, :root_elements => root_elements)
+    assert_equal 1, root_elements.size
+    assert_problems([
+      [/unexpected \[, expected identifier/i, 2],
+      [/unexpected unlabled argument/i, 2],
+      [/unexpected unlabled argument/i, 2],
+      [/unexpected end of file, expected \]/i, 2],
     ], problems)
   end
 
@@ -1540,6 +1594,27 @@ class InstantiatorTest < Test::Unit::TestCase
     env, problems = instantiate(input, TestMM)
     assert_no_problems(problems)
     assert_match /AE Umlaut: /, env.elements.first.text
+  end
+
+  #
+  # line breaks
+  #
+
+  def test_linebreak
+    roots = []
+    env, problems = instantiate(%Q(
+      TestNode sometext, 
+        integer: 1,
+        nums: [
+          1,
+          2
+        ]
+      ), TestMM, :root_elements => roots, :unlabled_arguments => proc {|clazz| ["text"]})
+    assert_no_problems(problems)
+    node = roots.first
+    assert_equal "sometext", node.text
+    assert_equal 1, node.integer
+    assert_equal [1,2], node.nums
   end
 
   private
