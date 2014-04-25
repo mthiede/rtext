@@ -47,7 +47,10 @@ def extract(lines)
 end
 
 def filter_lines(lines)
-  lines.reject{|l| l.strip.empty? || l =~ /^[#@]/}
+  lines.reject { |l| 
+    ls = l.strip
+    ls.empty? || ls[0..0] == "@" || ls[0..0] == "#"
+  }
 end
 
 def join_lines(lines)
