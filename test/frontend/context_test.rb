@@ -122,6 +122,27 @@ def test_linebreak_arg_array
     ))
 end
 
+def test_comment_annotation
+  assert_context(
+    %Q(
+      A {
+        B {
+          |F bla
+    ),
+    %Q(
+      A {
+        # bla
+        B {
+          C a1: v1, a2: "v2"
+          # bla
+          D {
+            E a1: 5
+          }
+          @ anno
+          |F bla
+    ))
+end
+
 def assert_context(expected, text)
   exp_lines = expected.strip.split("\n")
   exp_col = exp_lines.last.index("|")
