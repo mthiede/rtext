@@ -654,7 +654,7 @@ def assert_link_targets(context, options)
   infile = options[:file] || @infile
   content = File.open(infile, "rb") {|f| f.read}
   lines = content.split(/\r?\n/)[0..context.line-1]
-  lines =  RText::Frontend::Context.extract(lines)
+  lines, col_offset =  RText::Frontend::Context.new.extract(lines)
   response = @con.execute_command( 
     {"command" => "link_targets", "context" => lines, "column" => context.col})
   assert_equal "response", response["type"]
@@ -666,7 +666,7 @@ end
 def assert_completions(context, expected)
   content = File.open(@infile, "rb"){|f| f.read}
   lines = content.split(/\r?\n/)[0..context.line-1]
-  lines =  RText::Frontend::Context.extract(lines)
+  lines, col_offset =  RText::Frontend::Context.new.extract(lines)
   response = @con.execute_command( 
     {"command" => "content_complete", "context" => lines, "column" => context.col})
   assert_equal expected, response["options"].collect{|o| o["insert"]}
