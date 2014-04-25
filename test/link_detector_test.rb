@@ -189,6 +189,14 @@ TestNode |SomeNode
   assert_link_desc ld, :element => "TestNode", :feature => "name", :index => 0, :backward => true, :value => "SomeNode", :scol => 10, :ecol => 17
 end
 
+def test_command_and_name_curly_no_ws
+  ld = build_link_desc(TestMM, {:backward_ref => "name"}, <<-END
+TestNode Some|Node{
+  END
+  )
+  assert_link_desc ld, :element => "TestNode", :element_name => "SomeNode", :feature => "name", :index => 0, :backward => true, :value => "SomeNode", :scol => 10, :ecol => 17
+end
+
 def test_child_within_command
   ld = build_link_desc(TestMM, {:backward_ref => "name"}, <<-END
 TestNode SomeNode {
@@ -255,6 +263,9 @@ def assert_link_desc(ld, options)
     assert_equal options[:element], ld.element.class.ecore.name
   else
     assert_nil ld.element
+  end
+  if options[:element_name]
+    assert_equal options[:element_name], ld.element.name
   end
   if options[:feature]
     assert_equal options[:feature], ld.feature.name

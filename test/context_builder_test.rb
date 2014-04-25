@@ -397,6 +397,14 @@ TestNode {|
   assert(c.element.is_a?(TestMM::TestNode))
 end
 
+def test_root_after_curly_no_ws
+  c = build_context TestMM, <<-END
+TestNode{|
+  END
+  assert_context c, :prefix => "", :feature => nil, :in_array => false, :in_block => false, :problem => :after_curly
+  assert(c.element.is_a?(TestMM::TestNode))
+end
+
 def test_in_cmd_after_cmd
   c = build_context TestMM, <<-END
   TestNode text: a {
