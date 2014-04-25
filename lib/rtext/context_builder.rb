@@ -103,8 +103,10 @@ module ContextBuilder
     problem = nil
     line = context_lines.last
     if line =~ /\{\s*$/
-      # remove curly brace from last line, required for correct counting of num_elements
-      line.sub!(/\{\s*$/,"")
+      # remove curly brace from last line, required for correct counting of num_elements;
+      # also make sure that there is whitespace at the end of line, otherwise a word
+      # might get removed as "just being completed"
+      line.sub!(/\{\s*$/," ")
       problem = :after_curly
     end
     
