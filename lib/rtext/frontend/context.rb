@@ -3,10 +3,12 @@ module Frontend
 
 class Context
 
-# lines; all lines from the beginning up to and including the current line
-def extract(lines)
+# lines: all lines from the beginning up to and including the current line
+# pos: position of the cursor in the last lines
+# returns the extracted lines and the new position in the last line
+def extract(lines, pos)
   lines = filter_lines(lines)
-  lines, col_offset = join_lines(lines)
+  lines, new_pos = join_lines(lines, pos)
   non_ignored_lines = 0
   array_nesting = 0
   block_nesting = 0
@@ -43,32 +45,33 @@ def extract(lines)
       end
     end
   end
-  [result, col_offset]
+  [result, new_pos]
 end
 
 def filter_lines(lines)
   lines.reject { |l| 
     ls = l.strip
-    ls.empty? || ls[0..0] == "@" || ls[0..0] == "#"
+    ls[0..0] == "@" || ls[0..0] == "#"
   }
 end
 
-def join_lines(lines)
+def join_lines(lines, pos)
   outlines = []
   while lines.size > 0
     outlines << lines.shift
-    last_col_offset = 0
     while lines.size > 0 && 
         (outlines.last =~ /,\s*$/ || 
         (outlines.last =~ /\[\s*$/ && outlines.last =~ /,/) ||
         (lines.first =~ /^\s*\]/ && outlines.last =~ /,/))
       l = lines.shift
-      l =~ /^(\s*)/
-      last_col_offset = outlines.last.size - $1.size
+      if lines.size == 0
+        non_ws_prefix = l[0..pos-1].strip
+        pos = outlines.last.size + non_ws_prefix.size
+      end
       outlines.last.concat(l.strip)
     end
   end
-  [outlines, last_col_offset]
+  [outlines, pos]
 end
 
 end

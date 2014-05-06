@@ -122,6 +122,46 @@ def test_linebreak_arg_array
     ))
 end
 
+def test_linebreak_empty_last_line
+  assert_context(
+    %Q(
+      A {
+        B name,|
+    ),
+    %Q(
+      A {
+        B name,
+          |
+    ))
+end
+
+def test_linebreak_empty_last_line2
+  assert_context(
+    %Q(
+      A {
+        B name,|
+    ),
+    %Q(
+      A {
+        B name,
+ |
+    ))
+end
+
+def test_linebreak_empty_lines
+  assert_context(
+    %Q(
+      A {
+        B name,a1:|
+    ),
+    %Q(
+      A {
+        B name,
+
+        a1: |
+    ))
+end
+
 def test_comment_annotation
   assert_context(
     %Q(
@@ -144,15 +184,19 @@ def test_comment_annotation
 end
 
 def assert_context(expected, text)
-  exp_lines = expected.strip.split("\n")
+  # remove first and last lines
+  # these are empty because of the use of %Q
+  exp_lines = expected.split("\n")[1..-2]
   exp_col = exp_lines.last.index("|")
-  in_lines = text.strip.split("\n")
+  exp_lines.last.sub!("|","")
+  in_lines = text.split("\n")[1..-2]
   in_col = in_lines.last.index("|")
+  in_lines.last.sub!("|","")
   ctx = RText::Frontend::Context.new
-  lines, col_offset = ctx.extract(in_lines)
+  lines, out_col = ctx.extract(in_lines, in_col)
   assert_equal exp_lines, lines
   if exp_col && in_col
-    assert_equal exp_col, in_col + col_offset
+    assert_equal exp_col, out_col
   end
 end
 
