@@ -1,10 +1,16 @@
 EPackage StatemachineMM {
   EClass State, abstract: true {
     EAttribute name, eType: /StatemachineMM/StringType
-    EReference parent, eType: /StatemachineMM/CompositeState, eOpposite: /StatemachineMM/CompositeState/substates
+    EReference parent, 
+      eType: /StatemachineMM/CompositeState, 
+      eOpposite: /StatemachineMM/CompositeState/substates
   }
   EClass SimpleState, eSuperTypes: [/StatemachineMM/State]
-  EClass CompositeState, eSuperTypes: [/StatemachineMM/State] {
+  EClass CompositeState, 
+    eSuperTypes: [
+      /StatemachineMM/State
+    ],
+    abstract: false {
     EReference substates, upperBound: -1, containment: true, eType: /StatemachineMM/State, eOpposite: /StatemachineMM/State/parent
   }
   EClass Transition {
