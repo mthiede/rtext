@@ -55,6 +55,10 @@ def filter_lines(lines)
   }
 end
 
+# when joining two lines, all whitespace after the last character of the first line is removed
+# (after , and [); however whitespace at the end of the last of several joined lines is preserved;
+# this way the context is correct even if the cursor is after the end of the last line 
+# (i.e. with whitespace after the last non-whitespace character)
 def join_lines(lines, pos)
   outlines = []
   while lines.size > 0
@@ -63,12 +67,15 @@ def join_lines(lines, pos)
         (outlines.last =~ /,\s*$/ || 
         (outlines.last =~ /\[\s*$/ && outlines.last =~ /,/) ||
         (lines.first =~ /^\s*\]/ && outlines.last =~ /,/))
+      outlines.last.rstrip!
       l = lines.shift
       if lines.size == 0
-        non_ws_prefix = l[0..pos-1].strip
+        # strip only left part, the prefix might have whitespace on the
+        # right hand side which is relevant for the position
+        non_ws_prefix = l[0..pos-1].lstrip
         pos = outlines.last.size + non_ws_prefix.size
       end
-      outlines.last.concat(l.strip)
+      outlines.last.concat(l.lstrip)
     end
   end
   [outlines, pos]

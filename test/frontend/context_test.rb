@@ -114,10 +114,10 @@ def test_linebreak_arg_array
       A {
         B {
           C name,
-            a1: [
+            a1: [   
               v1,
-              v2 
-            ],
+              v2
+            ], 
             a2: |5
     ))
 end
@@ -152,11 +152,11 @@ def test_linebreak_empty_lines
   assert_context(
     %Q(
       A {
-        B name,a1:|
+        B name,a1: |
     ),
     %Q(
       A {
-        B name,
+        B name, 
 
         a1: |
     ))
