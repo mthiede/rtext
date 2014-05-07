@@ -493,3 +493,11 @@ context in the frontend simple and the amount of data transmitted to the backend
 It's also a way to keep the parsing time of the context low in the backend and thus to minimize
 the user noticable delay.
 
+In case of line breaks, the frontend is responsible to join the lines before sending the 
+context information. For commands which use a column position, the position is the position
+within the joined line. This means that, when sending a command, the frontend must convert
+the column position in the broken line into the new position in the joined line.
+When reading back column information in a response (e.g. link command) the frontend must
+convert the column position in the joined line into a position in the respective broken
+fragment of a line.
+

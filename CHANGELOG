@@ -76,3 +76,7 @@
 * Minor performance improvements, mainly for instantiator and when passing large RText messages
 * Improved performance of frontend connector especially for large amounts of data
 
+=0.8.0
+
+* Added line breaks support
+
