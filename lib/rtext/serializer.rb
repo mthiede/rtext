@@ -72,13 +72,24 @@ class Serializer
     args = []
     @lang.unlabled_arguments(clazz).each do |f|
       values = serialize_values(element, f)
-      args << values if values
+      args << [f, values] if values
     end
     @lang.labled_arguments(clazz).each do |f|
       values = serialize_values(element, f)
-      args << "#{f.name}: #{values}" if values
+      args << [f, "#{f.name}: #{values}"] if values
     end
-    headline += " "+args.join(", ") if args.size > 0
+    newline_arguments = false
+    args.each_with_index do |arg, index|
+      if @lang.newline_argument?(clazz, arg[0])
+        headline += " \\" if index == 0
+        headline += "\n" + @lang.indent_string * (@indent + 1)
+        newline_arguments = true
+      else
+        headline += " "
+      end
+      headline += arg[1]
+      headline += "," unless index == args.size-1
+    end
     contained_elements = {}
     @lang.containments(clazz).each do |f|
       contained_elements[f] = element.getGenericAsArray(f.name) 
@@ -87,6 +98,10 @@ class Serializer
       headline += " {"
       write(headline)
       iinc
+      # additional indentation needed if there are arguments on separate lines;
+      # note that this increment doesn't affect indentation of features of this element
+      # that have array values, because they have already been formatted in serialize_values
+      iinc if newline_arguments
       @lang.containments(clazz).each do |f|
         childs = contained_elements[f]
         if childs.size > 0
@@ -111,6 +126,7 @@ class Serializer
         end
       end
       idec
+      idec if newline_arguments
       write("}")
     else
       write(headline)
@@ -173,10 +189,17 @@ class Serializer
         result << @lang.identifier_provider.call(v, element, feature, index) 
       end
     end
-    if result.size > 1  
-      "[#{result.join(", ")}]"
+    if result.size > 1
+      if @lang.newline_array?(element.class.ecore, feature)
+        # inside an array, indent two steps further than the command
+        "[\n" + @lang.indent_string * (@indent + 2) +
+          result.join(",\n" + @lang.indent_string * (@indent + 2)) +
+          "\n" + @lang.indent_string * (@indent + 1) + "]"
+      else
+        "[#{result.join(", ")}]"
+      end
     elsif result.size == 1
-      result.first 
+      result.first
     else
       nil
     end

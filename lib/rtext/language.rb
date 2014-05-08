@@ -142,6 +142,8 @@ class Language
     @unquoted_arguments = options[:unquoted_arguments]
     @labeled_containments = options[:labeled_containments]
     @argument_format_provider = options[:argument_format_provider]
+    @newline_arguments = options[:newline_arguments]
+    @newline_arrays = options[:newline_arrays]
     @root_classes = options[:root_classes] || default_root_classes(root_epackage)
     command_name_provider = options[:command_name_provider] || proc{|c| c.name}
     setup_commands(root_epackage, command_name_provider)
@@ -232,6 +234,16 @@ class Language
     @argument_format_provider && @argument_format_provider.call(feature)
   end
 
+  def newline_argument?(clazz, feature)
+    return false unless @newline_arguments
+    @newline_arguments.call(clazz).include?(feature.name)
+  end
+
+  def newline_array?(clazz, feature)
+    return false unless @newline_arrays
+    @newline_arrays.call(clazz).include?(feature.name)
+  end
+
   def concrete_types(clazz)
     ([clazz] + clazz.eAllSubTypes).select{|c| !c.abstract}
   end
@@ -312,6 +324,8 @@ class Language
     :labled_arguments,
     :unquoted?,
     :labeled_containment?,
+    :newline_argument?,
+    :newline_array?,
     :argument_format,
     :concrete_types,
     :containments_by_target_type,

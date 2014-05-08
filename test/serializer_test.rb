@@ -27,6 +27,12 @@ class SerializerTest < Test::Unit::TestCase
     class TestNode < RGen::MetamodelBuilder::MMBase
       has_attr 'text', String
       has_many_attr 'texts', String
+      has_many_attr 'more_texts', String
+      has_attr 'unlabled', String
+      has_attr 'unquoted', String
+      has_attr 'both', String
+      has_attr 'none', String
+      has_attr 'comment', String
       has_attr 'integer', Integer
       has_attr 'float', Float
       has_attr 'enum', SomeEnum
@@ -368,6 +374,7 @@ TestNode name: "Target" {
     end
     class TestNode < RGen::MetamodelBuilder::MMBase
       has_attr 'text', String
+      has_many_attr 'texts', String
       contains_one 'child1', TestNode, 'parent1'
       contains_many 'childs2', TestNode, 'parent2'
       contains_one 'child3', TestNodeA, 'parent3'
@@ -642,6 +649,349 @@ TestNode text: "some text"
     assert_equal %Q(\
 TestNode text: "some text"
 ), output.string
+  end
+
+  #
+  # line breaks
+  #
+  All_features = proc {|clazz|
+    res = []
+    clazz.eAllStructuralFeatures.reject{|f| f.name =~ /parent|2$/}.each{|f| res << f.name}
+    res
+  }
+
+  def test_linebreak
+    testModel = TestMM::TestNode.new(
+      :text => "some text",
+      :texts => ["some more text", "some more text", "some more text"])
+
+    output = StringWriter.new
+    serialize(testModel, TestMM, output,
+      :newline_arguments => All_features,
+      :newline_arrays => All_features)
+
+    assert_equal %Q(\
+TestNode \\
+  text: "some text",
+  texts: [
+    "some more text",
+    "some more text",
+    "some more text"
+  ]
+), output 
+  end
+
+  def test_linebreak_child
+    testModel1 = TestMM::TestNode.new(
+      :text => "some text1",
+      :texts => ["some more text", "some more text", "some more text"])
+    testModel0 = TestMM::TestNode.new(
+      :text => "some text0",
+      :integer => 10,
+      :childs => [testModel1])
+
+    output = StringWriter.new
+    serialize(testModel0, TestMM, output,
+      :newline_arguments => All_features,
+      :newline_arrays => All_features)
+
+    assert_equal %Q(\
+TestNode \\
+  text: "some text0",
+  integer: 10 {
+    TestNode \\
+      text: "some text1",
+      texts: [
+        "some more text",
+        "some more text",
+        "some more text"
+      ]
+}
+), output 
+  end
+
+  def test_linebreak_child_no_arguments
+    testModel1 = TestMM::TestNode.new(
+      :text => "some text1",
+      :texts => ["some more text", "some more text", "some more text"])
+    testModel0 = TestMM::TestNode.new(:childs => [testModel1])
+
+    output = StringWriter.new
+    serialize(testModel0, TestMM, output,
+      :newline_arguments => All_features,
+      :newline_arrays => All_features)
+
+    assert_equal %Q(\
+TestNode {
+  TestNode \\
+    text: "some text1",
+    texts: [
+      "some more text",
+      "some more text",
+      "some more text"
+    ]
+}
+), output 
+  end
+
+  def test_linebreak_unlabled_array_arguments
+    testModel = TestMM::TestNode.new(
+      :none => "some text",
+      :texts => ["some more text", "some more text", "some more text"])
+
+    output = StringWriter.new
+    serialize(testModel, TestMM, output,
+      :unlabled_arguments => proc {|clazz| ["texts"]},
+      :newline_arguments => proc {|clazz| All_features.call(clazz) - ["texts"]},
+      :newline_arrays => All_features)
+
+    assert_equal %Q(\
+TestNode [
+    "some more text",
+    "some more text",
+    "some more text"
+  ],
+  none: "some text"
+), output 
+  end
+
+  def test_linebreak_unlabled_array_arguments_sameline
+    testModel = TestMM::TestNode.new(
+      :none => "some text",
+      :texts => ["some more text", "some more text", "some more text"])
+
+    output = StringWriter.new
+    serialize(testModel, TestMM, output,
+      :unlabled_arguments => proc {|clazz| ["texts"]},
+      :newline_arguments => proc {|clazz| All_features.call(clazz) - ["texts"]},
+      :newline_arrays => proc {|clazz| All_features.call(clazz) - ["texts"]})
+
+    assert_equal %Q(\
+TestNode ["some more text", "some more text", "some more text"],
+  none: "some text"
+), output 
+  end
+
+  def test_linebreak_unlabled_both_arguments_and_child
+    testModel1 = TestMM::TestNode.new(
+      :texts => ["some more text", "some more text", "some more text"])
+    testModel0 = TestMM::TestNode.new(
+      :unlabled => "unlabled",
+      :both => "both",
+      :childs => [testModel1])
+
+    output = StringWriter.new
+    serialize(testModel0, TestMM, output,
+      :unlabled_arguments => proc {|clazz| ["unlabled", "both"]},
+      :unquoted_arguments => proc {|clazz| ["both"]},
+      :newline_arguments => proc {|clazz| All_features.call(clazz) - ["unlabled"]},
+      :newline_arrays => All_features)
+
+    assert_equal %Q(\
+TestNode "unlabled",
+  both {
+    TestNode \\
+      texts: [
+        "some more text",
+        "some more text",
+        "some more text"
+      ]
+}
+), output 
+  end
+
+  def test_linebreak_child_two_attributes
+    testModel1 = TestMM::TestNode.new(
+      :text => "some text1",
+      :texts => ["some more text", "some more text", "some more text"],
+      :more_texts => ["even more text", "even more text"])
+    testModel0 = TestMM::TestNode.new(:text => "some text0", :childs => [testModel1])
+
+    output = StringWriter.new
+    serialize(testModel0, TestMM, output,
+      :newline_arguments => proc {|clazz| All_features.call(clazz) - ["text"]},
+      :newline_arrays => proc {|clazz| All_features.call(clazz) - ["text"]})
+
+    assert_equal %Q(\
+TestNode text: "some text0" {
+  TestNode text: "some text1",
+    texts: [
+      "some more text",
+      "some more text",
+      "some more text"
+    ],
+    more_texts: [
+      "even more text",
+      "even more text"
+    ]
+}
+), output 
+  end
+
+  def test_linebreak_child_two_attributes_one_sameline
+    testModel1 = TestMM::TestNode.new(
+      :text => "some text1",
+      :texts => ["some more text", "some more text", "some more text"],
+      :more_texts => ["even more text", "even more text"])
+    testModel0 = TestMM::TestNode.new(:text => "some text0", :childs => [testModel1])
+
+    output = StringWriter.new
+    serialize(testModel0, TestMM, output,
+      :newline_arguments => proc {|clazz| All_features.call(clazz) - ["more_texts"]},
+      :newline_arrays => proc {|clazz| All_features.call(clazz) - ["more_texts"]})
+
+    assert_equal %Q(\
+TestNode \\
+  text: "some text0" {
+    TestNode \\
+      text: "some text1",
+      texts: [
+        "some more text",
+        "some more text",
+        "some more text"
+      ], more_texts: ["even more text", "even more text"]
+}
+), output 
+  end
+
+  def test_linebreak_two_children
+    testModel2 = TestMM::TestNode.new(:text => "some text2", :texts => ["some more text"])
+    testModel1 = TestMM::TestNode.new(:text => "some text1", :texts => ["some more text", "some more text", "some more text"])
+    testModel0 = TestMM::TestNode.new(:text => "some text0", :childs => [testModel1, testModel2])
+
+    output = StringWriter.new
+    serialize(testModel0, TestMM, output,
+      :newline_arguments => proc {|clazz| All_features.call(clazz) - ["text"]},
+      :newline_arrays => All_features)
+
+    assert_equal %Q(\
+TestNode text: "some text0" {
+  TestNode text: "some text1",
+    texts: [
+      "some more text",
+      "some more text",
+      "some more text"
+    ]
+  TestNode text: "some text2",
+    texts: "some more text"
+}
+), output 
+  end
+
+  def test_linebreak_nested_children
+    testModel2 = TestMM::TestNode.new(
+      :text => "some text2",
+      :texts => ["some more text", "some more text", "some more text"])
+    testModel1 = TestMM::TestNode.new(
+      :text => "some text1",
+      :childs => [testModel2])
+    testModel0 = TestMM::TestNode.new(
+      :text => "some text0",
+      :integer => 10,
+      :childs => [testModel1])
+
+    output = StringWriter.new
+    serialize(testModel0, TestMM, output,
+      :newline_arguments => All_features,
+      :newline_arrays => All_features)
+
+    assert_equal %Q(\
+TestNode \\
+  text: "some text0",
+  integer: 10 {
+    TestNode \\
+      text: "some text1" {
+        TestNode \\
+          text: "some text2",
+          texts: [
+            "some more text",
+            "some more text",
+            "some more text"
+          ]
+    }
+}
+), output 
+  end
+
+  def test_linebreak_no_break
+    testModel = TestMM::TestNode.new(:text => "some text", :texts => ["some more text", "some more text", "some more text"])
+
+    output = StringWriter.new
+    serialize(testModel, TestMM, output)
+
+    assert_equal %Q(\
+TestNode text: "some text", texts: ["some more text", "some more text", "some more text"]
+), output 
+  end
+
+  def test_linebreak_child_role
+    testModel = TestMMChildRole::TestNode.new(
+      :child1 => TestMMChildRole::TestNode.new(:text => "child1"),
+      :childs2 => [
+        TestMMChildRole::TestNode.new(
+          :text => "child2a",
+          :texts => ["some more text", "some more text"]),
+        TestMMChildRole::TestNode.new(
+          :text => "child2b",
+          :texts => ["some more text", "some more text"])
+      ])
+
+    output = StringWriter.new
+    serialize(testModel, TestMMChildRole, output,
+      :newline_arguments => proc {|clazz| All_features.call(clazz) - ["text"]},
+      :newline_arrays => proc {|clazz| All_features.call(clazz) - ["text"]})
+
+    assert_equal %Q(\
+TestNode {
+  child1:
+    TestNode text: "child1"
+  childs2: [
+    TestNode text: "child2a",
+      texts: [
+        "some more text",
+        "some more text"
+      ]
+    TestNode text: "child2b",
+      texts: [
+        "some more text",
+        "some more text"
+      ]
+  ]
+}
+), output 
+  end
+
+  def test_linebreak_comment
+    testModel = TestMM::TestNode.new(
+      :text => "some text",
+      :comment => "this is a comment",
+      :childs => [
+        TestMM::TestNode.new(:comment => "\n\ncomment of a child node\n  multiline\n\n\nanother\n\n\n")
+        ])
+
+    output = StringWriter.new
+    serialize(testModel, TestMM, output,
+      :newline_arguments => All_features,
+      :comment_provider => proc { |e| 
+        c = e.comment
+        e.comment = nil
+        c
+      })
+
+    assert_equal %Q(\
+#this is a comment
+TestNode \\
+  text: "some text" {
+    #
+    #
+    #comment of a child node
+    #  multiline
+    #
+    #
+    #another
+    TestNode
+}
+), output 
   end
 
   def serialize(model, mm, output, options={})
