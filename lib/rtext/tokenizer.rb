@@ -10,6 +10,7 @@ module Tokenizer
   def tokenize(str, reference_regexp, options={})
     result = []
     on_command_token_proc = options[:on_command_token]
+    linebreak = false
     str.split(/\r?\n/).each_with_index do |str, idx|
       idx += 1
       if idx == 1
@@ -27,7 +28,12 @@ module Tokenizer
         end
       else
         col = 1
-        first_token_in_line = true
+        if linebreak
+          # do not regard as the first token, if previous line ended in a linebreak
+          linebreak = false
+        else
+          first_token_in_line = true
+        end
         until str.empty?
           whitespace = false
           case str
@@ -94,6 +100,10 @@ module Tokenizer
             col += $&.size
             whitespace = true
             # ignore
+          when /\A\\\s*\Z/
+            str = $'
+            linebreak = true
+            # ignore
           when /\A<%((?:(?!%>).)*)%>/, /\A<([^>]*)>/
             str = $'
             result << Token.new(:generic, RText::Generic.new($1), idx, col, col+$&.size-1)
@@ -107,7 +117,7 @@ module Tokenizer
         end
       end
       result << Token.new(:newline, nil, idx) \
-        unless result.empty? || result.last.kind == :newline
+        unless linebreak || result.empty? || result.last.kind == :newline
     end
     result
   end
