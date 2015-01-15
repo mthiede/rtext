@@ -42,6 +42,16 @@ class Language
   #     (in sprintf syntax) which will be used by the serializer for integers and floats.
   #     default: if not present or the proc returns nil, then #to_s is used
   #
+  #  :newline_arguments
+  #     a Proc which receives an EClass and should return the names of this EClass's features
+  #     which are to be serialized after adding a line break.
+  #     default: no attributes on new lines
+  #
+  #  :newline_arrays
+  #     a Proc which receives an EClass and should return the names of this EClass's features
+  #     for which the array elements of their values are to be serialized after a line break.
+  #     default: no attributes on new lines
+  #
   #  :reference_regexp  
   #     a Regexp which is used by the tokenizer for identifying references 
   #     it must only match at the beginning of a string, i.e. it should start with \A
@@ -53,19 +63,24 @@ class Language
   #  :identifier_provider
   #     a Proc which receives an element, its containing element, the feature through which the
   #     element is referenced and the index position of the reference within the feature's values.
-  #     the latter 3 argumnets may be nil. it should return the element's identifier as a string.
-  #     the identifier must be unique for the element unless "per_type_identifier" is set to true,
+  #     the latter 3 arguments may be nil. it should return the element's identifier as a string.
+  #     the identifier must be unique for the element unless :per_type_identifier is set to true,
   #     in which case they must be unique for each element of the same type.
   #     identifiers may be relative to the given containing element, depending on the given
   #     feature and index position. in this case a globally unique 
-  #     identifier must be resonstructed by the proc specified using the :reference_qualifier option.
+  #     identifier must be reconstructed by the proc specified using the :reference_qualifier option.
   #     if the containing element is nil, the identifier returned must be globally unique.
-  #     default: identifiers calculated by QualifiedNameProvider
+  #     default: identifiers calculated by QualifiedNameProvider using the attribute provided using
+  #              the :attribute_name option
   #              in this case options to QualifiedNameProvider may be provided and will be passed through
   #
   #  :per_type_identifier
   #     if set to true, identifiers may be reused for elements of different type
   #     default: false
+  #
+  #  :attribute_name
+  #     the name of the attribute used to calculate identifiers by the default identifier provider
+  #     default: "name"
   #
   #  :reference_qualifier
   #     a Proc which receives RGen unresolved references and either a FragmentedModel or a ModelFragment.
