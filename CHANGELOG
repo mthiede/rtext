@@ -79,4 +79,6 @@
 =0.8.0
 
 * Added line breaks support
+* Fixed problem when there is no whitespace before a curly bracket
+* Fixed problem when loading frontend context extractor in vim
 
