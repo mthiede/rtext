@@ -66,6 +66,35 @@ def test_child_label_array
     ))
 end
 
+def test_child_label_array2
+  assert_context(
+    %Q(
+      A {
+        B |
+    ),
+    %Q(
+      A {
+        sub: [
+        ] 
+        B |
+    ))
+end
+
+def test_child_label_array3
+  assert_context(
+    %Q(
+      A {
+        sub: [
+        ] |
+    ),
+    %Q(
+      A {
+        sub: [
+        ] |
+    ))
+end
+
+
 def test_ignore_child_lables
   assert_context(
     %Q(
@@ -159,6 +188,47 @@ def test_linebreak_empty_lines
         B name, 
 
         a1: |
+    ))
+end
+
+def test_linebreak_first_arg_array
+  assert_context(
+    %Q(
+      A {
+        B [        |
+    ),
+    %Q(
+      A {
+        B [
+        |
+    ))
+end
+
+def test_linebreak_first_arg_array2
+  assert_context(
+    %Q(
+      A {
+        B [          2,          |
+    ),
+    %Q(
+      A {
+        B [
+          2,
+          |
+    ))
+end
+
+def test_linebreak_first_arg_array3
+  assert_context(
+    %Q(
+      A {
+        B [          2        ], |
+    ),
+    %Q(
+      A {
+        B [
+          2
+        ], |
     ))
 end
 
