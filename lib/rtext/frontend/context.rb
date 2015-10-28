@@ -67,15 +67,13 @@ def join_lines(lines, pos)
         (outlines.last =~ /,\s*$/ || 
         (outlines.last =~ /\[\s*$/ && outlines.last =~ /,/) ||
         (lines.first =~ /^\s*\]/ && outlines.last =~ /,/))
-      outlines.last.rstrip!
       l = lines.shift
       if lines.size == 0
-        # strip only left part, the prefix might have whitespace on the
+        # the prefix might have whitespace on the
         # right hand side which is relevant for the position
-        non_ws_prefix = l[0..pos-1].lstrip
-        pos = outlines.last.size + non_ws_prefix.size
+        pos = outlines.last.size + pos
       end
-      outlines.last.concat(l.lstrip)
+      outlines.last.concat(l)
     end
   end
   [outlines, pos]

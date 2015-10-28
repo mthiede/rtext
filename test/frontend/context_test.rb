@@ -92,7 +92,7 @@ def test_linebreak
     %Q(
       A {
         B {
-          C name,a1: v1,a2: "v2"|
+          C name,            a1: v1,            a2: "v2"|
     ),
     %Q(
       A {
@@ -108,7 +108,7 @@ def test_linebreak_arg_array
     %Q(
       A {
         B {
-          C name,a1: [v1,v2],a2: |5
+          C name,            a1: [                 v1,              v2            ],             a2: |5
     ),
     %Q(
       A {
@@ -126,7 +126,7 @@ def test_linebreak_empty_last_line
   assert_context(
     %Q(
       A {
-        B name,|
+        B name,          |
     ),
     %Q(
       A {
@@ -139,7 +139,7 @@ def test_linebreak_empty_last_line2
   assert_context(
     %Q(
       A {
-        B name,|
+        B name, |
     ),
     %Q(
       A {
@@ -152,7 +152,7 @@ def test_linebreak_empty_lines
   assert_context(
     %Q(
       A {
-        B name,a1: |
+        B name,         a1: |
     ),
     %Q(
       A {

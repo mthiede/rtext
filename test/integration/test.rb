@@ -495,12 +495,6 @@ EPackage StatemachineMM {
     |],
   END
   assert_completions context, [
-    "/StatemachineMM/CompositeState",
-    "/StatemachineMM/SimpleState",
-    "/StatemachineMM/State",
-    "/StatemachineMM/Transition",
-    "/StatemachineMM2/SimpleState",
-    "/StatemachineMM2/State"
   ]
 end
 
@@ -783,7 +777,7 @@ EPackage StatemachineMM {
   # in case of linebreaks, the begin and end column refer to the string which
   # was passed to the backend as the context; in this case the context extractor
   # appends each broken line to the previous line with all the leading whitespace removed 
-  assert_link_targets context, :begin => 30, :end => 59, :targets => [
+  assert_link_targets context, :begin => 37, :end => 66, :targets => [
     {"file"=> File.expand_path(@infile),
      "line"=>9,
      "display"=>"/StatemachineMM/CompositeState [EClass]"}
@@ -795,7 +789,7 @@ EPackage StatemachineMM {
     EReference parent, 
       eType: |/StatemachineMM/CompositeState, 
   END
-  assert_link_targets context, :begin => 30, :end => 59, :targets => [
+  assert_link_targets context, :begin => 37, :end => 66, :targets => [
     {"file"=> File.expand_path(@infile),
      "line"=>9,
      "display"=>"/StatemachineMM/CompositeState [EClass]"}
@@ -807,7 +801,7 @@ EPackage StatemachineMM {
     EReference parent, 
       eType: /StatemachineMM/CompositeStat|e, 
   END
-  assert_link_targets context, :begin => 30, :end => 59, :targets => [
+  assert_link_targets context, :begin => 37, :end => 66, :targets => [
     {"file"=> File.expand_path(@infile),
      "line"=>9,
      "display"=>"/StatemachineMM/CompositeState [EClass]"}
