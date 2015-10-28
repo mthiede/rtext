@@ -1,0 +1,7 @@
+EPackage StatemachineMM3 {
+  EClass State
+  EClass \
+    SimpleState, 
+    eSuperTypes: [/StatemachineMM3/State]
+} 
+

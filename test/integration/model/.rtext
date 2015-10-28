@@ -4,6 +4,8 @@ ruby -I../../../../rgen/lib -I ../../../lib ../ecore_editor.rb "*.ect" 2>&1
 ruby -I../../../../rgen/lib -I ../../../lib ../ecore_editor.rb "*.ect2" 2>&1
 *.ect3:
 ruby -I../../../../rgen/lib -I ../../../lib ../ecore_editor.rb "*.ect3" 2>&1
+*.ect4:
+ruby -I../../../../rgen/lib -I ../../../lib ../ecore_editor.rb "*.ect4" 2>&1
 *.invenc:
 ruby -E utf-8 -I../../../../rgen/lib -I ../../../lib ../ecore_editor.rb "*.invenc" 2>&1
 *.invalid_cmd_line:

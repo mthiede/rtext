@@ -232,6 +232,32 @@ def test_linebreak_first_arg_array3
     ))
 end
 
+def test_linebreak_backslash
+  assert_context(
+    %Q(
+      A {
+        B           arg: 1,|
+    ),
+    %Q(
+      A {
+        B \\
+          arg: 1,|
+    ))
+end
+
+def test_linebreak_whitespace_after_backslash
+  assert_context(
+    %Q(
+      A {
+        B             arg: 1,|
+    ),
+    %Q(
+      A {
+        B \\  
+          arg: 1,|
+    ))
+end
+
 def test_comment_annotation
   assert_context(
     %Q(

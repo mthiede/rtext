@@ -9,6 +9,7 @@ class IntegrationTest < Test::Unit::TestCase
 
 ModelFile = File.dirname(__FILE__)+"/model/test_metamodel.ect"
 ModelFile2 = File.dirname(__FILE__)+"/model/test_metamodel2.ect"
+ModelFile3 = File.dirname(__FILE__)+"/model/test_metamodel3.ect4"
 LargeWithErrorsFile = File.dirname(__FILE__)+"/model/test_large_with_errors.ect3"
 InvalidEncodingFile = File.dirname(__FILE__)+"/model/invalid_encoding.invenc"
 NotInRTextFile = File.dirname(__FILE__)+"/model/test.not_in_rtext"
@@ -495,6 +496,59 @@ EPackage StatemachineMM {
     |],
   END
   assert_completions context, [
+  ]
+end
+
+def test_complete_after_backslash
+  setup_connector(ModelFile3)
+  load_model
+  context = build_context <<-END
+EPackage StatemachineMM3 {
+  EClass State
+  EClass \\
+    |SimpleState, 
+  END
+  assert_completions context, [
+    "name",
+    "abstract:", 
+    "interface:", 
+    "eSuperTypes:", 
+    "instanceClassName:"
+  ]
+end
+
+def test_complete_after_backslash2
+  setup_connector(ModelFile3)
+  load_model
+  context = build_context <<-END
+EPackage StatemachineMM3 {
+  EClass State
+  EClass \\
+    SimpleState, 
+    |eSuperTypes: [/StatemachineMM3/State]
+  END
+  assert_completions context, [
+    "abstract:", 
+    "interface:", 
+    "eSuperTypes:", 
+    "instanceClassName:"
+  ]
+end
+
+def test_link_target_after_backslash
+  setup_connector(ModelFile3)
+  load_model
+  context = build_context <<-END
+EPackage StatemachineMM3 {
+  EClass State
+  EClass \\
+    SimpleState, 
+    eSuperTypes: [/S|tatemachineMM3/State]
+  END
+  assert_link_targets context, :file => ModelFile3, :begin => 45, :end => 66, :targets => [
+    {"file"=> File.expand_path(ModelFile3),
+     "line"=>2,
+     "display"=>"/StatemachineMM3/State [EClass]"}
   ]
 end
 

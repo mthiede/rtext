@@ -56,18 +56,20 @@ def filter_lines(lines)
 end
 
 # when joining two lines, all whitespace is preserved in order to simplify the algorithm
+# whitespace after a backslash is also preserved, only the backslash itself is removed
 # note that whitespace left of the cursor is important for proper context calculation
 def join_lines(lines, pos)
   outlines = []
   while lines.size > 0
     outlines << lines.shift
     while lines.size > 0 && 
-        (outlines.last =~ /,\s*$/ || 
+        (outlines.last =~ /[,\\]\s*$/ || 
           # don't join after a child label
-          (outlines.last !~ /^\s*\w+:\s*\[\s*$/ &&
+          (outlines.last !~ /^\s*\w+:/ &&
             (outlines.last =~ /\[\s*$/ ||
             (lines.first =~ /^\s*\]/ && outlines.last =~ /\[/))))
       l = lines.shift
+      outlines.last.gsub!("\\","")
       if lines.size == 0
         # the prefix might have whitespace on the
         # right hand side which is relevant for the position
