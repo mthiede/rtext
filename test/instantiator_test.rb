@@ -1628,6 +1628,19 @@ class InstantiatorTest < Test::Unit::TestCase
     assert_equal "sometext", node.text
   end
 
+  def test_linebreak_backslash_problems
+    roots = []
+    env, problems = instantiate(%Q(
+      TostNode \\
+        sometext
+      TostNode
+      ), TestMM, :root_elements => roots, :unlabled_arguments => proc {|clazz| ["text"]})
+    assert_problems([
+      [/unknown command/i, 2],
+      [/unknown command/i, 4],
+    ], problems)
+  end
+
   private
 
   def instantiate(text, mm, options={})
