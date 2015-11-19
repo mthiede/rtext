@@ -28,7 +28,7 @@ def setup_connector(file)
   man = RText::Frontend::ConnectorManager.new(
     :logger => logger,
     :keep_outfile => true,
-    :connection_timeout => 1,
+    :connection_timeout => 2,
     :outfile_provider => lambda { File.expand_path(outfile) },
     :connect_callback => lambda do |connector, state|
       @connection_timeout = true if state == :timeout
