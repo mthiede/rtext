@@ -77,7 +77,7 @@ module Tokenizer
             str = $'
             result << Token.new(:boolean, $& == "true", idx, col, col+$&.size-1)
             col += $&.size
-          when /\A([a-zA-Z_]\w*)\b(?:\s*:)?/
+          when /\A([a-zA-Z_]\w*)\b:?/
             str = $'
             if $&[-1] == ?: 
               result << Token.new(:label, $1, idx, col, col+$&.size-1)
