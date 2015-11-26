@@ -756,6 +756,17 @@ class InstantiatorTest < Test::Unit::TestCase
     assert_problems([[/command 'NonRootClass' can not be used on root level/i, 2]], problems)
   end
 
+  def test_invalid_root_label
+    root_elements = []
+    env, problems = instantiate(%Q(
+      TestNode text : A
+    ), TestMM, :root_elements => root_elements)
+    assert_problems([
+                     [/Unexpected unlabled argument, 0 unlabled arguments expected/i, 2],
+                     [/Unexpected :, expected newline/i, 2]
+                    ], problems)
+  end
+
   #
   # problem recovery
   #
