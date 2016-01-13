@@ -130,12 +130,24 @@ class DefaultCompleter
     end
   end
 
+  def get_default_value_completion(context)
+    CompletionOption.new("#{context.feature.defaultValue}", value_description(context))
+  end
+
   def integer_options(context)
-    (0..0).collect{|i| CompletionOption.new("#{i}", value_description(context)) }
+    if context.feature.defaultValue
+      [get_default_value_completion(context)]
+    else
+      (0..0).collect{|i| CompletionOption.new("#{i}", value_description(context)) }
+    end
   end
 
   def float_options(context)
-    (0..0).collect{|i| CompletionOption.new("#{i}.0", value_description(context)) }
+    if context.feature.defaultValue
+      [get_default_value_completion(context)]
+    else
+      (0..0).collect{|i| CompletionOption.new("#{i}.0", value_description(context)) }
+    end
   end
 
   def boolean_options(context)
