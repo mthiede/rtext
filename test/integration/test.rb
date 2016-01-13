@@ -704,7 +704,7 @@ EPackage StatemachineMM {
     EReference substates, upperBound: |-1, containment: true, eType: /StatemachineMM/State, eOpposite: /StatemachineMM/State/parent
   END
   assert_completions context, [
-    "0",
+    "1",
   ]
   context = build_context <<-END
 EPackage StatemachineMM {
@@ -723,7 +723,7 @@ EPackage StatemachineMM {
     EReference substates, upperBound: -1|, containment: true, eType: /StatemachineMM/State, eOpposite: /StatemachineMM/State/parent
   END
   assert_completions context, [
-    "0",
+    "1",
   ]
 end
 
