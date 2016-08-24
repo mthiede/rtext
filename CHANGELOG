@@ -87,3 +87,7 @@
 * Fixed frontend content extraction to support line breaks with backslash
 * Fixed frontend content extraction, joining of broken lines
 
+=0.8.2
+
+* Fixed serializer negative decimal quotation
+* Added Object attribute test case

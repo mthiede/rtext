@@ -994,6 +994,25 @@ TestNode \\
 ), output 
   end
 
+  module TestMMObjectAttribute
+    extend RGen::MetamodelBuilder::ModuleExtension
+    class TestNode < RGen::MetamodelBuilder::MMBase
+      has_many_attr 'objs', Object
+    end
+  end
+
+  def test_object_attribute
+    testModel = TestMMObjectAttribute::TestNode.new(
+        :objs => ['some text', -123, :someSymbol, true, false, -0.097])
+
+    output = StringWriter.new
+    serialize(testModel, TestMMObjectAttribute, output)
+
+    assert_equal %Q(\
+TestNode objs: ["some text", -123, someSymbol, true, false, -0.097]
+), output
+  end
+
   def serialize(model, mm, output, options={})
     lang = RText::Language.new(mm.ecore, options)
     ser = RText::Serializer.new(lang)

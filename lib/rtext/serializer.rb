@@ -179,7 +179,7 @@ class Serializer
           result << v.to_s  
         end
       elsif feature.eType.instanceClass == Object
-        if v.to_s =~ /^\d+(\.\d+)?$|^\w+$|^true$|^false$/ 
+        if v.to_s =~ /^-?\d+(\.\d+)?$|^\w+$|^true$|^false$/
           result << v.to_s  
         else
           result << "\"#{v.to_s.gsub("\\","\\\\\\\\").gsub("\"","\\\"").gsub("\n","\\n").

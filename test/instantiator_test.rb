@@ -1652,6 +1652,23 @@ class InstantiatorTest < Test::Unit::TestCase
     ], problems)
   end
 
+  module TestMMObjectAttribute
+    extend RGen::MetamodelBuilder::ModuleExtension
+    class TestNode < RGen::MetamodelBuilder::MMBase
+      has_many_attr 'objs', Object
+    end
+  end
+
+  def test_object_attribute
+    roots = []
+    env, problems = instantiate(%Q(
+      TestNode objs: ["some text", -123, someSymbol, true, false, -0.097]
+      ), TestMMObjectAttribute, :root_elements => roots)
+    assert_no_problems(problems)
+    node = roots.first
+    assert_equal ['some text', -123, 'someSymbol', true, false, -0.097], node.objs
+  end
+
   private
 
   def instantiate(text, mm, options={})
