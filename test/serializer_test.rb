@@ -1003,13 +1003,13 @@ TestNode \\
 
   def test_object_attribute
     testModel = TestMMObjectAttribute::TestNode.new(
-        :objs => ['some text', -123, :someSymbol, true, false, -0.097])
+        :objs => ['some text', -123, :someSymbol, true, false, -0.097, :'some other symbol'])
 
     output = StringWriter.new
     serialize(testModel, TestMMObjectAttribute, output)
 
     assert_equal %Q(\
-TestNode objs: ["some text", -123, someSymbol, true, false, -0.097]
+TestNode objs: ["some text", -123, someSymbol, true, false, -0.097, "some other symbol"]
 ), output
   end
 
