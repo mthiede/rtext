@@ -21,16 +21,16 @@ class DefaultCompleter
         block_options(context, clazz)
       elsif !context.problem
         result = []
-        if context.feature
-          add_value_options(context, result)
-        end
-        if !context.after_label
-          add_label_options(context, clazz, result)
-        end
+        add_value_options(context, result) if context.feature
+        add_label_options(context, clazz, result) unless context.after_label
         result
       else
         # missing comma, after curly brace, etc.
-        []
+        if !context.before_brace && context.element.class.ecore.eAllReferences.any? { |r| r.containment }
+          [CompletionOption.new('{}')]
+        else
+          []
+        end
       end
     elsif context
       root_options
@@ -74,6 +74,9 @@ class DefaultCompleter
     if context.feature.is_a?(RGen::ECore::EAttribute) || !context.feature.containment
       if context.feature.is_a?(RGen::ECore::EReference)
         result.concat(reference_options(context))
+        if !context.before_bracket && context.feature.upperBound != 1
+          result << CompletionOption.new('[]')
+        end
       elsif context.feature.eType.is_a?(RGen::ECore::EEnum)
         result.concat(enum_options(context))
       elsif context.feature.eType.instanceClass == String
@@ -88,7 +91,9 @@ class DefaultCompleter
         # no options 
       end
     else
-      # containment reference, ignore
+      if !context.before_bracket && context.feature.upperBound != 1
+        result << CompletionOption.new('[]')
+      end
     end
   end
 
@@ -97,7 +102,11 @@ class DefaultCompleter
       select{|f| 
         !context.element.eIsSet(f.name)}.collect do |f| 
         CompletionOption.new("#{f.name}:", "<#{f.eType.name}>")
-      end )
+    end )
+    if !context.after_comma && context.element.class.ecore.eAllReferences.any? { |r| r.containment } &&
+      !context.before_brace
+      result << CompletionOption.new('{}')
+    end
   end
 
   def root_options

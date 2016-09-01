@@ -91,3 +91,7 @@
 
 * Fixed serializer negative decimal quotation
 * Added Object attribute test case
+
+=0.9.0
+
+* Added suggestion options for brackets and braces
