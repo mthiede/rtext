@@ -14,11 +14,12 @@ class Service
   PortRangeEnd   = 9100
 
   FlushInterval  = 1
+  ProtocolVersion = 1
 
   # Creates an RText backend service. Options:
   #
   #  :timeout
-  #    idle time in seconds after which the service will terminate itelf
+  #    idle time in seconds after which the service will terminate itself
   #
   #  :logger
   #    a logger object on which the service will write its logging output
@@ -98,6 +99,8 @@ class Service
       @logger.debug("request: "+obj.inspect) if @logger
       response = { "type" => "response", "invocation_id" => obj["invocation_id"] }
       case obj["command"]
+      when "version"
+        version(sock, obj, response)  
       when "load_model"
         load_model(sock, obj, response)
       when "content_complete"
@@ -134,6 +137,10 @@ class Service
       true
     end
   end
+  
+  def version(sock, request, response)
+    response["version"] = ProtocolVersion
+  end
 
   def load_model(sock, request, response)
     problems = @service_provider.get_problems(
@@ -160,22 +167,22 @@ class Service
 
   InsertString = "insert"
   DisplayString = "display"
+  DescriptionString = "desc"
 
   def content_complete(sock, request, response)
     # column numbers start at 1
     linepos = request["column"]-1 
     lines = request["context"]
+    version = request["version"].to_i
     lang = @service_provider.language
     response["options"] = []
     return unless lang
     context = ContextBuilder.build_context(lang, lines, linepos)
     @logger.debug("context element: #{lang.identifier_provider.call(context.element, nil, nil, nil)}") \
       if context && context.element && @logger
-    options = @service_provider.get_completion_options(context)
-    insert_str = "insert"
-    display_str = "display"
+    options = @service_provider.get_completion_options(context, version)
     response["options"] = options.collect do |o|
-      { insert_str => o.text, display_str => "#{o.text} #{o.extra}" }
+      { InsertString => o.insert, DisplayString => o.display, DescriptionString => o.description }
     end
   end
 

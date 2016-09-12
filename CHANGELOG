@@ -94,4 +94,5 @@
 
 =0.9.0
 
-* Added suggestion options for brackets and braces
+* Added protocol versioning support
+* Added completion options for square brackets and curly braces

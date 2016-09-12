@@ -41,7 +41,7 @@ class DefaultServiceProvider
       attr_accessor :service_provider
       def reference_options(context) 
         service_provider.get_reference_completion_options(context).collect {|o|
-          DefaultCompleter::CompletionOption.new(o.identifier, "<#{o.type}>")}
+          DefaultCompleter::CompletionOption.from_text_extra(o.identifier, "<#{o.type}>")}
       end
     end
     completer.service_provider = self

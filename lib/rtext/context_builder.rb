@@ -26,8 +26,8 @@ module RText
 #
 module ContextBuilder
 
-  Context = Struct.new(:element, :feature, :prefix, :in_array, :in_block, :after_label, :problem, :after_comma,
-                       :before_brace, :before_bracket)
+  PositionContext = Struct.new(:in_array, :in_block, :after_label, :after_comma, :before_brace, :before_bracket)
+  Context = Struct.new(:element, :feature, :prefix, :problem, :position, :line_indent, :indent)
 
   class << self
   include RText::Tokenizer
@@ -51,15 +51,31 @@ module ContextBuilder
       else
         feature = nil
       end
-      Context.new(element, feature, context_info.prefix, context_info.in_array, context_info.in_block, after_label,
-                  context_info.problem, context_info.after_comma, context_info.before_brace, context_info.before_bracket)
+      context_info.position.after_label = after_label
+      Context.new(element, feature, context_info.prefix, context_info.problem, context_info.position,
+                  get_line_indent(context_lines.last), get_indent(context_lines))
     else
-      Context.new(nil, nil, context_info.prefix, context_info.in_array, context_info.in_block, false,
-                  context_info.problem, context_info.after_comma, context_info.before_brace, context_info.before_bracket)
+      context_info.position.after_label = false
+      Context.new(nil, nil, context_info.prefix, context_info.problem, context_info.position,
+                  get_line_indent(context_lines.last), get_indent(context_lines))
     end
   end
 
   private
+  
+  def get_line_indent(line)
+    line.match(/^\s+/)[0]
+  end
+  
+  # Compute indent from context lines
+  def get_indent(context_lines)
+    cl = context_lines.dup
+    while true
+      return '  ' if cl.size < 2 # default indentation is 2 spaces
+      indent = get_line_indent(cl.last)[get_line_indent(cl.delete_at(-2)).size..-1]
+      return indent unless indent.nil? || indent.empty?
+    end
+  end
 
   def instantiate_context_element(language, context_info)
     root_elements = []
@@ -86,8 +102,7 @@ module ContextBuilder
     end
   end
 
-  ContextInternal = Struct.new(:lines, :num_elements, :role, :prefix, :in_array, :in_block, :problem, :after_comma,
-                               :before_brace, :before_bracket)
+  ContextInternal = Struct.new(:lines, :num_elements, :role, :prefix, :problem, :position)
 
   # extend +context_lines+ into a set of lines which can be processed by the RText
   def fix_context(language, context_lines, position_in_line)
@@ -202,9 +217,9 @@ module ContextBuilder
       context_lines << context_lines.pop[0..token.scol - 2]
       context = fix_context(language, context_lines, context_lines.last.size)
       context.role = role
-      context.in_block = false
-      context.before_brace = before_brace
-      context.before_bracket = before_bracket
+      context.position.in_block = false
+      context.position.before_brace = before_brace
+      context.position.before_bracket = before_bracket
       return context
     else
       # comment, closing brackets, etc.
@@ -229,8 +244,8 @@ module ContextBuilder
       end
     end
     problem = :missing_comma if !problem && missing_comma
-    ContextInternal.new(context_lines, num_elements, role, prefix, in_array, in_block, problem, after_comma,
-                        before_brace, before_bracket)
+    ContextInternal.new(context_lines, num_elements, role, prefix, problem,
+                        PositionContext.new(in_array, in_block, false, after_comma, before_brace, before_bracket))
   end
 
   def find_role(context_lines)
