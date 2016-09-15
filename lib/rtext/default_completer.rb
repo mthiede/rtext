@@ -4,7 +4,31 @@ module RText
 
 class DefaultCompleter
 
-  CompletionOption = Struct.new(:text, :extra)
+  class CompletionOption
+    
+    attr_accessor :insert
+    attr_accessor :display
+    attr_accessor :description
+
+    def self.from_text_extra(text, extra)
+      self.new(text, text + ' ' + extra)
+    end
+    
+    def self.for_curly_braces(context)
+      self.new("{\n#{context.line_indent}#{context.indent}||\n#{context.line_indent}}", '{}')
+    end
+    
+    def self.for_square_brackets
+      self.new('[ || ]', '[]', '')
+    end
+    
+    def initialize(insert, display, description = nil)
+      @insert = insert
+      @display = display
+      @description = description
+    end
+    
+  end
 
   # Creates a completer for RText::Language +language+.
   #
@@ -14,23 +38,24 @@ class DefaultCompleter
 
   # Provides completion options
   #
-  def complete(context)
+  def complete(context, version)
     clazz = context && context.element && context.element.class.ecore
     if clazz
-      if context.in_block
+      if context.position.in_block
         block_options(context, clazz)
       elsif !context.problem
         result = []
-        if context.feature
-          add_value_options(context, result)
-        end
-        if !context.after_label
-          add_label_options(context, clazz, result)
-        end
+        add_value_options(context, result, version) if context.feature
+        add_label_options(context, clazz, result, version) unless context.position.after_label
         result
       else
         # missing comma, after curly brace, etc.
-        []
+        if version > 0 && !context.position.before_brace &&
+            context.element.class.ecore.eAllReferences.any? { |r| r.containment }
+          [CompletionOption.for_curly_braces(context)]
+        else
+          []
+        end
       end
     elsif context
       root_options
@@ -66,14 +91,17 @@ class DefaultCompleter
         class_completion_option(c)
       end +
     labled_refs.uniq.collect do |r|
-        CompletionOption.new("#{r.name}:", "<#{r.eType.name}>")
+        CompletionOption.from_text_extra("#{r.name}:", "<#{r.eType.name}>")
       end
   end
 
-  def add_value_options(context, result)
+  def add_value_options(context, result, version)
     if context.feature.is_a?(RGen::ECore::EAttribute) || !context.feature.containment
       if context.feature.is_a?(RGen::ECore::EReference)
         result.concat(reference_options(context))
+        if version > 0 && !context.position.before_bracket && context.feature.upperBound != 1
+          result << CompletionOption.for_square_brackets
+        end
       elsif context.feature.eType.is_a?(RGen::ECore::EEnum)
         result.concat(enum_options(context))
       elsif context.feature.eType.instanceClass == String
@@ -88,16 +116,22 @@ class DefaultCompleter
         # no options 
       end
     else
-      # containment reference, ignore
+      if version > 0 && !context.position.before_bracket && context.feature.upperBound != 1
+        result << CompletionOption.for_square_brackets
+      end
     end
   end
 
-  def add_label_options(context, clazz, result)
+  def add_label_options(context, clazz, result, version)
     result.concat(@lang.labled_arguments(clazz).
       select{|f| 
         !context.element.eIsSet(f.name)}.collect do |f| 
-        CompletionOption.new("#{f.name}:", "<#{f.eType.name}>")
-      end )
+        CompletionOption.from_text_extra("#{f.name}:", "<#{f.eType.name}>")
+    end )
+    if version > 0 && !context.position.after_comma &&
+        context.element.class.ecore.eAllReferences.any? { |r| r.containment } && !context.position.before_brace
+      result << CompletionOption.for_curly_braces(context)
+    end
   end
 
   def root_options
@@ -118,43 +152,43 @@ class DefaultCompleter
         lname =  "\"#{lname.gsub("\\","\\\\\\\\").gsub("\"","\\\"").gsub("\n","\\n").
           gsub("\r","\\r").gsub("\t","\\t").gsub("\f","\\f").gsub("\b","\\b")}\""
       end
-      CompletionOption.new("#{lname}", "<#{context.feature.eType.name}>")
+      CompletionOption.from_text_extra("#{lname}", "<#{context.feature.eType.name}>")
     end
   end
 
   def string_options(context)
     if @lang.unquoted?(context.feature)
-      [ CompletionOption.new("#{context.feature.name.gsub(/\W/,"")}", value_description(context)) ]
+      [ CompletionOption.from_text_extra("#{context.feature.name.gsub(/\W/,"")}", value_description(context)) ]
     else
-      [ CompletionOption.new("\"\"", value_description(context)) ]
+      [ CompletionOption.from_text_extra("\"\"", value_description(context)) ]
     end
   end
 
   def get_default_value_completion(context)
     return nil unless context.feature.defaultValue
-    CompletionOption.new("#{context.feature.defaultValue}", value_description(context))
+    CompletionOption.from_text_extra("#{context.feature.defaultValue}", value_description(context))
   end
 
   def integer_options(context)
     default_comp = get_default_value_completion(context)
     return [default_comp] if default_comp
-    (0..0).collect{|i| CompletionOption.new("#{i}", value_description(context)) }
+    (0..0).collect{|i| CompletionOption.from_text_extra("#{i}", value_description(context)) }
   end
 
   def float_options(context)
     default_comp = get_default_value_completion(context)
     return [default_comp] if default_comp
-    (0..0).collect{|i| CompletionOption.new("#{i}.0", value_description(context)) }
+    (0..0).collect{|i| CompletionOption.from_text_extra("#{i}.0", value_description(context)) }
   end
 
   def boolean_options(context)
-    [true, false].collect{|b| CompletionOption.new("#{b}", value_description(context)) }
+    [true, false].collect{|b| CompletionOption.from_text_extra("#{b}", value_description(context)) }
   end
 
   private
 
   def value_description(context)
-    if context.after_label
+    if context.position.after_label
       "<#{context.feature.eType.name}>"
     else
       "[#{context.feature.name}] <#{context.feature.eType.name}>"
@@ -163,7 +197,7 @@ class DefaultCompleter
 
   def class_completion_option(eclass)
     uargs = @lang.unlabled_arguments(eclass).collect{|a| "<#{a.name}>"}.join(", ")
-    CompletionOption.new(@lang.command_by_class(eclass.instanceClass), uargs)
+    CompletionOption.from_text_extra(@lang.command_by_class(eclass.instanceClass), uargs)
   end
 
 end

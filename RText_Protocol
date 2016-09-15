@@ -4,6 +4,10 @@ RText frontend and backend pass messages containing JSON objects.
 Normally the frontend invokes a backend command by means of a request message and the 
 backend will eventually reply with a response message. 
 
+== Versioning
+
+RText protocol supports versioning mechanism with a single version natural number.
+The actual version of the protocol is 1.
 
 == Encoding
 
@@ -25,8 +29,8 @@ In addition, the character "%" is escaped in the same way, i.e. "%" will always 
 
 Example:
 
-The word "Übung" (german: exercise), encoded in ISO-8859-1 would result in the string:
-"%dcbung" (the "Ü" Umlaut has a byte value of 0xdc is ISO-8859-1).
+The word "Ãœbung" (german: exercise), encoded in ISO-8859-1 would result in the string:
+"%dcbung" (the "Ãœ" Umlaut has a byte value of 0xdc is ISO-8859-1).
 
 
 == Request Messages
@@ -34,9 +38,12 @@ The word "Übung" (german: exercise), encoded in ISO-8859-1 would result in the s
 Each request message contains a field ``command`` and a field ``invocation_id``.
 The command field holds the name of the command to be invoked as a string.
 The invocation id field holds an identifier which will be repeated by the backend's response.
+The "version" field was introduced in version 1. It is optional for protocol version 0 requests,
+but mandatory for newer versions.
 
   {
     "type": "request",
+    "version": <protocol_version [integer]>,
     "command": <command>,
     "invocation_id": <invocation_id>
     ...
@@ -65,6 +72,16 @@ There are a number of error message which may be sent in response to a request m
     "invocation_id": <invocation_id>,
     "command": <unknown command [string]>
   }
+  
+=== Unsupported Protocol Version Error
+
+Introduced in version 1.
+
+  {
+    "type": "unsupported_version",
+    "invocation_id": <invocation_id>,
+    "version": <supported version [integer]>
+  }
 
 == Progress Information
 
@@ -90,6 +107,25 @@ The message field may carry information about the currently ongoing subtask.
 For each command, the layout of the request and response messages will be given below.
 Note that the invocation id field is present in every request and response but is omitted for brevity.
 
+=== Backend version request
+
+Introduced in version 1.
+
+This command requests the backend to disclose its supported protocol version.
+
+  {
+    "type": "request",
+    "command": "version"
+  }
+  
+The backend responds with a version information.
+
+  {
+    "type": "response",
+    "version": <version [integer]>
+  }
+  
+The backend supporting protocool version 0 only responds with an 'Unknown Command Error'.
 
 === Load Model
 
@@ -141,7 +177,14 @@ build the set of context lines in the frontend. Column number start at 1.
   }
 
 The backend replies with a list of completion options. 
-The field ``insert`` holds the text to be inserted if the completion option is chosen.
+The field ``insert`` holds the text to be inserted if the completion option is chosen. This text 
+may contains placeholders for cursor position. An editor may use them to assist a user in 
+filling additional completion fields.
+Each placeholder must start and end with a vertical bar character (``|``) and can contain up to
+three optional parts separated by an additional vertical bar character: ordering number, name and
+description of this cursor position. E.g.: ``||``, ``|1|name|Entity name|``, ``|||New value|``.
+Placeholders with the same name must be considered as the same value repeated in different 
+positions.
 The field ``display`` contains the string which should be displayed to the user in some kind of 
 completion option menu. An optional description field may provide more information about a 
 particular option.
