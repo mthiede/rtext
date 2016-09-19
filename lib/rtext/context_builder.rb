@@ -64,7 +64,8 @@ module ContextBuilder
   private
   
   def get_line_indent(line)
-    line.match(/^\s+/)[0]
+    match = line.match(/^\s+/)
+    match[0] unless match.nil? else ''
   end
   
   # Compute indent from context lines
