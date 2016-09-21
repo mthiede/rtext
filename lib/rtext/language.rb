@@ -260,7 +260,7 @@ class Language
   end
 
   def concrete_types(clazz)
-    ([clazz] + clazz.eAllSubTypes).select{|c| !c.abstract}
+    ([clazz] + clazz.eAllSubTypes).select{|c| c.concrete}
   end
 
   def containments_by_target_type(clazz, type)
@@ -299,7 +299,7 @@ class Language
     @command_by_class = {}
     @has_command = {}
     root_epackage.eAllClasses.each do |c|
-      next if c.abstract
+      next unless c.concrete
       cmd = command_name_provider.call(c)
       @command_by_class[c.instanceClass] = cmd 
       @has_command[cmd] = true
@@ -307,7 +307,7 @@ class Language
       @class_by_command[clazz] ||= {} 
       containments(c).collect{|r|
           [r.eType] + r.eType.eAllSubTypes}.flatten.uniq.each do |t|
-        next if t.abstract
+        next unless t.concrete
         cmw = command_name_provider.call(t)
         raise "ambiguous command name #{cmw}" if @class_by_command[clazz][cmw]
         @class_by_command[clazz][cmw] = t.instanceClass
@@ -315,7 +315,7 @@ class Language
     end
     @class_by_command[nil] = {} 
     @root_classes.each do |c|
-      next if c.abstract
+      next unless c.concrete
       cmw = command_name_provider.call(c)
       raise "ambiguous command name #{cmw}" if @class_by_command[nil][cmw]
       @class_by_command[nil][cmw] = c.instanceClass
@@ -323,7 +323,7 @@ class Language
   end
 
   def default_root_classes(root_package)
-    root_epackage.eAllClasses.select{|c| !c.abstract &&
+    root_epackage.eAllClasses.select{|c| c.concrete &&
       !c.eAllReferences.any?{|r| r.eOpposite && r.eOpposite.containment}}
   end
 

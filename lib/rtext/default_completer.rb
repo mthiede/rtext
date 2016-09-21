@@ -77,7 +77,7 @@ class DefaultCompleter
       # all target types which don't need a label
       # and all lables which are needed by a potential target type
       @lang.containments(clazz).each do |r|
-        ([r.eType] + r.eType.eAllSubTypes).select{|t| !t.abstract}.each do |t|
+        ([r.eType] + r.eType.eAllSubTypes).select{|t| t.concrete}.each do |t|
           if @lang.labeled_containment?(clazz, r) || @lang.containments_by_target_type(clazz, t).size > 1
             labled_refs << r
           else
