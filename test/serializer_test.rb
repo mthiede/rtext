@@ -1,6 +1,7 @@
 $:.unshift File.join(File.dirname(__FILE__),"..","lib")
 
-require 'test/unit'
+gem 'minitest'
+require 'minitest/autorun'
 require 'bigdecimal'
 require 'fileutils'
 require 'stringio'
@@ -9,7 +10,7 @@ require 'rgen/metamodel_builder'
 require 'rtext/serializer'
 require 'rtext/language'
 
-class SerializerTest < Test::Unit::TestCase
+class SerializerTest < MiniTest::Test
   TestOutputFile = ".serializer_test_file"
 
   def teardown

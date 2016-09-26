@@ -1,9 +1,10 @@
 $:.unshift File.join(File.dirname(__FILE__),"..","..","lib")
 
-require 'test/unit'
+gem 'minitest'
+require 'minitest/autorun'
 require 'rtext/frontend/context'
 
-class ContextTest < Test::Unit::TestCase
+class ContextTest < MiniTest::Test
 
 def test_simple
   assert_context(

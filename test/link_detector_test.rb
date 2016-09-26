@@ -1,11 +1,12 @@
 $:.unshift File.join(File.dirname(__FILE__),"..","lib")
 
-require 'test/unit'
+gem 'minitest'
+require 'minitest/autorun'
 require 'rgen/metamodel_builder'
 require 'rtext/language'
 require 'rtext/link_detector'
 
-class LinkDetectorTest < Test::Unit::TestCase
+class LinkDetectorTest < MiniTest::Test
 
 module TestMM
   extend RGen::MetamodelBuilder::ModuleExtension

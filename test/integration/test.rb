@@ -1,11 +1,13 @@
 # encoding: binary
 $:.unshift(File.dirname(__FILE__)+"/../../lib")
-require 'test/unit'
+
+gem 'minitest'
+require 'minitest/autorun'
 require 'rtext/frontend/connector_manager'
 require 'rtext/frontend/context'
 require 'logger'
 
-class IntegrationTest < Test::Unit::TestCase
+class IntegrationTest < MiniTest::Test
 
 ModelFile = File.dirname(__FILE__)+"/model/test_metamodel.ect"
 ModelFile2 = File.dirname(__FILE__)+"/model/test_metamodel2.ect"

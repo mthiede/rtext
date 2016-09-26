@@ -1,10 +1,11 @@
 $:.unshift File.join(File.dirname(__FILE__),"..","lib")
 
-require 'test/unit'
+gem 'minitest'
+require 'minitest/autorun'
 require 'rtext/tokenizer'
 require 'rtext/generic'
 
-class TokenizerTest < Test::Unit::TestCase
+class TokenizerTest < MiniTest::Test
 include RText::Tokenizer
 
 def test_simple

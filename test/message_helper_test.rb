@@ -1,9 +1,10 @@
 $:.unshift File.join(File.dirname(__FILE__),"..","lib")
 
-require 'test/unit'
+gem 'minitest'
+require 'minitest/autorun'
 require 'rtext/message_helper'
 
-class MessageHelperTest < Test::Unit::TestCase
+class MessageHelperTest < MiniTest::Test
 include RText::MessageHelper
 
 def test_serialize
@@ -18,7 +19,7 @@ def test_serialize
   str = serialize_message({"key" => ["value1", "value2"]})
   assert_equal '27{"key":["value1","value2"]}', str
 
-  # a iso-8859-1 'ä' 
+  # a iso-8859-1 'ï¿½' 
   str = serialize_message({"key" => "umlaut\xe4".force_encoding("binary")})
   assert_equal '19{"key":"umlaut%e4"}', str
   str = serialize_message({"key" => "umlaut\xe4".force_encoding("iso-8859-1")})
@@ -28,7 +29,7 @@ def test_serialize
   str = serialize_message({"key" => "umlaut\xe4".force_encoding("utf-8")})
   assert_equal '19{"key":"umlaut%e4"}', str
 
-  # a utf-8 'ä'
+  # a utf-8 'ï¿½'
   str = serialize_message({"key" => "umlaut\xc3\xa4".force_encoding("binary")})
   assert_equal '22{"key":"umlaut%c3%a4"}', str
   str = serialize_message({"key" => "umlaut\xc3\xa4".force_encoding("iso-8859-1")})
@@ -45,17 +46,15 @@ end
 
 def test_extract
   # specified length too short
-  assert_raise JSON::ParserError do
+  assert_raises JSON::ParserError do
     extract_message('8{"key":1}')
   end
   # specified length too long
-  assert_raise JSON::ParserError do
+  assert_raises JSON::ParserError do
     extract_message('10{"key":1}x')
   end
   # message data shorter than length specifie, waits for more data
-  assert_nothing_raised do
-    extract_message('10{"key":1}')
-  end
+  extract_message('10{"key":1}')
 
   obj = extract_message('9{"key":1}')
   assert_equal({"key" => 1}, obj)
@@ -68,7 +67,7 @@ def test_extract
   obj = extract_message('27{"key":["value1","value2"]}')
   assert_equal({"key" => ["value1", "value2"]}, obj)
 
-  # a iso-8859-1 'ä' 
+  # a iso-8859-1 'ï¿½' 
   obj = extract_message('19{"key":"umlaut%e4"}'.force_encoding("binary"))
   assert_equal "ASCII-8BIT", obj["key"].encoding.name
   assert_equal "umlaut\xe4".force_encoding("ascii-8bit"), obj["key"]
@@ -76,7 +75,7 @@ def test_extract
   assert_equal "ASCII-8BIT", obj["key"].encoding.name
   assert_equal "umlaut\xe4".force_encoding("ascii-8bit"), obj["key"]
 
-  # a utf-8 'ä'
+  # a utf-8 'ï¿½'
   obj = extract_message('22{"key":"umlaut%c3%a4"}'.force_encoding("binary"))
   assert_equal "ASCII-8BIT", obj["key"].encoding.name
   assert_equal "umlaut\xc3\xa4".force_encoding("ascii-8bit"), obj["key"]

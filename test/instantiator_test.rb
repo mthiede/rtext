@@ -1,14 +1,15 @@
 # coding: binary
 $:.unshift File.join(File.dirname(__FILE__),"..","lib")
 
-require 'test/unit'
+gem 'minitest'
+require 'minitest/autorun'
 require 'bigdecimal'
 require 'rgen/environment'
 require 'rgen/metamodel_builder'
 require 'rtext/instantiator'
 require 'rtext/language'
 
-class InstantiatorTest < Test::Unit::TestCase
+class InstantiatorTest < MiniTest::Test
 
   module TestMM
     extend RGen::MetamodelBuilder::ModuleExtension
@@ -507,7 +508,7 @@ class InstantiatorTest < Test::Unit::TestCase
       ), TestMMContextSensitiveCommands)
     assert_no_problems(problems)
     root = env.find(:class => TestMMContextSensitiveCommands::TestNode).first
-    assert_not_nil(root)
+    assert root != nil
     assert(root.command.is_a?(TestMMContextSensitiveCommands::SubPackage1::Command))
     assert(root.command.command.is_a?(TestMMContextSensitiveCommands::SubPackage2::Command))
   end
@@ -523,7 +524,7 @@ class InstantiatorTest < Test::Unit::TestCase
         "Command" end)
     assert_no_problems(problems)
     root = env.find(:class => TestMMContextSensitiveCommands::TestNode).first
-    assert_not_nil(root)
+    assert root != nil
     assert(root.command.is_a?(TestMMContextSensitiveCommands::SubPackage1::Command))
     assert(root.command.command.is_a?(TestMMContextSensitiveCommands::SubPackage2::Command))
   end
@@ -1709,7 +1710,7 @@ class InstantiatorTest < Test::Unit::TestCase
   def assert_model_simple(env, *opts)
     raise "unknown options" unless (opts - [:with_nums]).empty?
     root = env.find(:class => TestMM::TestNode, :text => "some text").first
-    assert_not_nil root
+    assert root != nil
     assert_equal 2, root.childs.size
     assert_equal [TestMM::TestNode, TestMM::TestNode], root.childs.collect{|c| c.class}
     assert_equal ["child", "child2"], root.childs.text
