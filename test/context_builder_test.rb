@@ -911,9 +911,9 @@ end
 
 def assert_context(c, options)
   assert_equal(options[:prefix], c.prefix)
-  assert_equal(options[:in_array], c.in_array)
-  assert_equal(options[:in_block], c.in_block)
-  assert_equal((options[:after_label] || false), c.after_label)
+  assert_equal(options[:in_array], c.position.in_array)
+  assert_equal(options[:in_block], c.position.in_block)
+  assert_equal((options[:after_label] || false), c.position.after_label)
   assert_equal(options[:problem], c.problem)
   if options[:feature]
     assert_equal(options[:feature], c.feature.name)

@@ -64,8 +64,13 @@ module ContextBuilder
   private
   
   def get_line_indent(line)
+    return '' unless line
     match = line.match(/^\s+/)
-    match[0] unless match.nil? else ''
+    if match.nil?
+      ''
+    else
+      match[0]
+    end
   end
   
   # Compute indent from context lines
@@ -121,8 +126,8 @@ module ContextBuilder
       tail = context_lines.last[position_in_line..-1]
       context_lines << context_lines.pop[0..position_in_line-1]
     end
-    before_brace = !tail.match(/^\s*\{/).nil?
-    before_bracket = !tail.match(/^\s*\[/).nil?
+    before_brace = !tail.nil? && !tail.match(/^\s*\{/).nil?
+    before_bracket = !tail.nil? && !tail.match(/^\s*\[/).nil?
     problem = nil
     line = context_lines.last
     if line =~ /\{\s*$/

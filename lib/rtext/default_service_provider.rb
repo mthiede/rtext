@@ -35,7 +35,7 @@ class DefaultServiceProvider
     end
   end
 
-  def get_completion_options(context)
+  def get_completion_options(context, version=0)
     completer = RText::DefaultCompleter.new(@lang) 
     class << completer
       attr_accessor :service_provider
@@ -45,7 +45,7 @@ class DefaultServiceProvider
       end
     end
     completer.service_provider = self
-    completer.complete(context)
+    completer.complete(context, version)
   end
 
   ReferenceCompletionOption = Struct.new(:identifier, :type)

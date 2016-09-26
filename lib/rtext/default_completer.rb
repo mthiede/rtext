@@ -8,10 +8,11 @@ class DefaultCompleter
     
     attr_accessor :insert
     attr_accessor :display
+    attr_accessor :extra
     attr_accessor :description
 
     def self.from_text_extra(text, extra)
-      self.new(text, text + ' ' + extra)
+      self.new(text, text + ' ' + extra, nil, extra)
     end
     
     def self.for_curly_braces(context)
@@ -22,10 +23,11 @@ class DefaultCompleter
       self.new('[ || ]', '[]', '')
     end
     
-    def initialize(insert, display, description = nil)
+    def initialize(insert, display, description=nil, extra=nil)
       @insert = insert
       @display = display
       @description = description
+      @extra = extra
     end
     
   end
@@ -38,7 +40,7 @@ class DefaultCompleter
 
   # Provides completion options
   #
-  def complete(context, version)
+  def complete(context, version=0)
     clazz = context && context.element && context.element.class.ecore
     if clazz
       if context.position.in_block

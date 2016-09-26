@@ -311,8 +311,8 @@ def test_reference_value
   options = complete(TestMM, %Q(\
 TestNode related: |\
   ), lambda { |r| [
-    RText::DefaultCompleter::CompletionOption.new("A", "a"),
-    RText::DefaultCompleter::CompletionOption.new("B", "b") ] })
+    RText::DefaultCompleter::CompletionOption.from_text_extra("A", "a"),
+    RText::DefaultCompleter::CompletionOption.from_text_extra("B", "b") ] })
   assert_options([
     ["A", "a"],
     ["B", "b"],
@@ -323,8 +323,8 @@ def test_reference_value_part
   options = complete(TestMM, %Q(\
 TestNode related: /My/|\
   ), lambda { |r| [
-    RText::DefaultCompleter::CompletionOption.new("/My/Target", "a"),
-    RText::DefaultCompleter::CompletionOption.new("/MyOther/Target", "b") ] })
+    RText::DefaultCompleter::CompletionOption.from_text_extra("/My/Target", "a"),
+    RText::DefaultCompleter::CompletionOption.from_text_extra("/MyOther/Target", "b") ] })
   assert_options([
     ["/My/Target", "a"],
     ["/MyOther/Target", "b"]
@@ -343,8 +343,8 @@ def test_reference_value_in_array
   options = complete(TestMM, %Q(\
 TestNode others: |
 ), lambda { |r| [
-    RText::DefaultCompleter::CompletionOption.new("A", "a"),
-    RText::DefaultCompleter::CompletionOption.new("B", "b") ] })
+    RText::DefaultCompleter::CompletionOption.from_text_extra("A", "a"),
+    RText::DefaultCompleter::CompletionOption.from_text_extra("B", "b") ] })
   assert_options([
     ["A", "a"],
     ["B", "b"],
@@ -355,8 +355,8 @@ def test_reference_value_in_array_after_bracket
   options = complete(TestMM, %Q(\
 TestNode others: [|
 ), lambda { |r| [
-    RText::DefaultCompleter::CompletionOption.new("A", "a"),
-    RText::DefaultCompleter::CompletionOption.new("B", "b") ] })
+    RText::DefaultCompleter::CompletionOption.from_text_extra("A", "a"),
+    RText::DefaultCompleter::CompletionOption.from_text_extra("B", "b") ] })
   assert_options([
     ["A", "a"],
     ["B", "b"],
@@ -367,8 +367,8 @@ def test_reference_value_in_array_second_value
   options = complete(TestMM, %Q(\
 TestNode others: [xxx, |
 ), lambda { |r| [
-    RText::DefaultCompleter::CompletionOption.new("A", "a"),
-    RText::DefaultCompleter::CompletionOption.new("B", "b") ] })
+    RText::DefaultCompleter::CompletionOption.from_text_extra("A", "a"),
+    RText::DefaultCompleter::CompletionOption.from_text_extra("B", "b") ] })
   assert_options([
     ["A", "a"],
     ["B", "b"],
@@ -380,8 +380,8 @@ def test_reference_value_nested
 TestNode {
   TestNode SimpleState, others: [|/StatemachineMM/State]
 ), lambda { |r| [
-    RText::DefaultCompleter::CompletionOption.new("A", "a"),
-    RText::DefaultCompleter::CompletionOption.new("B", "b") ] })
+    RText::DefaultCompleter::CompletionOption.from_text_extra("A", "a"),
+    RText::DefaultCompleter::CompletionOption.from_text_extra("B", "b") ] })
   assert_options([
     ["A", "a"],
     ["B", "b"],
@@ -572,7 +572,7 @@ END
 end
 
 def assert_options(expected, options)
-  assert_equal(expected, options.collect { |o| [o.text, o.extra] })
+  assert_equal(expected, options.collect { |o| [o.insert, o.extra] })
 end
 
 def complete(mm, text, ref_comp_option_provider=nil)
