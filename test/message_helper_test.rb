@@ -19,7 +19,7 @@ def test_serialize
   str = serialize_message({"key" => ["value1", "value2"]})
   assert_equal '27{"key":["value1","value2"]}', str
 
-  # a iso-8859-1 '�' 
+  # a iso-8859-1 'ä' 
   str = serialize_message({"key" => "umlaut\xe4".force_encoding("binary")})
   assert_equal '19{"key":"umlaut%e4"}', str
   str = serialize_message({"key" => "umlaut\xe4".force_encoding("iso-8859-1")})
@@ -29,7 +29,7 @@ def test_serialize
   str = serialize_message({"key" => "umlaut\xe4".force_encoding("utf-8")})
   assert_equal '19{"key":"umlaut%e4"}', str
 
-  # a utf-8 '�'
+  # a utf-8 'ä'
   str = serialize_message({"key" => "umlaut\xc3\xa4".force_encoding("binary")})
   assert_equal '22{"key":"umlaut%c3%a4"}', str
   str = serialize_message({"key" => "umlaut\xc3\xa4".force_encoding("iso-8859-1")})
@@ -67,7 +67,7 @@ def test_extract
   obj = extract_message('27{"key":["value1","value2"]}')
   assert_equal({"key" => ["value1", "value2"]}, obj)
 
-  # a iso-8859-1 '�' 
+  # a iso-8859-1 'ä' 
   obj = extract_message('19{"key":"umlaut%e4"}'.force_encoding("binary"))
   assert_equal "ASCII-8BIT", obj["key"].encoding.name
   assert_equal "umlaut\xe4".force_encoding("ascii-8bit"), obj["key"]
@@ -75,7 +75,7 @@ def test_extract
   assert_equal "ASCII-8BIT", obj["key"].encoding.name
   assert_equal "umlaut\xe4".force_encoding("ascii-8bit"), obj["key"]
 
-  # a utf-8 '�'
+  # a utf-8 'ä'
   obj = extract_message('22{"key":"umlaut%c3%a4"}'.force_encoding("binary"))
   assert_equal "ASCII-8BIT", obj["key"].encoding.name
   assert_equal "umlaut\xc3\xa4".force_encoding("ascii-8bit"), obj["key"]
