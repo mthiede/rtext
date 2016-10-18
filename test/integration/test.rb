@@ -1,7 +1,6 @@
 # encoding: binary
 $:.unshift(File.dirname(__FILE__)+"/../../lib")
 
-gem 'minitest'
 require 'minitest/autorun'
 require 'rtext/frontend/connector_manager'
 require 'rtext/frontend/context'

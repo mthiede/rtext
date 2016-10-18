@@ -180,7 +180,11 @@ class Service
     context = ContextBuilder.build_context(lang, lines, linepos)
     @logger.debug("context element: #{lang.identifier_provider.call(context.element, nil, nil, nil)}") \
       if context && context.element && @logger
-    options = @service_provider.get_completion_options(context, version)
+    if @service_provider.method(:get_completion_options).arity == 1
+      options = @service_provider.get_completion_options(context)
+    else
+      options = @service_provider.get_completion_options(context, version)
+    end
     response["options"] = options.collect do |o|
       { InsertString => o.insert, DisplayString => o.display, DescriptionString => o.description }
     end

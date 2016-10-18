@@ -96,3 +96,7 @@
 
 * Added protocol versioning support
 * Added completion options for square brackets and curly braces
+
+=0.9.1
+
+* Fixed backward compatibility issues

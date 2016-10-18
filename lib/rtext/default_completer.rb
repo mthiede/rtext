@@ -30,6 +30,10 @@ class DefaultCompleter
       @extra = extra
     end
     
+    def text
+      @insert
+    end
+    
   end
 
   # Creates a completer for RText::Language +language+.

@@ -1,6 +1,5 @@
 $:.unshift File.join(File.dirname(__FILE__),"..","lib")
 
-gem 'minitest'
 require 'minitest/autorun'
 require 'bigdecimal'
 require 'fileutils'

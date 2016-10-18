@@ -1,6 +1,5 @@
 $:.unshift File.join(File.dirname(__FILE__),"..","lib")
 
-gem 'minitest'
 require 'minitest/autorun'
 require 'rgen/metamodel_builder'
 require 'rtext/language'
