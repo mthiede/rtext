@@ -936,8 +936,16 @@ def assert_link_targets(context, options)
     {"command" => "link_targets", "context" => lines, "column" => col})
   assert_equal "response", response["type"]
   assert_equal options[:targets], response["targets"]
-  assert_equal options[:begin], response["begin_column"]
-  assert_equal options[:end], response["end_column"]
+  if options[:begin]
+    assert_equal options[:begin], response["begin_column"]
+  else
+    assert_nil response["begin_column"]
+  end
+  if options[:end]
+    assert_equal options[:end], response["end_column"]
+  else
+    assert_nil response["end_column"]
+  end
 end
 
 def assert_completions(context, expected)

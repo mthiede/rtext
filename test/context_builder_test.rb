@@ -914,7 +914,11 @@ def assert_context(c, options)
   assert_equal(options[:in_array], c.position.in_array)
   assert_equal(options[:in_block], c.position.in_block)
   assert_equal((options[:after_label] || false), c.position.after_label)
-  assert_equal(options[:problem], c.problem)
+  if options[:problem]
+    assert_equal(options[:problem], c.problem)
+  else
+    assert_nil(c.problem)
+  end
   if options[:feature]
     assert_equal(options[:feature], c.feature.name)
   else
