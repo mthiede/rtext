@@ -21,7 +21,7 @@ CrashOnRequestFile = File.dirname(__FILE__)+"/model/test.crash_on_request"
 
 def setup_connector(file)
   @infile = file
-  outfile = File.dirname(__FILE__)+"/backend.out"
+  outfile = File.dirname(__FILE__)+"/backend.out" + Random.new.rand(100000000).to_s
   logfile = File.dirname(__FILE__)+"/frontend.log"
   logger = Logger.new(logfile)
     File.unlink(outfile) if File.exist?(outfile)
@@ -29,7 +29,7 @@ def setup_connector(file)
   man = RText::Frontend::ConnectorManager.new(
     :logger => logger,
     :keep_outfile => true,
-    :connection_timeout => 2,
+    :connection_timeout => 10,
     :outfile_provider => lambda { File.expand_path(outfile) },
     :connect_callback => lambda do |connector, state|
       @connection_timeout = true if state == :timeout
@@ -960,11 +960,10 @@ end
 def load_model
   done = false
   response = nil
-  while !done 
+  while !done
     response = @con.execute_command({"command" => "load_model"})
     if response == :connecting && !@connection_timeout
       sleep(0.1)
-      @con.resume
     else
       done = true
     end

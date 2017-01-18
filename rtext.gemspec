@@ -1,10 +1,10 @@
-abort 'Please, use rake tasks to build the gem' if $0 =~ /gem$/
+abort 'Use the rake task to build the gem' if $0 =~ /gem$/ && $*.first == 'build'
 
 DocFiles = %w(README.rdoc CHANGELOG MIT-LICENSE RText_Users_Guide RText_Protocol)
 
 Gem::Specification.new do |s|
   s.name = %q{rtext}
-  s.version = '0.9.1'
+  s.version = '0.9.2'
   s.date = Time.now.strftime('%Y-%m-%d')
   s.summary = %q{Ruby Textual Modelling}
   s.email = %q{martin dot thiede at gmx de}

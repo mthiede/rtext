@@ -21,15 +21,21 @@ def initialize(config, options={})
   @outfile_provider = options[:outfile_provider]
   @keep_outfile = options[:keep_outfile]
   @connection_timeout = options[:connection_timeout] || 10
+  @process_id = nil
 end
 
 def execute_command(obj, options={})
-  timeout = options[:timeout] || 5
+  timeout = options[:timeout] || 10
   @busy = false if @busy_start_time && (Time.now > @busy_start_time + timeout)
   if @busy
     do_work
-    :backend_busy 
-  elsif connected?
+    return :backend_busy 
+  end
+  unless connected?
+    connect unless connecting?
+    do_work
+  end
+  if connected?
     obj["invocation_id"] = @invocation_id
     obj["type"] = "request"
     @socket.send(serialize_message(obj), 0)
@@ -66,9 +72,7 @@ def execute_command(obj, options={})
       result
     end
   else
-    connect unless connecting?
-    do_work
-    :connecting 
+    :connecting
   end
 end
 
@@ -87,23 +91,68 @@ def stop
       sleep(0.1)
     end
   end
+  ensure_process_cleanup(@process_id, @keep_outfile ? nil : @out_file, 10)
+  @process_id = nil
 end
 
 private
 
+def wait_for_process_to_exit(process_id, timeout)
+  with_timeout timeout do
+    begin
+      waitpid(process_id, Process::WNOHANG)
+      process_id = nil
+      true
+    rescue Errno::ECHILD => _
+      false
+    end
+  end
+end
+
+def ensure_process_cleanup(process_id, out_file, timeout)
+  Thread.new do
+    begin
+      unless process_id.nil?
+        process_id = nil if wait_for_process_to_exit(process_id, timeout)
+      end
+    ensure
+      unless process_id.nil?
+        begin
+          Process.kill('QUIT', process_id)
+        rescue Errno::ESRCH => _
+        end
+      end
+      File.unlink(out_file) if !out_file.nil? && File.exist?(out_file)
+    end
+  end
+end
+
+def with_timeout(timeout, sleep_time = 0.1, &block)
+  started = Time.now
+  while true do
+    return true if block.call
+    if Time.now > started + timeout
+      return false
+    end
+    sleep(sleep_time)
+  end
+end
+
+
 def connected?
-  @state == :connected && backend_running?
+  !@process_id.nil? && @state == :read_from_socket && backend_running?
 end
 
 def connecting?
-  @state == :connecting
+  !@process_id.nil? && (@state == :wait_for_file || @state == :wait_for_port)
 end
 
 def backend_running?
   if @process_id
     begin
-      return true unless waitpid(@process_id, Process::WNOHANG)
-    rescue Errno::ECHILD
+      waitpid(@process_id, Process::WNOHANG)
+      return true
+    rescue Errno::ECHILD => _
     end
   end
   false
@@ -121,7 +170,7 @@ def tempfile_name
 end
 
 def connect
-  @state = :connecting
+  return if connected?
   @connect_start_time = Time.now
 
   @logger.info @config.command if @logger
@@ -131,56 +180,75 @@ def connect
   else
     @out_file = tempfile_name 
   end
-  File.unlink(@out_file) if File.exist?(@out_file)
 
-  Dir.chdir(File.dirname(@config.file)) do
-    @process_id = spawn(@config.command.strip + " > #{@out_file} 2>&1")
+  if @process_id.nil?
+    File.unlink(@out_file) if File.exist?(@out_file)
+    Dir.chdir(File.dirname(@config.file)) do
+      @process_id = spawn(@config.command.strip + " > #{@out_file} 2>&1")
+      @state = :wait_for_file
+    end
   end
-  @work_state = :wait_for_file
 end
 
 def do_work
-  case @work_state
-  when :wait_for_file
-    if File.exist?(@out_file)
-      @work_state = :wait_for_port
-    end
-    if Time.now > @connect_start_time + @connection_timeout
-      cleanup
-      @connection_listener.call(:timeout) if @connection_listener
-      @work_state = :done
-      @state = :off
-      @logger.warn "process didn't startup (connection timeout)" if @logger
-    end
-    true
-  when :wait_for_port
-    output = File.read(@out_file)
-    if output =~ /^RText service, listening on port (\d+)/
-      port = $1.to_i
-      @logger.info "connecting to #{port}" if @logger
-      begin
-        @socket = TCPSocket.new("127.0.0.1", port)
-        @socket.setsockopt(:SOCKET, :RCVBUF, 1000000)
-      rescue Errno::ECONNREFUSED
+  if @process_id.nil?
+    @state = :off
+    return false
+  end
+  if @state == :wait_for_port && !File.exist?(@out_file)
+    @state = :wait_for_file
+  end
+  if @state == :wait_for_file && File.exist?(@out_file)
+    @state = :wait_for_port
+  end
+  if @state == :wait_for_file
+    while true
+      if Time.now > @connect_start_time + @connection_timeout
         cleanup
         @connection_listener.call(:timeout) if @connection_listener
-        @work_state = :done
+        @state = :off
+        @logger.warn "process didn't startup (connection timeout)" if @logger
+        return false
+      end
+      sleep(0.1)
+      if File.exist?(@out_file)
+        @state = :wait_for_port
+        break
+      end
+    end
+  end
+  if @state == :wait_for_port
+    while true
+      break unless File.exist?(@out_file)
+      output = File.read(@out_file)
+      if output =~ /^RText service, listening on port (\d+)/
+        port = $1.to_i
+        @logger.info "connecting to #{port}" if @logger
+        begin
+          @socket = TCPSocket.new("127.0.0.1", port)
+          @socket.setsockopt(:SOCKET, :RCVBUF, 1000000)
+        rescue Errno::ECONNREFUSED
+          cleanup
+          @connection_listener.call(:timeout) if @connection_listener
+          @state = :off
+          @logger.warn "could not connect socket (connection timeout)" if @logger
+          return false
+        end
+        @state = :read_from_socket
+        @connection_listener.call(:connected) if @connection_listener
+        break
+      end
+      if Time.now > @connect_start_time + @connection_timeout
+        cleanup
+        @connection_listener.call(:timeout) if @connection_listener
         @state = :off
         @logger.warn "could not connect socket (connection timeout)" if @logger
+        return false
       end
-      @state = :connected
-      @work_state = :read_from_socket
-      @connection_listener.call(:connected) if @connection_listener
+      sleep(0.1)
     end
-    if Time.now > @connect_start_time + @connection_timeout
-      cleanup
-      @connection_listener.call(:timeout) if @connection_listener
-      @work_state = :done
-      @state = :off
-      @logger.warn "could not connect socket (connection timeout)" if @logger
-    end
-    true
-  when :read_from_socket
+  end
+  if @state == :read_from_socket
     repeat = true
     socket_closed = false
     response_data = ""
@@ -208,13 +276,12 @@ def do_work
         end
       elsif !backend_running? || socket_closed
         cleanup
-        @work_state = :done
+        @state = :off
         return false
       end
     end
-    true
   end
-
+  true
 end
 
 def cleanup
@@ -224,7 +291,7 @@ def cleanup
     break unless backend_running?
     sleep(0.1)
   end
-  File.unlink(@out_file) unless @keep_outfile
+  ensure_process_cleanup(@process_id, @keep_outfile ? @out_file : nil, 10)
 end
 
 end
