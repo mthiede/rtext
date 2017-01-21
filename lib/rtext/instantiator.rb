@@ -247,7 +247,11 @@ class Instantiator
         element.setOrAddGeneric(feature.name, proxy)
       else
         begin
-          element.setOrAddGeneric(feature.name, v.value)
+          if feature.eType.instanceClass == Float && v.value.is_a?(Fixnum)
+            element.setOrAddGeneric(feature.name, v.value.to_f)
+          else
+            element.setOrAddGeneric(feature.name, v.value)
+          end
         rescue StandardError
           # backward compatibility for RGen versions not supporting BigDecimal
           if v.value.is_a?(BigDecimal)
@@ -304,7 +308,7 @@ class Instantiator
     else
       expected = { String => [:string, :identifier],
         Integer => [:integer],
-        Float => [:float],
+        Float => [:float, :integer],
         RGen::MetamodelBuilder::DataTypes::Boolean => [:boolean],
         Object => [:string, :identifier, :integer, :float, :boolean]
       }[feature.eType.instanceClass] 
