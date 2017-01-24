@@ -4,7 +4,7 @@ DocFiles = %w(README.rdoc CHANGELOG MIT-LICENSE RText_Users_Guide RText_Protocol
 
 Gem::Specification.new do |s|
   s.name = %q{rtext}
-  s.version = '0.9.2'
+  s.version = '0.9.3.pre1'
   s.date = Time.now.strftime('%Y-%m-%d')
   s.summary = %q{Ruby Textual Modelling}
   s.email = %q{martin dot thiede at gmx de}

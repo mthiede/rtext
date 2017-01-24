@@ -106,6 +106,37 @@ class InstantiatorTest < MiniTest::Test
     end
   end
 
+  def test_int_float
+    env, problems = instantiate(%Q(
+      TestNode float: "abc"
+      ), TestMM)
+    assert_equal(1, problems.length)
+
+    root_elements = []
+    env, problems = instantiate(%Q(
+      TestNode text: "some text", float: -25 {
+        TestNode text: "child"
+        TestNode text: "child2"
+      }
+      ), TestMM, :root_elements => root_elements)
+    assert_no_problems(problems)
+    assert_model_simple(env)
+    assert(root_elements.first.float.is_a?(Float))
+    assert_equal(-25.0, root_elements.first.float)
+
+    root_elements = []
+    env, problems = instantiate(%Q(
+      TestNode text: "some text", float: -72.001 {
+        TestNode text: "child"
+        TestNode text: "child2"
+      }
+      ), TestMM, :root_elements => root_elements)
+    assert_no_problems(problems)
+    assert_model_simple(env)
+    assert(root_elements.first.float.is_a?(Float))
+    assert_equal(-72.001, root_elements.first.float)
+  end
+  
   def test_simple
     env, problems = instantiate(%Q(
       TestNode text: "some text", nums: [1,2] {
@@ -1728,5 +1759,3 @@ class InstantiatorTest < MiniTest::Test
   end
 
 end
-	
-
