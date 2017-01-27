@@ -30,3 +30,10 @@ end
 task :release => [:prepare_package_rdoc, :package]
 
 task :clobber => [:clobber_rdoc, :clobber_package]
+
+require 'rake/testtask'
+
+::Rake::TestTask.new(:test) do |t|
+  t.test_files = ['test/rtext_test.rb']
+  t.warning = false
+end

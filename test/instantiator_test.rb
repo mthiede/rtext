@@ -106,6 +106,19 @@ class InstantiatorTest < MiniTest::Test
     end
   end
 
+  def test_int_float_string
+    root_elements = []
+    _, problems = instantiate(%Q(
+      TestNode text: 10
+      TestNode text: -14.55
+      ), TestMM, :root_elements => root_elements)
+    assert_no_problems(problems)
+    assert(root_elements.first.text.is_a?(String))
+    assert_equal('10', root_elements.first.text)
+    assert(root_elements[1].text.is_a?(String))
+    assert_equal('-14.55', root_elements[1].text)
+  end
+
   def test_int_float
     env, problems = instantiate(%Q(
       TestNode float: "abc"
@@ -760,7 +773,6 @@ class InstantiatorTest < MiniTest::Test
       TestNode related: 1
     ), TestMM)
     assert_problems([
-      [/argument 'text' can not take a integer, expected string/i, 2],
       [/argument 'integer' can not take a string, expected integer/i, 3],
       [/argument 'integer' can not take a boolean, expected integer/i, 4],
       [/argument 'integer' can not take a float, expected integer/i, 5],
