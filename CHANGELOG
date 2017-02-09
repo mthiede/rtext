@@ -105,3 +105,4 @@
 
 * Fixed frontend connector
 * Fixed frontend tests
+* Automatic conversion of integer and float values to string
