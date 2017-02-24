@@ -7,7 +7,7 @@ RTextGemSpec = eval(File.read('rtext.gemspec'))
 
 gemfiles = Rake::FileList.new
 gemfiles.include('{lib,test}/**/*')
-gemfiles.include(DocFiles)
+gemfiles.include(%w(README.rdoc CHANGELOG MIT-LICENSE RText_Users_Guide RText_Protocol))
 gemfiles.include('Rakefile')
 gemfiles.exclude(/\b\.bak\b/)
 RTextGemSpec.files = gemfiles
