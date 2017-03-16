@@ -12,6 +12,6 @@ Gem::Specification.new do |s|
   s.executables = nil
   s.extra_rdoc_files = ["README.rdoc", "CHANGELOG", "MIT-LICENSE", "RText_Users_Guide", "RText_Protocol"]
   s.rdoc_options << "--main" << "README.rdoc" << "-x" << "test"
-  s.files = ["Project.yaml"] + Dir.glob("lib/**/*.rb") + [] + ["lib/rubyencoder.lic"]
+  s.files = ["Project.yaml"] + Dir.glob("lib/**/*.rb")
   s.add_dependency("rgen", "~> 0.8.0")
 end

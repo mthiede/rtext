@@ -11,3 +11,4 @@ dependencies:
     - {name: rgen, version: '~> 0.8.0'}
 rdoc_options: [--main, README.rdoc, -x, test]
 extra_rdoc_files: [README.rdoc, CHANGELOG, MIT-LICENSE, RText_Users_Guide, RText_Protocol]
+encrypt_sources: false
