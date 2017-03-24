@@ -39,6 +39,7 @@ def execute_command(obj, options={})
     obj["invocation_id"] = @invocation_id
     obj["type"] = "request"
     @socket.send(serialize_message(obj), 0)
+    @logger.debug('Sent request') if @logger
     result = nil
     @busy = true
     @busy_start_time = Time.now
@@ -72,6 +73,7 @@ def execute_command(obj, options={})
       result
     end
   else
+    @logger.debug('connecting')
     :connecting
   end
 end
@@ -87,7 +89,7 @@ def stop
   end
   if connected?
     execute_command({"type" => "request", "command" => "stop"})
-    while do_work 
+    while do_work
       sleep(0.1)
     end
   end
@@ -184,6 +186,7 @@ def connect
   if @process_id.nil?
     File.unlink(@out_file) if File.exist?(@out_file)
     Dir.chdir(File.dirname(@config.file)) do
+      @logger.debug(@config.command.strip + " > #{@out_file} 2>&1") if @logger
       @process_id = spawn(@config.command.strip + " > #{@out_file} 2>&1")
       @state = :wait_for_file
     end
@@ -191,8 +194,9 @@ def connect
 end
 
 def do_work
-  if @process_id.nil?
+  unless @process_id
     @state = :off
+    @logger.debug('No process id') if @logger
     return false
   end
   if @state == :wait_for_port && !File.exist?(@out_file)
@@ -263,6 +267,7 @@ def do_work
         @logger.info "server socket closed (end of file)" if @logger
       end
       if data
+        @logger.debug('Got data') if @logger
         repeat = true
         response_data.concat(data)
         while obj = extract_message(response_data)
@@ -277,6 +282,7 @@ def do_work
       elsif !backend_running? || socket_closed
         cleanup
         @state = :off
+        @logger.debug("backend_running?: #{backend_running?}, socket_closed: #{socket_closed}") if @logger
         return false
       end
     end
@@ -291,7 +297,8 @@ def cleanup
     break unless backend_running?
     sleep(0.1)
   end
-  ensure_process_cleanup(@process_id, @keep_outfile ? @out_file : nil, 10)
+  ensure_process_cleanup(@process_id, @keep_outfile ? nil : @out_file, 10)
+  @process_id = nil
 end
 
 end

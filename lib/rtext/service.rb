@@ -1,4 +1,6 @@
 require 'socket'
+require 'yaml'
+require 'filelock'
 require 'rtext/context_builder'
 require 'rtext/message_helper'
 require 'rtext/link_detector'
@@ -6,7 +8,7 @@ require 'rtext/link_detector'
 # optimization: garbage collect while service is idle
 
 module RText
-
+  
 class Service
   include RText::MessageHelper
 
@@ -33,62 +35,77 @@ class Service
     @timeout = options[:timeout] || 60
     @logger = options[:logger]
     @on_startup = options[:on_startup]
+    @lock_file_path = options[:lock_file_path]
+    @config_file_path = options[:config_file_path]
+    @lock_file = nil
   end
 
   def run
-    server = create_server 
-    puts "RText service, listening on port #{server.addr[1]}"
-    @on_startup.call if @on_startup
-    $stdout.flush
-
-    last_access_time = Time.now
-    last_flush_time = Time.now
-    @stop_requested = false
-    sockets = []
-    request_data = {}
-    while !@stop_requested
+    Filelock @lock_file_path, :timeout => 0, :wait => 1 do
+      server = create_server 
+      puts "RText service, listening on port #{server.addr[1]}"
+      @logger.debug('Server started') if @logger
+      File.write(@config_file_path, YAML.dump({'port' => server.addr[1], 'pid' => Process.pid}))
       begin
-        sock = server.accept_nonblock
-        sock.sync = true
-        sockets << sock
-        @logger.info "accepted connection" if @logger
-      rescue Errno::EAGAIN, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR, Errno::EWOULDBLOCK
-      rescue Exception => e
-        @logger.warn "unexpected exception during socket accept: #{e.class}"
-      end
-      sockets.dup.each do |sock|
-        data = nil
-        begin
-          data = sock.read_nonblock(100000)
-        rescue Errno::EWOULDBLOCK
-        rescue IOError, EOFError, Errno::ECONNRESET, Errno::ECONNABORTED
-          sock.close
-          request_data[sock] = nil
-          sockets.delete(sock)
-        rescue Exception => e
-          # catch Exception to make sure we don't crash due to unexpected exceptions
-          @logger.warn "unexpected exception during socket read: #{e.class}"
-          sock.close
-          request_data[sock] = nil
-          sockets.delete(sock)
-        end
-        if data
-          last_access_time = Time.now
-          request_data[sock] ||= ""
-          request_data[sock].concat(data)
-          while obj = extract_message(request_data[sock])
-            message_received(sock, obj)
+        @on_startup.call if @on_startup
+        $stdout.flush
+      
+        last_access_time = Time.now
+        last_flush_time = Time.now
+        @stop_requested = false
+        sockets = []
+        request_data = {}
+        while !@stop_requested
+          begin
+            sock = server.accept_nonblock
+            sock.sync = true
+            sockets << sock
+            @logger.info "accepted connection" if @logger
+          rescue Errno::EAGAIN, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR, Errno::EWOULDBLOCK
+          rescue Exception => e
+            @logger.warn "unexpected exception during socket accept: #{e.class}"
+          end
+          sockets.dup.each do |sock|
+            data = nil
+            begin
+              data = sock.read_nonblock(100000)
+              @logger.debug('Got data') if @logger
+            rescue Errno::EWOULDBLOCK
+            rescue IOError, EOFError, Errno::ECONNRESET, Errno::ECONNABORTED
+              sock.close
+              request_data[sock] = nil
+              sockets.delete(sock)
+            rescue Exception => e
+              # catch Exception to make sure we don't crash due to unexpected exceptions
+              @logger.warn "unexpected exception during socket read: #{e.class}"
+              sock.close
+              request_data[sock] = nil
+              sockets.delete(sock)
+            end
+            if data
+              last_access_time = Time.now
+              request_data[sock] ||= ""
+              request_data[sock].concat(data)
+              @logger.debug("Data available: #{request_data[sock]}") if @logger
+              while obj = extract_message(request_data[sock])
+                @logger.debug("Got message #{obj.inspect}") if @logger
+                message_received(sock, obj)
+              end
+            end
+          end
+          IO.select([server] + sockets, [], [], 1)
+          if Time.now > last_access_time + @timeout
+            @logger.info("RText service, stopping now (timeout)") if @logger
+            break 
+          end
+          if Time.now > last_flush_time + FlushInterval
+            $stdout.flush
+            last_flush_time = Time.now
           end
         end
-      end
-      IO.select([server] + sockets, [], [], 1)
-      if Time.now > last_access_time + @timeout
-        @logger.info("RText service, stopping now (timeout)") if @logger
-        break 
-      end
-      if Time.now > last_flush_time + FlushInterval
-        $stdout.flush
-        last_flush_time = Time.now
+      ensure
+        @logger.warn("Config file doesn't exist, but lock is acquired, it could be a bug") unless File.exist?(@config_file_path)
+        File.unlink(@config_file_path) if File.exist?(@config_file_path)
       end
     end
   end

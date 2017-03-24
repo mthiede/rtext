@@ -33,5 +33,5 @@ def source_gems(gem_source, *gems)
     gem *(gem_args << {:source => gem_source}) unless found
   end
 end
-source_gems("http://rubygems.org", "rgen")
+source_gems("http://rubygems.org", "rgen", "filelock")
 gemspec :name => "rtext", :path => File.dirname(__FILE__)

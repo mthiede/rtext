@@ -2,7 +2,7 @@
 abort 'Use the rake task or esr-gem-builder to build the gem' if $0 =~ /gem$/ && $*.first == 'build'
 Gem::Specification.new do |s|
   s.name = "rtext"
-  s.version = "0.9.2"
+  s.version = "0.9.3"
   s.authors = ["Martin Thiede"]
   s.homepage = "http://ruby-gen.org"
   s.summary = "Ruby Textual Modelling"
@@ -14,4 +14,5 @@ Gem::Specification.new do |s|
   s.rdoc_options << "--main" << "README.rdoc" << "-x" << "test"
   s.files = ["Project.yaml"] + Dir.glob("lib/**/*.rb")
   s.add_dependency("rgen", "~> 0.8.0")
+  s.add_dependency("filelock", "~> 1.1.0")
 end
