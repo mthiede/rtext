@@ -176,9 +176,9 @@ def connect
   @logger.info @config.command if @logger
 
   if @outfile_provider
-    @out_file = @outfile_provider.call
+    @out_file = File.expand_path(@outfile_provider.call)
   else
-    @out_file = tempfile_name 
+    @out_file = File.expand_path(tempfile_name) 
   end
 
   if @process_id.nil?
