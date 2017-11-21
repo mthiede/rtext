@@ -35,8 +35,8 @@ class Service
     @timeout = options[:timeout] || 60
     @logger = options[:logger]
     @on_startup = options[:on_startup]
-    @lock_file_path = options[:lock_file_path]
-    @config_file_path = options[:config_file_path]
+    @lock_file_path = options[:lock_file_path] || File.expand_path('.rtext.lock')
+    @config_file_path = options[:config_file_path] || File.expand_path('.rtext.config')
     @lock_file = nil
   end
 
