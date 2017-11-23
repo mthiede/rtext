@@ -106,3 +106,8 @@
 * Fixed frontend connector
 * Fixed frontend tests
 * Automatic conversion of integer and float values to string
+
+=0.9.3
+
+* Fixed frontend log file path issue
+

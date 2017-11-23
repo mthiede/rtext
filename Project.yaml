@@ -1,5 +1,5 @@
 name: rtext
-version: 0.9.2
+version: 0.9.3
 git: https://github.com/mthiede/rtext.git
 summary: Ruby Textual Modelling
 email: martin dot thiede at gmx de
