@@ -291,7 +291,7 @@ def cleanup
     break unless backend_running?
     sleep(0.1)
   end
-  ensure_process_cleanup(@process_id, @keep_outfile ? @out_file : nil, 10)
+  ensure_process_cleanup(@process_id, @keep_outfile ? nil : @out_file, 10)
 end
 
 end
