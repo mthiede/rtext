@@ -224,7 +224,6 @@ EPackage StatemachineMM {
   assert_completions context, [
     "EAnnotation",
     "EClass",
-    "EClassifier",
     "EDataType",
     "EEnum",
     "EGenericType",
@@ -237,7 +236,6 @@ EPackage StatemachineMM {
   assert_completions context, [
     "EAnnotation",
     "EClass",
-    "EClassifier",
     "EDataType",
     "EEnum",
     "EGenericType",
@@ -250,7 +248,6 @@ EPackage StatemachineMM {
   assert_completions context, [
     "EAnnotation",
     "EClass",
-    "EClassifier",
     "EDataType",
     "EEnum",
     "EGenericType",
@@ -263,7 +260,6 @@ EPackage StatemachineMM {
   assert_completions context, [
     "EAnnotation",
     "EClass",
-    "EClassifier",
     "EDataType",
     "EEnum",
     "EGenericType",
@@ -451,7 +447,6 @@ EPackage StatemachineMM {
     "EAttribute",
     "EOperation",
     "EReference",
-    "EStructuralFeature"
   ]
 end
 
