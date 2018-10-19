@@ -19,7 +19,33 @@ CrashingBackendFile = File.dirname(__FILE__)+"/model/test.crashing_backend"
 DontOpenSocketFile = File.dirname(__FILE__)+"/model/test.dont_open_socket"
 CrashOnRequestFile = File.dirname(__FILE__)+"/model/test.crash_on_request"
 
+def setup_rtext_file(dir)
+  include_args = $:.map { |p| "-I#{p}" }.join(' ')
+  File.write(File.join(dir, '.rtext'), <<EOF
+*.ect:
+ruby #{include_args} ../ecore_editor.rb "*.ect" 2>&1
+*.ect2:
+ruby #{include_args} ../ecore_editor.rb "*.ect2" 2>&1
+*.ect3:
+ruby #{include_args} ../ecore_editor.rb "*.ect3" 2>&1
+*.ect4:
+ruby #{include_args} ../ecore_editor.rb "*.ect4" 2>&1
+*.invenc:
+ruby -E utf-8 #{include_args} ../ecore_editor.rb "*.invenc" 2>&1
+*.invalid_cmd_line:
+invalid_command_will_fail
+*.crashing_backend:
+ruby -e "this will crash"
+*.dont_open_socket:
+ruby -e "sleep(2)"
+*.crash_on_request:
+ruby #{include_args} ../crash_on_request_editor.rb "*.ect" 2>&1
+EOF
+  )
+end
+
 def setup_connector(file)
+  setup_rtext_file(File.dirname(file))
   @infile = file
   outfile = File.dirname(__FILE__)+"/backend.out" + Random.new.rand(100000000).to_s
   logfile = File.dirname(__FILE__)+"/frontend.log"
