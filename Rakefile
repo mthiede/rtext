@@ -35,5 +35,6 @@ require 'rake/testtask'
 
 ::Rake::TestTask.new(:test) do |t|
   t.test_files = ['test/rtext_test.rb']
+  t.libs.concat($:)
   t.warning = false
 end
