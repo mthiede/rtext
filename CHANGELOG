@@ -110,3 +110,7 @@
 =0.9.3
 
 * Added lock file for backend service
+
+=0.9.4
+
+* Fixed issue with unquoted multiline strings

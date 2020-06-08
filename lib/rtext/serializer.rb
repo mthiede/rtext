@@ -152,7 +152,7 @@ class Serializer
           result << v.to_s
         end
       elsif feature.eType.instanceClass == String
-        if @lang.unquoted?(feature) && v.to_s =~ /^[a-zA-Z_]\w*$/ && v.to_s != "true" && v.to_s != "false"
+        if @lang.unquoted?(feature) && v.to_s =~ /^[a-zA-Z_]\w*$/m && v.to_s != "true" && v.to_s != "false"
           result << v.to_s
         else
           result << "\"#{v.gsub("\\","\\\\\\\\").gsub("\"","\\\"").gsub("\n","\\n").
@@ -166,7 +166,7 @@ class Serializer
           # formatting not available for BigDecimals
         else
           if arg_format 
-            result << sprintf(arg_format, v)
+          result << sprintf(arg_format, v)
           else
             result << v.to_s
           end
