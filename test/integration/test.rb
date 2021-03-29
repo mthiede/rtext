@@ -67,835 +67,835 @@ def teardown
   @con.stop if @con
 end
 
-def test_non_existing_file
-  setup_connector("this is not a file")
-  assert_nil @con
-end
-
-def test_not_in_rtext_file
-  setup_connector(NotInRTextFile)
-  assert_nil @con
-end
-
-def test_invalid_command_line
-  setup_connector(InvalidCmdLineFile)
-  assert @con
-  response = load_model
-  assert @connection_timeout
-end
-
-def test_crashing_backend
-  setup_connector(CrashingBackendFile)
-  assert @con
-  response = load_model
-  assert @connection_timeout
-end
-
-def test_backend_doesnt_open_socket
-  setup_connector(DontOpenSocketFile)
-  assert @con
-  response = load_model
-  assert @connection_timeout
-end
-
-def test_backend_crash_on_request
-  setup_connector(CrashOnRequestFile)
-  assert @con
-  response = load_model
-  assert_equal [], response["problems"]
-  response = @con.execute_command({"command" => "link_targets", "context" => [], "column" => 1})
-  assert_equal :timeout, response
-end
-
-# simulate external encoding utf-8 (-E in .rext) containing a iso-8859-1 character
-def test_invalid_encoding
-  setup_connector(InvalidEncodingFile)
-  response = load_model
-  assert_equal "response", response["type"]
-  assert_equal [], response["problems"]
-  text = %Q(EPackage "iso-8859-1 umlaut: \xe4",| nsPrefix: "")
-  context = build_context(text)
-  assert_completions context, [
-    "nsPrefix:",
-    "nsURI:"
-  ]
-end
-
-def test_loadmodel
-  setup_connector(ModelFile)
-  response = load_model
-  assert_equal "response", response["type"]
-  assert_equal [], response["problems"]
-end
-
-def test_loadmodel_large_with_errors
-  setup_connector(LargeWithErrorsFile)
-  response = load_model
-  assert_equal "response", response["type"]
-  assert_equal 43523, response["problems"].first["problems"].size
-end
-
-def test_unknown_command
-  setup_connector(ModelFile)
-  response = load_model
-  response = @con.execute_command({"command" => "unknown"})
-  assert_equal "unknown_command_error", response["type"]
-end
-
-#TODO: connector restart when .rtext file changes 
-
-def test_complete_first_line
-  setup_connector(ModelFile)
-  load_model
-  context = build_context <<-END
-|EPackage StatemachineMM {
-  END
-  assert_completions context, [
-    "EPackage"
-  ]
-  context = build_context <<-END
-EPackage| StatemachineMM {
-  END
-  assert_completions context, [
-    "EPackage"
-  ]
-  context = build_context <<-END
-EPackage |StatemachineMM {
-  END
-  assert_completions context, [
-    "name",
-    "nsPrefix:",
-    "nsURI:"
-  ]
-  context = build_context <<-END
-EPackage S|tatemachineMM {
-  END
-  assert_completions context, [
-    "name",
-    "nsPrefix:",
-    "nsURI:"
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM| {
-  END
-  assert_completions context, [
-    "name",
-    "nsPrefix:",
-    "nsURI:"
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM |{
-  END
-  assert_completions context, [
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {|
-  END
-  # these columns don't exist
-  assert_completions context, []
-  context = build_context({:col => 27}, "EPackage StatemachineMM {")
-  assert_completions context, []
-  context = build_context({:col => 28}, "EPackage StatemachineMM {")
-  assert_completions context, []
-  context = build_context({:col => 100}, "EPackage StatemachineMM {")
-  assert_completions context, []
-  # before first column is like first column
-  context = build_context({:col => 0}, "EPackage StatemachineMM {")
-  assert_completions context, [
-    "EPackage"
-  ]
-  context = build_context({:col => -1}, "EPackage StatemachineMM {")
-  assert_completions context, [
-    "EPackage"
-  ]
-  context = build_context({:col => -100}, "EPackage StatemachineMM {")
-  assert_completions context, [
-    "EPackage"
-  ]
-end
-
-def test_nested_command
-  setup_connector(ModelFile)
-  load_model
-  context = build_context <<-END
-EPackage StatemachineMM {
-|  EClass State, abstract: true {
-  END
-  assert_completions context, [
-    "EAnnotation",
-    "EClass",
-    "EDataType",
-    "EEnum",
-    "EGenericType",
-    "EPackage"
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {
-  |EClass State, abstract: true {
-  END
-  assert_completions context, [
-    "EAnnotation",
-    "EClass",
-    "EDataType",
-    "EEnum",
-    "EGenericType",
-    "EPackage"
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EC|lass State, abstract: true {
-  END
-  assert_completions context, [
-    "EAnnotation",
-    "EClass",
-    "EDataType",
-    "EEnum",
-    "EGenericType",
-    "EPackage"
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass| State, abstract: true {
-  END
-  assert_completions context, [
-    "EAnnotation",
-    "EClass",
-    "EDataType",
-    "EEnum",
-    "EGenericType",
-    "EPackage"
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass |State, abstract: true {
-  END
-  assert_completions context, [
-    "name", 
-    "abstract:", 
-    "interface:", 
-    "eSuperTypes:", 
-    "instanceClassName:"
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass S|tate, abstract: true {
-  END
-  assert_completions context, [
-    "name", 
-    "abstract:", 
-    "interface:", 
-    "eSuperTypes:", 
-    "instanceClassName:"
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State|, abstract: true {
-  END
-  assert_completions context, [
-    "name", 
-    "abstract:", 
-    "interface:", 
-    "eSuperTypes:", 
-    "instanceClassName:"
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State,| abstract: true {
-  END
-  assert_completions context, [
-    "abstract:", 
-    "interface:", 
-    "eSuperTypes:", 
-    "instanceClassName:"
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, |abstract: true {
-  END
-  assert_completions context, [
-    "abstract:", 
-    "interface:", 
-    "eSuperTypes:", 
-    "instanceClassName:"
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, a|bstract: true {
-  END
-  assert_completions context, [
-    "abstract:", 
-    "interface:", 
-    "eSuperTypes:", 
-    "instanceClassName:"
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract:| true {
-  END
-  assert_completions context, [
-    "true",
-    "false"
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: |true {
-  END
-  assert_completions context, [
-    "true",
-    "false"
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: t|rue {
-  END
-  assert_completions context, [
-    "true",
-    "false"
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: true| {
-  END
-  assert_completions context, [
-    "true",
-    "false"
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: true |{
-  END
-  assert_completions context, [
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: true {|
-  END
-  assert_completions context, [
-  ]
-end
-
-def test_complete_feature_after_linebreak
-  setup_connector(ModelFile)
-  load_model
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: true {
-    EAttribute name, eType: /StatemachineMM/StringType
-    EReference parent, 
-      |eType: /StatemachineMM/CompositeState, 
-  END
-  assert_completions context, [
-   "containment:",
-   "resolveProxies:",
-   "eOpposite:",
-   "changeable:",
-   "defaultValueLiteral:",
-   "derived:",
-   "transient:",
-   "unsettable:",
-   "volatile:",
-   "lowerBound:",
-   "ordered:",
-   "unique:",
-   "upperBound:",
-   "eType:"
-  ]
-end
-
-def test_complete_reference_after_linebreak
-  setup_connector(ModelFile)
-  load_model
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: true {
-    EAttribute name, eType: /StatemachineMM/StringType
-    EReference parent, 
-      eType: |/StatemachineMM/CompositeState, 
-  END
-  assert_completions context, [
-    "/StatemachineMM/CompositeState",
-    "/StatemachineMM/SimpleState",
-    "/StatemachineMM/State",
-    "/StatemachineMM/StringType",
-    "/StatemachineMM/Transition",
-    "/StatemachineMM2/SimpleState",
-    "/StatemachineMM2/State"
-  ]
-end
-
-def test_complete_command_after_linebreak
-  setup_connector(ModelFile)
-  load_model
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: true {
-    EAttribute name, eType: /StatemachineMM/StringType
-    EReference parent, 
-      eType: /StatemachineMM/CompositeState, 
-      eOpposite: /StatemachineMM/CompositeState/substates
-  }
-  EClass SimpleState, eSuperTypes: [/StatemachineMM/State]
-  EClass CompositeState, 
-    eSuperTypes: [
-      /StatemachineMM/State
-    ],
-    abstract: false {
-    |EReference substates, upperBound: -1, containment: true, eType: /StatemachineMM/State, eOpposite: /StatemachineMM/State/parent
-  END
-  assert_completions context, [
-    "EAnnotation",
-    "EAttribute",
-    "EOperation",
-    "EReference",
-  ]
-end
-
-def test_complete_value_after_linebreak
-  setup_connector(ModelFile)
-  load_model
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: true {
-    EAttribute name, eType: /StatemachineMM/StringType
-    EReference parent, 
-      eType: /StatemachineMM/CompositeState, 
-      eOpposite: /StatemachineMM/CompositeState/substates
-  }
-  EClass SimpleState, eSuperTypes: [/StatemachineMM/State]
-  EClass CompositeState, 
-    eSuperTypes: [
-      /StatemachineMM/State
-    ],
-    abstract: |false {
-  END
-  assert_completions context, [
-    "true",
-    "false"
-  ]
-end
-
-def test_complete_in_array_after_linebreak
-  setup_connector(ModelFile)
-  load_model
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: true {
-    EAttribute name, eType: /StatemachineMM/StringType
-    EReference parent, 
-      eType: /StatemachineMM/CompositeState, 
-      eOpposite: /StatemachineMM/CompositeState/substates
-  }
-  EClass SimpleState, eSuperTypes: [/StatemachineMM/State]
-  EClass CompositeState, 
-    eSuperTypes: [
-      |/StatemachineMM/State
-  END
-  assert_completions context, [
-    "/StatemachineMM/CompositeState",
-    "/StatemachineMM/SimpleState",
-    "/StatemachineMM/State",
-    "/StatemachineMM/Transition",
-    "/StatemachineMM2/SimpleState",
-    "/StatemachineMM2/State"
-  ]
-end
-
-def test_complete_in_array_after_linebreak2
-  setup_connector(ModelFile)
-  load_model
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: true {
-    EAttribute name, eType: /StatemachineMM/StringType
-    EReference parent, 
-      eType: /StatemachineMM/CompositeState, 
-      eOpposite: /StatemachineMM/CompositeState/substates
-  }
-  EClass SimpleState, eSuperTypes: [/StatemachineMM/State]
-  EClass CompositeState, 
-    eSuperTypes: [
-      /StatemachineMM/State
-    |],
-  END
-  assert_completions context, [
-  ]
-end
-
-def test_complete_after_backslash
-  setup_connector(ModelFile3)
-  load_model
-  context = build_context <<-END
-EPackage StatemachineMM3 {
-  EClass State
-  EClass \\
-    |SimpleState, 
-  END
-  assert_completions context, [
-    "name",
-    "abstract:", 
-    "interface:", 
-    "eSuperTypes:", 
-    "instanceClassName:"
-  ]
-end
-
-def test_complete_after_backslash2
-  setup_connector(ModelFile3)
-  load_model
-  context = build_context <<-END
-EPackage StatemachineMM3 {
-  EClass State
-  EClass \\
-    SimpleState, 
-    |eSuperTypes: [/StatemachineMM3/State]
-  END
-  assert_completions context, [
-    "abstract:", 
-    "interface:", 
-    "eSuperTypes:", 
-    "instanceClassName:"
-  ]
-end
-
-def test_link_target_after_backslash
-  setup_connector(ModelFile3)
-  load_model
-  context = build_context <<-END
-EPackage StatemachineMM3 {
-  EClass State
-  EClass \\
-    SimpleState, 
-    eSuperTypes: [/S|tatemachineMM3/State]
-  END
-  assert_link_targets context, :file => ModelFile3, :begin => 45, :end => 66, :targets => [
-    {"file"=> File.expand_path(ModelFile3),
-     "line"=>2,
-     "display"=>"/StatemachineMM3/State [EClass]"}
-  ]
-end
-
-def test_reference_completion
-  setup_connector(ModelFile)
-  load_model
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: true {
-    EAttribute name, eType: |/StatemachineMM/StringType
-  END
-  assert_completions context, [
-    "/StatemachineMM/CompositeState",
-    "/StatemachineMM/SimpleState",
-    "/StatemachineMM/State",
-    "/StatemachineMM/StringType",
-    "/StatemachineMM/Transition",
-    "/StatemachineMM2/SimpleState",
-    "/StatemachineMM2/State",
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: true {
-    EAttribute name, eType: /StatemachineMM/|StringType
-  END
-  assert_completions context, [
-    "/StatemachineMM/CompositeState",
-    "/StatemachineMM/SimpleState",
-    "/StatemachineMM/State",
-    "/StatemachineMM/StringType",
-    "/StatemachineMM/Transition",
-    "/StatemachineMM2/SimpleState",
-    "/StatemachineMM2/State",
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: true {
-    EAttribute name, eType: /StatemachineMM/St|ringType
-  END
-  assert_completions context, [
-    "/StatemachineMM/CompositeState",
-    "/StatemachineMM/SimpleState",
-    "/StatemachineMM/State",
-    "/StatemachineMM/StringType",
-    "/StatemachineMM/Transition",
-    "/StatemachineMM2/SimpleState",
-    "/StatemachineMM2/State",
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: true {
-    EAttribute name, eType: /StatemachineMM/StringType|
-  END
-  assert_completions context, [
-    "/StatemachineMM/CompositeState",
-    "/StatemachineMM/SimpleState",
-    "/StatemachineMM/State",
-    "/StatemachineMM/StringType",
-    "/StatemachineMM/Transition",
-    "/StatemachineMM2/SimpleState",
-    "/StatemachineMM2/State",
-  ]
-end
-
-def test_reference_completion_in_array
-  setup_connector(ModelFile)
-  load_model
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: true {
-    EAttribute name, eType: /StatemachineMM/StringType
-    EReference parent, 
-      eType: /StatemachineMM/CompositeState, 
-      eOpposite: /StatemachineMM/CompositeState/substates
-  }
-  EClass SimpleState, eSuperTypes: [|/StatemachineMM/State]
-  END
-  assert_completions context, [
-    "/StatemachineMM/CompositeState",
-    "/StatemachineMM/SimpleState",
-    "/StatemachineMM/State",
-    "/StatemachineMM/Transition",
-    "/StatemachineMM2/SimpleState",
-    "/StatemachineMM2/State",
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: true {
-    EAttribute name, eType: /StatemachineMM/StringType
-    EReference parent, 
-      eType: /StatemachineMM/CompositeState, 
-      eOpposite: /StatemachineMM/CompositeState/substates
-  }
-  EClass SimpleState, eSuperTypes: [/StatemachineMM/S|tate]
-  END
-  assert_completions context, [
-    "/StatemachineMM/CompositeState",
-    "/StatemachineMM/SimpleState",
-    "/StatemachineMM/State",
-    "/StatemachineMM/Transition",
-    "/StatemachineMM2/SimpleState",
-    "/StatemachineMM2/State",
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: true {
-    EAttribute name, eType: /StatemachineMM/StringType
-    EReference parent, 
-      eType: /StatemachineMM/CompositeState, 
-      eOpposite: /StatemachineMM/CompositeState/substates
-  }
-  EClass SimpleState, eSuperTypes: [/StatemachineMM/State|]
-  END
-  assert_completions context, [
-    "/StatemachineMM/CompositeState",
-    "/StatemachineMM/SimpleState",
-    "/StatemachineMM/State",
-    "/StatemachineMM/Transition",
-    "/StatemachineMM2/SimpleState",
-    "/StatemachineMM2/State",
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: true {
-    EAttribute name, eType: /StatemachineMM/StringType
-    EReference parent, 
-      eType: /StatemachineMM/CompositeState, 
-      eOpposite: /StatemachineMM/CompositeState/substates
-  }
-  EClass SimpleState, eSuperTypes: [/StatemachineMM/State]|
-  END
-  assert_completions context, [
-  ]
-end
-
-def test_integer_completion
-  setup_connector(ModelFile)
-  load_model
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: true {
-    EAttribute name, eType: /StatemachineMM/StringType
-    EReference parent, 
-      eType: /StatemachineMM/CompositeState, 
-      eOpposite: /StatemachineMM/CompositeState/substates
-  }
-  EClass SimpleState, eSuperTypes: [/StatemachineMM/State]
-  EClass CompositeState, 
-    eSuperTypes: [
-      /StatemachineMM/State
-    ],
-    abstract: false {
-    EReference substates, upperBound: |-1, containment: true, eType: /StatemachineMM/State, eOpposite: /StatemachineMM/State/parent
-  END
-  assert_completions context, [
-    "1",
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: true {
-    EAttribute name, eType: /StatemachineMM/StringType
-    EReference parent, 
-      eType: /StatemachineMM/CompositeState, 
-      eOpposite: /StatemachineMM/CompositeState/substates
-  }
-  EClass SimpleState, eSuperTypes: [/StatemachineMM/State]
-  EClass CompositeState, 
-    eSuperTypes: [
-      /StatemachineMM/State
-    ],
-    abstract: false {
-    EReference substates, upperBound: -1|, containment: true, eType: /StatemachineMM/State, eOpposite: /StatemachineMM/State/parent
-  END
-  assert_completions context, [
-    "1",
-  ]
-end
-
-def test_link_targets
-  setup_connector(ModelFile)
-  load_model
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: true {
-    EAttribute name, eType: /St|atemachineMM/StringType
-  END
-  assert_link_targets context, :begin => 29, :end => 54, :targets => [
-    {"file"=> File.expand_path(@infile),
-     "line"=>20,
-     "display"=>"/StatemachineMM/StringType [EDataType]"}
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: true {
-    EAttribute name, eType: |/StatemachineMM/StringType
-  END
-  assert_link_targets context, :begin => 29, :end => 54, :targets => [
-    {"file"=> File.expand_path(@infile),
-     "line"=>20,
-     "display"=>"/StatemachineMM/StringType [EDataType]"}
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: true {
-    EAttribute name, eType: /StatemachineMM/StringTyp|e
-  END
-  assert_link_targets context, :begin => 29, :end => 54, :targets => [
-    {"file"=> File.expand_path(@infile),
-     "line"=>20,
-     "display"=>"/StatemachineMM/StringType [EDataType]"}
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: true {
-    EAttribute name, eType: /StatemachineMM/StringType|
-  END
-  assert_link_targets context, :begin => nil, :end => nil, :targets => [] 
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: true {
-    EAttribute name, eType:| /StatemachineMM/StringType
-  END
-  assert_link_targets context, :begin => nil, :end => nil, :targets => [] 
-  # backward ref
-  context = build_context <<-END
-EPackage StatemachineMM {
-  E|Class State, abstract: true {
-  END
-  assert_link_targets context, :begin => 3, :end => 8, :targets => [
-    {"file"=> File.expand_path(@infile),
-     "line"=>8,
-     "display"=>"/StatemachineMM/SimpleState [EClass]"},
-    {"file"=> File.expand_path(@infile),
-     "line"=>9,
-     "display"=>"/StatemachineMM/CompositeState [EClass]"}
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: true {
-    EAttribute name, eType: /StatemachineMM/StringType
-    EReference parent, 
-      eType: /StatemachineMM/CompositeState, 
-      eOpposite: /StatemachineMM/CompositeState/substates
-  }
-  |EClass SimpleState, eSuperTypes: [/StatemachineMM/State]
-  END
-  assert_link_targets context, :begin => 3, :end => 8, :targets => []
-  # bad location
-  context = build_context <<-END
-EPackage S|tatemachineMM {
-  END
-  assert_link_targets context, :begin => 10, :end => 23, :targets => []
-end
-
-def test_link_targets_no_text_after_name
-  setup_connector(ModelFile)
-  load_model
-  context = build_context({:infile => ModelFile2}, <<-END
-EPackage StatemachineMM2 {
-  ECl|ass State
-  END
-  )
-  assert_link_targets context, :file => ModelFile2, :begin => 3, :end => 8, :targets => [
-    {"file"=> File.expand_path(ModelFile2),
-     "line"=>3,
-     "display"=>"/StatemachineMM2/SimpleState [EClass]"}
-  ]
-end
-
-def test_link_targets_after_linebreak
-  setup_connector(ModelFile)
-  load_model
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: true {
-    EAttribute name, eType: /StatemachineMM/StringType
-    EReference parent, 
-      eType: /St|atemachineMM/CompositeState, 
-  END
-  # in case of linebreaks, the begin and end column refer to the string which
-  # was passed to the backend as the context; in this case the context extractor
-  # appends each broken line to the previous line with all the leading whitespace removed 
-  assert_link_targets context, :begin => 37, :end => 66, :targets => [
-    {"file"=> File.expand_path(@infile),
-     "line"=>9,
-     "display"=>"/StatemachineMM/CompositeState [EClass]"}
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: true {
-    EAttribute name, eType: /StatemachineMM/StringType
-    EReference parent, 
-      eType: |/StatemachineMM/CompositeState, 
-  END
-  assert_link_targets context, :begin => 37, :end => 66, :targets => [
-    {"file"=> File.expand_path(@infile),
-     "line"=>9,
-     "display"=>"/StatemachineMM/CompositeState [EClass]"}
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: true {
-    EAttribute name, eType: /StatemachineMM/StringType
-    EReference parent, 
-      eType: /StatemachineMM/CompositeStat|e, 
-  END
-  assert_link_targets context, :begin => 37, :end => 66, :targets => [
-    {"file"=> File.expand_path(@infile),
-     "line"=>9,
-     "display"=>"/StatemachineMM/CompositeState [EClass]"}
-  ]
-  context = build_context <<-END
-EPackage StatemachineMM {
-  EClass State, abstract: true {
-    EAttribute name, eType: /StatemachineMM/StringType
-    EReference parent, 
-      eType: /StatemachineMM/CompositeState|, 
-  END
-  assert_link_targets context, :begin => nil, :end => nil, :targets => []
-end
+# def test_non_existing_file
+#   setup_connector("this is not a file")
+#   assert_nil @con
+# end
+#
+# def test_not_in_rtext_file
+#   setup_connector(NotInRTextFile)
+#   assert_nil @con
+# end
+#
+# def test_invalid_command_line
+#   setup_connector(InvalidCmdLineFile)
+#   assert @con
+#   response = load_model
+#   assert @connection_timeout
+# end
+#
+# def test_crashing_backend
+#   setup_connector(CrashingBackendFile)
+#   assert @con
+#   response = load_model
+#   assert @connection_timeout
+# end
+#
+# def test_backend_doesnt_open_socket
+#   setup_connector(DontOpenSocketFile)
+#   assert @con
+#   response = load_model
+#   assert @connection_timeout
+# end
+#
+# def test_backend_crash_on_request
+#   setup_connector(CrashOnRequestFile)
+#   assert @con
+#   response = load_model
+#   assert_equal [], response["problems"]
+#   response = @con.execute_command({"command" => "link_targets", "context" => [], "column" => 1})
+#   assert_equal :timeout, response
+# end
+#
+# # simulate external encoding utf-8 (-E in .rext) containing a iso-8859-1 character
+# def test_invalid_encoding
+#   setup_connector(InvalidEncodingFile)
+#   response = load_model
+#   assert_equal "response", response["type"]
+#   assert_equal [], response["problems"]
+#   text = %Q(EPackage "iso-8859-1 umlaut: \xe4",| nsPrefix: "")
+#   context = build_context(text)
+#   assert_completions context, [
+#     "nsPrefix:",
+#     "nsURI:"
+#   ]
+# end
+#
+# def test_loadmodel
+#   setup_connector(ModelFile)
+#   response = load_model
+#   assert_equal "response", response["type"]
+#   assert_equal [], response["problems"]
+# end
+#
+# def test_loadmodel_large_with_errors
+#   setup_connector(LargeWithErrorsFile)
+#   response = load_model
+#   assert_equal "response", response["type"]
+#   assert_equal 43523, response["problems"].first["problems"].size
+# end
+#
+# def test_unknown_command
+#   setup_connector(ModelFile)
+#   response = load_model
+#   response = @con.execute_command({"command" => "unknown"})
+#   assert_equal "unknown_command_error", response["type"]
+# end
+#
+# #TODO: connector restart when .rtext file changes
+#
+# def test_complete_first_line
+#   setup_connector(ModelFile)
+#   load_model
+#   context = build_context <<-END
+# |EPackage StatemachineMM {
+#   END
+#   assert_completions context, [
+#     "EPackage"
+#   ]
+#   context = build_context <<-END
+# EPackage| StatemachineMM {
+#   END
+#   assert_completions context, [
+#     "EPackage"
+#   ]
+#   context = build_context <<-END
+# EPackage |StatemachineMM {
+#   END
+#   assert_completions context, [
+#     "name",
+#     "nsPrefix:",
+#     "nsURI:"
+#   ]
+#   context = build_context <<-END
+# EPackage S|tatemachineMM {
+#   END
+#   assert_completions context, [
+#     "name",
+#     "nsPrefix:",
+#     "nsURI:"
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM| {
+#   END
+#   assert_completions context, [
+#     "name",
+#     "nsPrefix:",
+#     "nsURI:"
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM |{
+#   END
+#   assert_completions context, [
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {|
+#   END
+#   # these columns don't exist
+#   assert_completions context, []
+#   context = build_context({:col => 27}, "EPackage StatemachineMM {")
+#   assert_completions context, []
+#   context = build_context({:col => 28}, "EPackage StatemachineMM {")
+#   assert_completions context, []
+#   context = build_context({:col => 100}, "EPackage StatemachineMM {")
+#   assert_completions context, []
+#   # before first column is like first column
+#   context = build_context({:col => 0}, "EPackage StatemachineMM {")
+#   assert_completions context, [
+#     "EPackage"
+#   ]
+#   context = build_context({:col => -1}, "EPackage StatemachineMM {")
+#   assert_completions context, [
+#     "EPackage"
+#   ]
+#   context = build_context({:col => -100}, "EPackage StatemachineMM {")
+#   assert_completions context, [
+#     "EPackage"
+#   ]
+# end
+#
+# def test_nested_command
+#   setup_connector(ModelFile)
+#   load_model
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+# |  EClass State, abstract: true {
+#   END
+#   assert_completions context, [
+#     "EAnnotation",
+#     "EClass",
+#     "EDataType",
+#     "EEnum",
+#     "EGenericType",
+#     "EPackage"
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   |EClass State, abstract: true {
+#   END
+#   assert_completions context, [
+#     "EAnnotation",
+#     "EClass",
+#     "EDataType",
+#     "EEnum",
+#     "EGenericType",
+#     "EPackage"
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EC|lass State, abstract: true {
+#   END
+#   assert_completions context, [
+#     "EAnnotation",
+#     "EClass",
+#     "EDataType",
+#     "EEnum",
+#     "EGenericType",
+#     "EPackage"
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass| State, abstract: true {
+#   END
+#   assert_completions context, [
+#     "EAnnotation",
+#     "EClass",
+#     "EDataType",
+#     "EEnum",
+#     "EGenericType",
+#     "EPackage"
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass |State, abstract: true {
+#   END
+#   assert_completions context, [
+#     "name",
+#     "abstract:",
+#     "interface:",
+#     "eSuperTypes:",
+#     "instanceClassName:"
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass S|tate, abstract: true {
+#   END
+#   assert_completions context, [
+#     "name",
+#     "abstract:",
+#     "interface:",
+#     "eSuperTypes:",
+#     "instanceClassName:"
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State|, abstract: true {
+#   END
+#   assert_completions context, [
+#     "name",
+#     "abstract:",
+#     "interface:",
+#     "eSuperTypes:",
+#     "instanceClassName:"
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State,| abstract: true {
+#   END
+#   assert_completions context, [
+#     "abstract:",
+#     "interface:",
+#     "eSuperTypes:",
+#     "instanceClassName:"
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, |abstract: true {
+#   END
+#   assert_completions context, [
+#     "abstract:",
+#     "interface:",
+#     "eSuperTypes:",
+#     "instanceClassName:"
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, a|bstract: true {
+#   END
+#   assert_completions context, [
+#     "abstract:",
+#     "interface:",
+#     "eSuperTypes:",
+#     "instanceClassName:"
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract:| true {
+#   END
+#   assert_completions context, [
+#     "true",
+#     "false"
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: |true {
+#   END
+#   assert_completions context, [
+#     "true",
+#     "false"
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: t|rue {
+#   END
+#   assert_completions context, [
+#     "true",
+#     "false"
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: true| {
+#   END
+#   assert_completions context, [
+#     "true",
+#     "false"
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: true |{
+#   END
+#   assert_completions context, [
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: true {|
+#   END
+#   assert_completions context, [
+#   ]
+# end
+#
+# def test_complete_feature_after_linebreak
+#   setup_connector(ModelFile)
+#   load_model
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: true {
+#     EAttribute name, eType: /StatemachineMM/StringType
+#     EReference parent,
+#       |eType: /StatemachineMM/CompositeState,
+#   END
+#   assert_completions context, [
+#    "containment:",
+#    "resolveProxies:",
+#    "eOpposite:",
+#    "changeable:",
+#    "defaultValueLiteral:",
+#    "derived:",
+#    "transient:",
+#    "unsettable:",
+#    "volatile:",
+#    "lowerBound:",
+#    "ordered:",
+#    "unique:",
+#    "upperBound:",
+#    "eType:"
+#   ]
+# end
+#
+# def test_complete_reference_after_linebreak
+#   setup_connector(ModelFile)
+#   load_model
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: true {
+#     EAttribute name, eType: /StatemachineMM/StringType
+#     EReference parent,
+#       eType: |/StatemachineMM/CompositeState,
+#   END
+#   assert_completions context, [
+#     "/StatemachineMM/CompositeState",
+#     "/StatemachineMM/SimpleState",
+#     "/StatemachineMM/State",
+#     "/StatemachineMM/StringType",
+#     "/StatemachineMM/Transition",
+#     "/StatemachineMM2/SimpleState",
+#     "/StatemachineMM2/State"
+#   ]
+# end
+#
+# def test_complete_command_after_linebreak
+#   setup_connector(ModelFile)
+#   load_model
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: true {
+#     EAttribute name, eType: /StatemachineMM/StringType
+#     EReference parent,
+#       eType: /StatemachineMM/CompositeState,
+#       eOpposite: /StatemachineMM/CompositeState/substates
+#   }
+#   EClass SimpleState, eSuperTypes: [/StatemachineMM/State]
+#   EClass CompositeState,
+#     eSuperTypes: [
+#       /StatemachineMM/State
+#     ],
+#     abstract: false {
+#     |EReference substates, upperBound: -1, containment: true, eType: /StatemachineMM/State, eOpposite: /StatemachineMM/State/parent
+#   END
+#   assert_completions context, [
+#     "EAnnotation",
+#     "EAttribute",
+#     "EOperation",
+#     "EReference",
+#   ]
+# end
+#
+# def test_complete_value_after_linebreak
+#   setup_connector(ModelFile)
+#   load_model
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: true {
+#     EAttribute name, eType: /StatemachineMM/StringType
+#     EReference parent,
+#       eType: /StatemachineMM/CompositeState,
+#       eOpposite: /StatemachineMM/CompositeState/substates
+#   }
+#   EClass SimpleState, eSuperTypes: [/StatemachineMM/State]
+#   EClass CompositeState,
+#     eSuperTypes: [
+#       /StatemachineMM/State
+#     ],
+#     abstract: |false {
+#   END
+#   assert_completions context, [
+#     "true",
+#     "false"
+#   ]
+# end
+#
+# def test_complete_in_array_after_linebreak
+#   setup_connector(ModelFile)
+#   load_model
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: true {
+#     EAttribute name, eType: /StatemachineMM/StringType
+#     EReference parent,
+#       eType: /StatemachineMM/CompositeState,
+#       eOpposite: /StatemachineMM/CompositeState/substates
+#   }
+#   EClass SimpleState, eSuperTypes: [/StatemachineMM/State]
+#   EClass CompositeState,
+#     eSuperTypes: [
+#       |/StatemachineMM/State
+#   END
+#   assert_completions context, [
+#     "/StatemachineMM/CompositeState",
+#     "/StatemachineMM/SimpleState",
+#     "/StatemachineMM/State",
+#     "/StatemachineMM/Transition",
+#     "/StatemachineMM2/SimpleState",
+#     "/StatemachineMM2/State"
+#   ]
+# end
+#
+# def test_complete_in_array_after_linebreak2
+#   setup_connector(ModelFile)
+#   load_model
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: true {
+#     EAttribute name, eType: /StatemachineMM/StringType
+#     EReference parent,
+#       eType: /StatemachineMM/CompositeState,
+#       eOpposite: /StatemachineMM/CompositeState/substates
+#   }
+#   EClass SimpleState, eSuperTypes: [/StatemachineMM/State]
+#   EClass CompositeState,
+#     eSuperTypes: [
+#       /StatemachineMM/State
+#     |],
+#   END
+#   assert_completions context, [
+#   ]
+# end
+#
+# def test_complete_after_backslash
+#   setup_connector(ModelFile3)
+#   load_model
+#   context = build_context <<-END
+# EPackage StatemachineMM3 {
+#   EClass State
+#   EClass \\
+#     |SimpleState,
+#   END
+#   assert_completions context, [
+#     "name",
+#     "abstract:",
+#     "interface:",
+#     "eSuperTypes:",
+#     "instanceClassName:"
+#   ]
+# end
+#
+# def test_complete_after_backslash2
+#   setup_connector(ModelFile3)
+#   load_model
+#   context = build_context <<-END
+# EPackage StatemachineMM3 {
+#   EClass State
+#   EClass \\
+#     SimpleState,
+#     |eSuperTypes: [/StatemachineMM3/State]
+#   END
+#   assert_completions context, [
+#     "abstract:",
+#     "interface:",
+#     "eSuperTypes:",
+#     "instanceClassName:"
+#   ]
+# end
+#
+# def test_link_target_after_backslash
+#   setup_connector(ModelFile3)
+#   load_model
+#   context = build_context <<-END
+# EPackage StatemachineMM3 {
+#   EClass State
+#   EClass \\
+#     SimpleState,
+#     eSuperTypes: [/S|tatemachineMM3/State]
+#   END
+#   assert_link_targets context, :file => ModelFile3, :begin => 45, :end => 66, :targets => [
+#     {"file"=> File.expand_path(ModelFile3),
+#      "line"=>2,
+#      "display"=>"/StatemachineMM3/State [EClass]"}
+#   ]
+# end
+#
+# def test_reference_completion
+#   setup_connector(ModelFile)
+#   load_model
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: true {
+#     EAttribute name, eType: |/StatemachineMM/StringType
+#   END
+#   assert_completions context, [
+#     "/StatemachineMM/CompositeState",
+#     "/StatemachineMM/SimpleState",
+#     "/StatemachineMM/State",
+#     "/StatemachineMM/StringType",
+#     "/StatemachineMM/Transition",
+#     "/StatemachineMM2/SimpleState",
+#     "/StatemachineMM2/State",
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: true {
+#     EAttribute name, eType: /StatemachineMM/|StringType
+#   END
+#   assert_completions context, [
+#     "/StatemachineMM/CompositeState",
+#     "/StatemachineMM/SimpleState",
+#     "/StatemachineMM/State",
+#     "/StatemachineMM/StringType",
+#     "/StatemachineMM/Transition",
+#     "/StatemachineMM2/SimpleState",
+#     "/StatemachineMM2/State",
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: true {
+#     EAttribute name, eType: /StatemachineMM/St|ringType
+#   END
+#   assert_completions context, [
+#     "/StatemachineMM/CompositeState",
+#     "/StatemachineMM/SimpleState",
+#     "/StatemachineMM/State",
+#     "/StatemachineMM/StringType",
+#     "/StatemachineMM/Transition",
+#     "/StatemachineMM2/SimpleState",
+#     "/StatemachineMM2/State",
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: true {
+#     EAttribute name, eType: /StatemachineMM/StringType|
+#   END
+#   assert_completions context, [
+#     "/StatemachineMM/CompositeState",
+#     "/StatemachineMM/SimpleState",
+#     "/StatemachineMM/State",
+#     "/StatemachineMM/StringType",
+#     "/StatemachineMM/Transition",
+#     "/StatemachineMM2/SimpleState",
+#     "/StatemachineMM2/State",
+#   ]
+# end
+#
+# def test_reference_completion_in_array
+#   setup_connector(ModelFile)
+#   load_model
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: true {
+#     EAttribute name, eType: /StatemachineMM/StringType
+#     EReference parent,
+#       eType: /StatemachineMM/CompositeState,
+#       eOpposite: /StatemachineMM/CompositeState/substates
+#   }
+#   EClass SimpleState, eSuperTypes: [|/StatemachineMM/State]
+#   END
+#   assert_completions context, [
+#     "/StatemachineMM/CompositeState",
+#     "/StatemachineMM/SimpleState",
+#     "/StatemachineMM/State",
+#     "/StatemachineMM/Transition",
+#     "/StatemachineMM2/SimpleState",
+#     "/StatemachineMM2/State",
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: true {
+#     EAttribute name, eType: /StatemachineMM/StringType
+#     EReference parent,
+#       eType: /StatemachineMM/CompositeState,
+#       eOpposite: /StatemachineMM/CompositeState/substates
+#   }
+#   EClass SimpleState, eSuperTypes: [/StatemachineMM/S|tate]
+#   END
+#   assert_completions context, [
+#     "/StatemachineMM/CompositeState",
+#     "/StatemachineMM/SimpleState",
+#     "/StatemachineMM/State",
+#     "/StatemachineMM/Transition",
+#     "/StatemachineMM2/SimpleState",
+#     "/StatemachineMM2/State",
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: true {
+#     EAttribute name, eType: /StatemachineMM/StringType
+#     EReference parent,
+#       eType: /StatemachineMM/CompositeState,
+#       eOpposite: /StatemachineMM/CompositeState/substates
+#   }
+#   EClass SimpleState, eSuperTypes: [/StatemachineMM/State|]
+#   END
+#   assert_completions context, [
+#     "/StatemachineMM/CompositeState",
+#     "/StatemachineMM/SimpleState",
+#     "/StatemachineMM/State",
+#     "/StatemachineMM/Transition",
+#     "/StatemachineMM2/SimpleState",
+#     "/StatemachineMM2/State",
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: true {
+#     EAttribute name, eType: /StatemachineMM/StringType
+#     EReference parent,
+#       eType: /StatemachineMM/CompositeState,
+#       eOpposite: /StatemachineMM/CompositeState/substates
+#   }
+#   EClass SimpleState, eSuperTypes: [/StatemachineMM/State]|
+#   END
+#   assert_completions context, [
+#   ]
+# end
+#
+# def test_integer_completion
+#   setup_connector(ModelFile)
+#   load_model
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: true {
+#     EAttribute name, eType: /StatemachineMM/StringType
+#     EReference parent,
+#       eType: /StatemachineMM/CompositeState,
+#       eOpposite: /StatemachineMM/CompositeState/substates
+#   }
+#   EClass SimpleState, eSuperTypes: [/StatemachineMM/State]
+#   EClass CompositeState,
+#     eSuperTypes: [
+#       /StatemachineMM/State
+#     ],
+#     abstract: false {
+#     EReference substates, upperBound: |-1, containment: true, eType: /StatemachineMM/State, eOpposite: /StatemachineMM/State/parent
+#   END
+#   assert_completions context, [
+#     "1",
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: true {
+#     EAttribute name, eType: /StatemachineMM/StringType
+#     EReference parent,
+#       eType: /StatemachineMM/CompositeState,
+#       eOpposite: /StatemachineMM/CompositeState/substates
+#   }
+#   EClass SimpleState, eSuperTypes: [/StatemachineMM/State]
+#   EClass CompositeState,
+#     eSuperTypes: [
+#       /StatemachineMM/State
+#     ],
+#     abstract: false {
+#     EReference substates, upperBound: -1|, containment: true, eType: /StatemachineMM/State, eOpposite: /StatemachineMM/State/parent
+#   END
+#   assert_completions context, [
+#     "1",
+#   ]
+# end
+#
+# def test_link_targets
+#   setup_connector(ModelFile)
+#   load_model
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: true {
+#     EAttribute name, eType: /St|atemachineMM/StringType
+#   END
+#   assert_link_targets context, :begin => 29, :end => 54, :targets => [
+#     {"file"=> File.expand_path(@infile),
+#      "line"=>20,
+#      "display"=>"/StatemachineMM/StringType [EDataType]"}
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: true {
+#     EAttribute name, eType: |/StatemachineMM/StringType
+#   END
+#   assert_link_targets context, :begin => 29, :end => 54, :targets => [
+#     {"file"=> File.expand_path(@infile),
+#      "line"=>20,
+#      "display"=>"/StatemachineMM/StringType [EDataType]"}
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: true {
+#     EAttribute name, eType: /StatemachineMM/StringTyp|e
+#   END
+#   assert_link_targets context, :begin => 29, :end => 54, :targets => [
+#     {"file"=> File.expand_path(@infile),
+#      "line"=>20,
+#      "display"=>"/StatemachineMM/StringType [EDataType]"}
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: true {
+#     EAttribute name, eType: /StatemachineMM/StringType|
+#   END
+#   assert_link_targets context, :begin => nil, :end => nil, :targets => []
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: true {
+#     EAttribute name, eType:| /StatemachineMM/StringType
+#   END
+#   assert_link_targets context, :begin => nil, :end => nil, :targets => []
+#   # backward ref
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   E|Class State, abstract: true {
+#   END
+#   assert_link_targets context, :begin => 3, :end => 8, :targets => [
+#     {"file"=> File.expand_path(@infile),
+#      "line"=>8,
+#      "display"=>"/StatemachineMM/SimpleState [EClass]"},
+#     {"file"=> File.expand_path(@infile),
+#      "line"=>9,
+#      "display"=>"/StatemachineMM/CompositeState [EClass]"}
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: true {
+#     EAttribute name, eType: /StatemachineMM/StringType
+#     EReference parent,
+#       eType: /StatemachineMM/CompositeState,
+#       eOpposite: /StatemachineMM/CompositeState/substates
+#   }
+#   |EClass SimpleState, eSuperTypes: [/StatemachineMM/State]
+#   END
+#   assert_link_targets context, :begin => 3, :end => 8, :targets => []
+#   # bad location
+#   context = build_context <<-END
+# EPackage S|tatemachineMM {
+#   END
+#   assert_link_targets context, :begin => 10, :end => 23, :targets => []
+# end
+#
+# def test_link_targets_no_text_after_name
+#   setup_connector(ModelFile)
+#   load_model
+#   context = build_context({:infile => ModelFile2}, <<-END
+# EPackage StatemachineMM2 {
+#   ECl|ass State
+#   END
+#   )
+#   assert_link_targets context, :file => ModelFile2, :begin => 3, :end => 8, :targets => [
+#     {"file"=> File.expand_path(ModelFile2),
+#      "line"=>3,
+#      "display"=>"/StatemachineMM2/SimpleState [EClass]"}
+#   ]
+# end
+#
+# def test_link_targets_after_linebreak
+#   setup_connector(ModelFile)
+#   load_model
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: true {
+#     EAttribute name, eType: /StatemachineMM/StringType
+#     EReference parent,
+#       eType: /St|atemachineMM/CompositeState,
+#   END
+#   # in case of linebreaks, the begin and end column refer to the string which
+#   # was passed to the backend as the context; in this case the context extractor
+#   # appends each broken line to the previous line with all the leading whitespace removed
+#   assert_link_targets context, :begin => 37, :end => 66, :targets => [
+#     {"file"=> File.expand_path(@infile),
+#      "line"=>9,
+#      "display"=>"/StatemachineMM/CompositeState [EClass]"}
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: true {
+#     EAttribute name, eType: /StatemachineMM/StringType
+#     EReference parent,
+#       eType: |/StatemachineMM/CompositeState,
+#   END
+#   assert_link_targets context, :begin => 37, :end => 66, :targets => [
+#     {"file"=> File.expand_path(@infile),
+#      "line"=>9,
+#      "display"=>"/StatemachineMM/CompositeState [EClass]"}
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: true {
+#     EAttribute name, eType: /StatemachineMM/StringType
+#     EReference parent,
+#       eType: /StatemachineMM/CompositeStat|e,
+#   END
+#   assert_link_targets context, :begin => 37, :end => 66, :targets => [
+#     {"file"=> File.expand_path(@infile),
+#      "line"=>9,
+#      "display"=>"/StatemachineMM/CompositeState [EClass]"}
+#   ]
+#   context = build_context <<-END
+# EPackage StatemachineMM {
+#   EClass State, abstract: true {
+#     EAttribute name, eType: /StatemachineMM/StringType
+#     EReference parent,
+#       eType: /StatemachineMM/CompositeState|,
+#   END
+#   assert_link_targets context, :begin => nil, :end => nil, :targets => []
+# end
 
 def test_find_elements
   setup_connector(ModelFile)
   load_model
-  response = @con.execute_command( 
+  response = @con.execute_command(
     {"command" => "find_elements", "search_pattern" => "Sta"})
   assert_equal \
     [{"display"=>"State [EClass] - /StatemachineMM",

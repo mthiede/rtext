@@ -49,7 +49,7 @@ module Tokenizer
             if val.size <= 16
               val = val.to_f
             else
-              val = BigDecimal.new(val)
+              val = BigDecimal(val)
             end
             result << Token.new(:float, val, idx, col, col+$&.size-1)
             col += $&.size

@@ -114,3 +114,7 @@
 =0.9.4
 
 * Fixed issue with unquoted multiline strings
+
+=0.10.0
+
+* Switch to Ruby 2.7
