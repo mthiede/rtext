@@ -1763,7 +1763,7 @@ class InstantiatorTest < MiniTest::Test
 
   def rgen_with_bigdecimal?
     begin
-      TestMM::TestNode.new.float = BigDecimal.new("0.0")
+      TestMM::TestNode.new.float = BigDecimal("0.0")
     rescue StandardError
       return false
     end

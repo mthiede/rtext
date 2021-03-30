@@ -535,7 +535,7 @@ TestNode1 text: "some text" {
 
   def test_float_big_decimal
     begin
-      testModel = TestMM::TestNode.new(:float => BigDecimal.new("1234567890.123456789"))
+      testModel = TestMM::TestNode.new(:float => BigDecimal("1234567890.123456789"))
     rescue StandardError
       return
     end
