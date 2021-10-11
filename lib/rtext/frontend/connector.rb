@@ -120,7 +120,12 @@ def ensure_process_cleanup(process_id, out_file, timeout)
     ensure
       unless process_id.nil?
         begin
-          Process.kill('QUIT', process_id)
+          begin
+            Process.kill('QUIT', process_id)
+          rescue ArgumentError
+            # SIGQUIT not supported in Ruby 2.7 on Windows
+            Process.kill('KILL', process_id)
+          end
         rescue Errno::ESRCH => _
         end
       end
