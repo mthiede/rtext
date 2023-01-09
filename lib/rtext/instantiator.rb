@@ -112,18 +112,18 @@ class Instantiator
     element = clazz.new
     @env << element if @env
     @root_elements << element if is_root
-    unlabled_args = @lang.unlabled_arguments(clazz.ecore).name
+    unlabeled_args = @lang.unlabled_arguments(clazz.ecore).name
     di_index = 0
     defined_args = {}
     arg_list.each do |a|
       if is_labeled(a) 
         set_argument(element, a[0].value, a[1], defined_args, command.line)
       else
-        if di_index < unlabled_args.size 
-          set_argument(element, unlabled_args[di_index], a, defined_args, command.line)
+        if di_index < unlabeled_args.size
+          set_argument(element, unlabeled_args[di_index], a, defined_args, command.line)
           di_index += 1
         elsif a != nil
-          problem("Unexpected unlabeled argument, #{unlabled_args.size} unlabeled arguments expected", command.line)
+          problem("Unexpected unlabeled argument, #{unlabeled_args.size} unlabeled arguments expected", command.line)
         end
       end
     end
