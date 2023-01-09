@@ -123,7 +123,7 @@ class Instantiator
           set_argument(element, unlabled_args[di_index], a, defined_args, command.line)
           di_index += 1
         elsif a != nil
-          problem("Unexpected unlabled argument, #{unlabled_args.size} unlabled arguments expected", command.line)
+          problem("Unexpected unlabeled argument, #{unlabled_args.size} unlabeled arguments expected", command.line)
         end
       end
     end
