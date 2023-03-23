@@ -490,7 +490,7 @@ class InstantiatorTest < MiniTest::Test
   end
 
   #
-  # unlabled arguments
+  # unlabeled arguments
   # 
 
   def test_unlabled_arguments
@@ -601,7 +601,7 @@ class InstantiatorTest < MiniTest::Test
     env, problems = instantiate(%Q(
       TestNode "more text"
     ), TestMM)
-    assert_problems([[/unexpected unlabled argument, 0 unlabled arguments expected/i, 2]], problems)
+    assert_problems([[/unexpected unlabeled argument, 0 unlabeled arguments expected/i, 2]], problems)
   end
 
   def test_unknown_child_role
@@ -805,7 +805,7 @@ class InstantiatorTest < MiniTest::Test
       TestNode text : A
     ), TestMM, :root_elements => root_elements)
     assert_problems([
-                     [/Unexpected unlabled argument, 0 unlabled arguments expected/i, 2],
+                     [/Unexpected unlabeled argument, 0 unlabeled arguments expected/i, 2],
                      [/Unexpected :, expected newline/i, 2]
                     ], problems)
   end
@@ -866,7 +866,7 @@ class InstantiatorTest < MiniTest::Test
     assert_equal [1], root_elements[0].nums
     assert_problems([
       [/unexpected string 'bla', expected ,/i, 2],
-      [/unexpected unlabled argument/i, 2]
+      [/unexpected unlabeled argument/i, 2]
     ], problems)
   end
 
@@ -935,7 +935,7 @@ class InstantiatorTest < MiniTest::Test
     assert_nil root_elements[0].text
     assert_problems([
       [/unexpected newline, expected \]/i, 2],
-      [/unexpected unlabled argument/i, 2],
+      [/unexpected unlabeled argument/i, 2],
     ], problems)
   end
 
@@ -948,8 +948,8 @@ class InstantiatorTest < MiniTest::Test
     assert_problems([
       [/unexpected \[, expected \]/i, 2],
       [/unexpected end of file, expected \]/i, 2],
-      [/unexpected unlabled argument/i, 2],
-      [/unexpected unlabled argument/i, 2],
+      [/unexpected unlabeled argument/i, 2],
+      [/unexpected unlabeled argument/i, 2],
     ], problems)
   end
 
@@ -961,8 +961,8 @@ class InstantiatorTest < MiniTest::Test
     assert_equal 1, root_elements.size
     assert_problems([
       [/unexpected \[, expected identifier/i, 2],
-      [/unexpected unlabled argument/i, 2],
-      [/unexpected unlabled argument/i, 2],
+      [/unexpected unlabeled argument/i, 2],
+      [/unexpected unlabeled argument/i, 2],
       [/unexpected end of file, expected \]/i, 2],
     ], problems)
   end
@@ -982,9 +982,9 @@ class InstantiatorTest < MiniTest::Test
     assert_problems([
       [/unexpected \], expected newline/i, 2],
       [/unexpected \], expected newline/i, 3],
-      [/unexpected unlabled argument/i, 3],
+      [/unexpected unlabeled argument/i, 3],
       [/unexpected \], expected identifier/i, 4],
-      [/unexpected unlabled argument/i, 4],
+      [/unexpected unlabeled argument/i, 4],
       [/unexpected \], expected identifier/i, 5],
       [/unexpected \], expected newline/i, 6],
     ], problems)
@@ -1005,9 +1005,9 @@ class InstantiatorTest < MiniTest::Test
     assert_problems([
       [/unexpected \}, expected newline/i, 2],
       [/unexpected \}, expected newline/i, 3],
-      [/unexpected unlabled argument/i, 3],
+      [/unexpected unlabeled argument/i, 3],
       [/unexpected \}, expected identifier/i, 4],
-      [/unexpected unlabled argument/i, 4],
+      [/unexpected unlabeled argument/i, 4],
       [/unexpected \}, expected identifier/i, 5],
       [/unexpected \}, expected newline/i, 6],
     ], problems)
@@ -1453,18 +1453,18 @@ class InstantiatorTest < MiniTest::Test
       ), TestMM, :enable_generics => true)
     assert_problems([
       [/parse error on token '<'/i, 2],
-      [/unexpected unlabled argument/i, 2],
+      [/unexpected unlabeled argument/i, 2],
       [/parse error on token '>'/i, 3],
       [/unexpected identifier 'b'/i, 5],
       [/parse error on token '>'/i, 5],
-      [/unexpected unlabled argument/i, 5],
+      [/unexpected unlabeled argument/i, 5],
       [/parse error on token '<'/i, 6],
-      [/unexpected unlabled argument/i, 6],
+      [/unexpected unlabeled argument/i, 6],
       [/parse error on token '<'/i, 7],
-      [/unexpected unlabled argument/i, 7],
+      [/unexpected unlabeled argument/i, 7],
       [/parse error on token '%'/i, 7],
       [/unexpected identifier 'b'/i, 8],
-      [/unexpected unlabled argument/i, 8],
+      [/unexpected unlabeled argument/i, 8],
       [/parse error on token '%'/i, 8],
     ], problems)
   end

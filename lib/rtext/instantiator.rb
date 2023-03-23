@@ -249,9 +249,9 @@ class Instantiator
         begin
           v_value = v.value
           feature_instance_class = feature.eType.instanceClass
-          if feature_instance_class == String && (v_value.is_a?(Float) || v_value.is_a?(Fixnum))
+          if feature_instance_class == String && (v_value.is_a?(Float) || v_value.is_a?(Integer))
             element.setOrAddGeneric(feature.name, v_value.to_s)
-          elsif feature_instance_class == Float && v_value.is_a?(Fixnum)
+          elsif feature_instance_class == Float && v_value.is_a?(Integer)
             element.setOrAddGeneric(feature.name, v_value.to_f)
           else
             element.setOrAddGeneric(feature.name, v_value)

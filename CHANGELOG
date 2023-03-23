@@ -118,3 +118,7 @@
 =0.10.0
 
 * Switch to Ruby 2.7
+
+=0.11.0
+
+* Add support for Ruby up to 3.2
