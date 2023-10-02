@@ -9,7 +9,7 @@ require 'rgen/metamodel_builder'
 require 'rtext/serializer'
 require 'rtext/language'
 
-class SerializerTest < MiniTest::Test
+class SerializerTest < Minitest::Test
   TestOutputFile = ".serializer_test_file"
 
   def teardown

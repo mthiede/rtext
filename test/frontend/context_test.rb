@@ -3,7 +3,7 @@ $:.unshift File.join(File.dirname(__FILE__),"..","..","lib")
 require 'minitest/autorun'
 require 'rtext/frontend/context'
 
-class ContextTest < MiniTest::Test
+class ContextTest < Minitest::Test
 
 def test_simple
   assert_context(

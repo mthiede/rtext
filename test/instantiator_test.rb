@@ -8,7 +8,7 @@ require 'rgen/metamodel_builder'
 require 'rtext/instantiator'
 require 'rtext/language'
 
-class InstantiatorTest < MiniTest::Test
+class InstantiatorTest < Minitest::Test
 
   module TestMM
     extend RGen::MetamodelBuilder::ModuleExtension

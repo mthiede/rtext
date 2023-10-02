@@ -5,7 +5,7 @@ require 'rgen/metamodel_builder'
 require 'rtext/language'
 require 'rtext/context_builder'
 
-class ContextBuilderTest < MiniTest::Test 
+class ContextBuilderTest < Minitest::Test 
 
 module TestMM
   extend RGen::MetamodelBuilder::ModuleExtension

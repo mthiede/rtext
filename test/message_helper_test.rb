@@ -3,7 +3,7 @@ $:.unshift File.join(File.dirname(__FILE__),"..","lib")
 require 'minitest/autorun'
 require 'rtext/message_helper'
 
-class MessageHelperTest < MiniTest::Test
+class MessageHelperTest < Minitest::Test
 include RText::MessageHelper
 
 def test_serialize

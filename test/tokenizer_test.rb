@@ -4,7 +4,7 @@ require 'minitest/autorun'
 require 'rtext/tokenizer'
 require 'rtext/generic'
 
-class TokenizerTest < MiniTest::Test
+class TokenizerTest < Minitest::Test
 include RText::Tokenizer
 
 def test_simple

@@ -6,7 +6,7 @@ require 'rtext/language'
 require 'rtext/context_builder'
 require 'rtext/default_completer'
 
-class CompleterTest < MiniTest::Test
+class CompleterTest < Minitest::Test
 
 module TestMM
   extend RGen::MetamodelBuilder::ModuleExtension

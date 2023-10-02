@@ -1,2 +1,5 @@
 .idea/
 pkg/
+test/integration/backend.out*
+test/integration/model/.rtext
+test/integration/model/.rtext.lock

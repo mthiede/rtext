@@ -5,7 +5,7 @@ require 'rgen/metamodel_builder'
 require 'rtext/language'
 require 'rtext/link_detector'
 
-class LinkDetectorTest < MiniTest::Test
+class LinkDetectorTest < Minitest::Test
 
 module TestMM
   extend RGen::MetamodelBuilder::ModuleExtension
