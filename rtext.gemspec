@@ -2,7 +2,7 @@
 abort 'Use the rake task or esr-gem-builder to build the gem' if $0 =~ /gem$/ && $*.first == 'build'
 Gem::Specification.new do |s|
   s.name = "rtext"
-  s.version = "0.9.3"
+  s.version = "0.11.1"
   s.authors = ["Martin Thiede"]
   s.homepage = "http://ruby-gen.org"
   s.summary = "Ruby Textual Modelling"
