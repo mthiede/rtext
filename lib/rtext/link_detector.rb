@@ -19,7 +19,7 @@ def detect(lines, column)
   # context model since the context builder removes it as "just being completed"
   lines.last.concat(" ")
   current_line = lines.last
-  context = ContextBuilder.build_context(@lang, lines, lines.last.size)
+  context = ContextBuilder.build_context(@lang, lines, lines.last.size + 1)
   tokens = tokenize(lines.last, @lang.reference_regexp)
   token = tokens.find{|t| t.scol && t.scol <= column && t.ecol && t.ecol >= column}
   if context && context.element && token &&
@@ -29,7 +29,7 @@ def detect(lines, column)
     else
       line_prefix = ""
     end
-    context2 = ContextBuilder.build_context(@lang, lines, line_prefix.size) 
+    context2 = ContextBuilder.build_context(@lang, lines, line_prefix.size + 1) 
     # for command prefixes nested below a lable, the context element and feature are
     # the parent element and feature, this is not what's expected here
     if line_prefix =~ /^\s*\w*$/

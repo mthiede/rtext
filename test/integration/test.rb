@@ -200,6 +200,10 @@ EPackage StatemachineMM {|
   context = build_context({:col => 100}, "EPackage StatemachineMM {")
   assert_completions context, []
   # before first column is like first column
+  context = build_context({:col => 1}, "EPackage StatemachineMM {")
+  assert_completions context, [
+    "EPackage"
+  ]
   context = build_context({:col => 0}, "EPackage StatemachineMM {")
   assert_completions context, [
     "EPackage"

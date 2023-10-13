@@ -284,9 +284,11 @@ def assert_context(expected, text)
   # these are empty because of the use of %Q
   exp_lines = expected.split("\n")[1..-2]
   exp_col = exp_lines.last.index("|")
+  exp_col += 1 if exp_col
   exp_lines.last.sub!("|","")
   in_lines = text.split("\n")[1..-2]
   in_col = in_lines.last.index("|")
+  in_col += 1 if in_col
   in_lines.last.sub!("|","")
   ctx = RText::Frontend::Context.new
   lines, out_col = ctx.extract(in_lines, in_col)

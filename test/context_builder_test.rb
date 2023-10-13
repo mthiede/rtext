@@ -941,6 +941,7 @@ end
 def build_context(mm, text)
   context_lines = text.split("\n")
   pos_in_line = context_lines.last.index("|")
+  pos_in_line += 1 if pos_in_line
   context_lines.last.sub!("|", "")
   lang = RText::Language.new(mm.ecore, 
     :root_classes => mm.ecore.eAllClasses,

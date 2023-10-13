@@ -117,14 +117,15 @@ module ContextBuilder
     if context_lines.empty?
       context_lines << ""
     end
-    position_in_line ||= context_lines.last.size
+    position_in_line ||= context_lines.last.size + 1
     # cut off last line right of cursor
-    if position_in_line < 1
+    # raise "position_in_line starts at index 1!" if position_in_line == 0
+    if position_in_line <= 1
       tail = context_lines.pop
       context_lines << ""
     else
-      tail = context_lines.last[position_in_line..-1]
-      context_lines << context_lines.pop[0..position_in_line-1]
+      tail = context_lines.last[position_in_line-1..-1]
+      context_lines << context_lines.pop[0..position_in_line-2]
     end
     before_brace = !tail.nil? && !tail.match(/^\s*\{/).nil?
     before_bracket = !tail.nil? && !tail.match(/^\s*\[/).nil?

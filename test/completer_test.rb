@@ -579,6 +579,7 @@ def complete(mm, text, ref_comp_option_provider=nil)
   context_lines = text.split("\n")
   if context_lines.last
     pos_in_line = context_lines.last.index("|")
+    pos_in_line += 1 if pos_in_line
     context_lines.last.sub!("|", "")
   end
   lang = RText::Language.new(mm.ecore,
