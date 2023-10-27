@@ -188,7 +188,7 @@ class Service
 
   def content_complete(sock, request, response)
     # column numbers start at 1
-    linepos = request["column"]-1 
+    linepos = request["column"] 
     lines = request["context"]
     version = request["version"].to_i
     lang = @service_provider.language

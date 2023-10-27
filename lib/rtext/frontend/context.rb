@@ -8,6 +8,7 @@ class Context
 # returns the extracted lines and the new position in the last line
 def extract(lines, pos)
   lines = filter_lines(lines)
+  return nil if lines.nil?
   lines, new_pos = join_lines(lines, pos)
   non_ignored_lines = 0
   array_nesting = 0
@@ -49,10 +50,16 @@ def extract(lines, pos)
 end
 
 def filter_lines(lines)
-  lines.reject { |l| 
-    ls = l.strip
-    ls[0..0] == "@" || ls[0..0] == "#"
-  }
+  ret = []
+  lines.each_with_index do |line, i|
+    ls = line.strip
+    if ls.start_with?("@") || ls.start_with?("#")
+      return nil if i+1 == lines.length
+    else
+      ret << line
+    end
+  end
+  ret
 end
 
 # when joining two lines, all whitespace is preserved in order to simplify the algorithm

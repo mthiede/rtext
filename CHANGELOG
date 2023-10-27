@@ -122,3 +122,8 @@
 =0.11.0
 
 * Add support for Ruby up to 3.2
+
+=0.11.1
+
+* Fix column indixes to consistently start at 1
+* Fix algorithm of context creation if inside comment/annotation

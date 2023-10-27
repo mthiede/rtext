@@ -279,17 +279,51 @@ def test_comment_annotation
     ))
 end
 
+def test_in_comment
+  assert_context(
+    nil,
+    %Q(
+      A {
+        # b|la
+    ))
+end
+
+def test_in_annotation
+  assert_context(
+    nil,
+    %Q(
+      A {
+        # bla
+        B {
+          C a1: v1, a2: "v2"
+          # bla
+          D {
+            E a1: 5
+          }
+          @ anno|
+    ))
+end
+
 def assert_context(expected, text)
   # remove first and last lines
   # these are empty because of the use of %Q
-  exp_lines = expected.split("\n")[1..-2]
-  exp_col = exp_lines.last.index("|")
-  exp_lines.last.sub!("|","")
   in_lines = text.split("\n")[1..-2]
   in_col = in_lines.last.index("|")
+  in_col += 1 if in_col
   in_lines.last.sub!("|","")
   ctx = RText::Frontend::Context.new
-  lines, out_col = ctx.extract(in_lines, in_col)
+  extracted = ctx.extract(in_lines, in_col)
+
+  if expected.nil?
+    assert_nil extracted
+    return
+  end
+
+  lines, out_col = extracted
+  exp_lines = expected.split("\n")[1..-2]
+  exp_col = exp_lines.last.index("|")
+  exp_col += 1 if exp_col
+  exp_lines.last.sub!("|","")
   assert_equal exp_lines, lines
   if exp_col && in_col
     assert_equal exp_col, out_col
