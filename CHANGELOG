@@ -133,3 +133,4 @@
 * Flush the writer at the end of Serializer#serialize
 * Add support for Ruby 4.0
 * Require rgen 0.11.0
+* Flush the writer at the end of Serializer#serialize
