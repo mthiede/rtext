@@ -6,14 +6,25 @@ A .rtext config file is used to specify which backend service is to be started f
 RText model file.
 
 In order to be found by an RText plugin, the .rtext file must be located in the same directory
-as the RText model file being edited or in any of its parent directories. 
+as the RText model file being edited or in any of its parent directories. The frontend uses the
+first .rtext file which holds an entry matching the model file; a .rtext file without a matching
+entry does not stop the search.
 
 Here is the grammar for the config file syntax:
 
   rtext_config      ::= <service_spec>+
   service_spec      ::= <file_pattern_list>:\n<command line string>\n
   file_pattern_list ::= <file_pattern> | <file_pattern>, <file_pattern_list>
-  file_pattern      ::= <filename without path> | *.<extension>
+  file_pattern      ::= <filename without extension> | *.<extension>
+
+Lines which are part of no service spec are ignored, so blank lines and comments may be placed
+between specs.
+
+Patterns are matched by name, not by globbing. A model file which has an extension is looked up
+as "*.<extension>", so it is matched by that pattern and by no other: "*.ext1" does not match a
+file named "a.ext11", and a pattern spelled out as "model.ext1" matches nothing. A model file
+which has no extension is looked up as its filename, so it is matched by a pattern equal to that
+filename.
 
 Here is an example:
 
@@ -29,3 +40,23 @@ when a model file with the extension "ext1" is being edited. service2.rb is star
 model file with extension "ext2" or "ext3" is edited. service2.rb also receives additional command
 line parameters. service3.sh is started whenever a file named "noext" is edited.
 
+The command line is run with the working directory set to the directory holding the .rtext file,
+so relative paths within it are relative to that directory. The frontend redirects the command's
+standard output and standard error to a file, from which it reads the port the backend listens on
+(see the "Transport" section of the RText protocol documentation).
+
+== The backend service
+
+RText::Service is the backend service implementation. It answers RText protocol requests until
+nothing has asked anything for an idle timeout, which defaults to 60 seconds and is set with the
+:timeout option.
+
+While it runs, the service holds two files in the working directory:
+
+* .rtext.lock -- held for as long as the service runs. A second service started in the same
+  directory waits one second for the lock and then fails, so only one service serves a directory.
+* .rtext.config -- YAML holding the "port" the service listens on and its "pid". It is removed
+  when the service terminates.
+
+Both paths default to the working directory and are set with the :lock_file_path and
+:config_file_path options.

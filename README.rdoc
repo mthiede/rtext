@@ -1,4 +1,4 @@
-== RText - Ruby Textual Modelling 
+= RText - Ruby Textual Modelling 
 
 RText can be used to derive textual languages from an RGen metamodel with very little effort. 
 
@@ -13,21 +13,27 @@ RText features include:
   - Model Navigation
 
 
-= Installation
+== Installation
 
 > gem install rtext
 
-The RText service protocol requires the JSON gem:
-
-> gem install json
+RText depends on the rgen and filelock gems, which are installed along with it.
 
 
-= Documentation
+== Documentation
+
+* RText_Users_Guide -- the .rtext config file and the backend service
+* RText_Protocol -- the JSON protocol spoken between an editor frontend and a backend
+* CHANGELOG -- the changes in each release
 
 
-= Examples
+== Examples
 
-	
-= License
+test/integration/ecore_editor.rb is a complete backend service: it builds an RText::Language
+from the ECore metamodel, loads the model files it is given with RText::DefaultLoader, and
+serves them through RText::DefaultServiceProvider and RText::Service.
+
+
+== License
 
 RText is released under the MIT license.

@@ -33,13 +33,39 @@ The word "Übung" (german: exercise), encoded in ISO-8859-1 would result in the 
 "%dcbung" (the "Ü" Umlaut has a byte value of 0xdc is ISO-8859-1).
 
 
+== Transport
+
+The backend listens on a TCP socket bound to 127.0.0.1, on the first free port in the range
+9001 to 9100. It announces the port on its standard output as a single line:
+
+  RText service, listening on port 9001
+
+The frontend starts the backend with its output redirected to a file (see the RText users
+guide), reads the port from that line and connects to the socket.
+
+A message on the socket is its length in bytes, written as decimal digits, immediately followed
+by that many bytes holding the JSON object. There is no separator between the two and none
+after the object, so messages may be read one after another from a single stream and a message
+which has arrived only in part can be recognized as incomplete.
+
+Example:
+
+  59{"command":"load_model","invocation_id":1,"type":"request"}
+
+The backend terminates when it receives the "stop" command and when nothing has asked it
+anything for its idle timeout.
+
+
 == Request Messages
 
 Each request message contains a field ``command`` and a field ``invocation_id``.
 The command field holds the name of the command to be invoked as a string.
 The invocation id field holds an identifier which will be repeated by the backend's response.
-The "version" field was introduced in version 1. It is optional for protocol version 0 requests,
-but mandatory for newer versions.
+The invocation id must be a number; the backend ignores a message which is not a request or
+which carries no numeric invocation id, and sends no response to it.
+The "version" field was introduced in version 1. It is optional, and a request without it is
+read as a version 0 request. Use the "version" command to find out which version the backend
+speaks.
 
   {
     "type": "request",
@@ -52,8 +78,8 @@ but mandatory for newer versions.
 == Response Messages
 
 The response message repeats the invocation id of the request it replies to.
-If the requested command is not known by the backend, it will respond with a 
-"unknonw_command_error" message instead (see below).
+If the requested command is not known by the backend, it will respond with an
+"unknown_command_error" message instead (see below).
 
   {
     "type": "response",
@@ -71,16 +97,6 @@ There are a number of error message which may be sent in response to a request m
     "type": "unknown_command_error",
     "invocation_id": <invocation_id>,
     "command": <unknown command [string]>
-  }
-  
-=== Unsupported Protocol Version Error
-
-Introduced in version 1.
-
-  {
-    "type": "unsupported_version",
-    "invocation_id": <invocation_id>,
-    "version": <supported version [integer]>
   }
 
 == Progress Information
@@ -125,7 +141,7 @@ The backend responds with a version information.
     "version": <version [integer]>
   }
   
-The backend supporting protocool version 0 only responds with an 'Unknown Command Error'.
+A backend supporting protocol version 0 only responds with an 'Unknown Command Error'.
 
 === Load Model
 
@@ -148,12 +164,12 @@ limit detection effort and/or response time.
     "total_problems": <number of total problems or -1 [integer]>,
     "problems": [
       { 
-        "file": <fully qualifed file name [string]>,
+        "file": <fully qualified file name [string]>,
         "problems: [
           {
             "message": <message [string]>,
-            "severity": <['debug', 'info', 'warn', 'error', 'fatal']>,
-            "line": <line number [integer]>
+            "severity": <['error', 'warning']>,
+            "line": <line number [integer], null if the problem is not tied to a line>
           }
           ...
         ]
@@ -167,7 +183,7 @@ limit detection effort and/or response time.
 This command is a request by the frontend in order to show content completion options at a given
 location within a file. The location is expressed using a set of context lines and the cursor
 column position in the current line. See section "Context Extraction" for details about how to
-build the set of context lines in the frontend. Column number start at 1. 
+build the set of context lines in the frontend. Column numbers start at 1.
 
   {
     "type": "request",
@@ -221,7 +237,7 @@ If so, it sends back the columns of the beginning and the end of the link as wel
 link targets. Column positions are inclusive, i.e. the beginning and the end column are part of
 the link. Link targets contain the string to be displayed to the user, the filename and the line
 number within the file.
-An optional description field may provide more information about a particular lin target.
+An optional description field may provide more information about a particular link target.
 
 If there is no link, the backend may send an empty response.
 
@@ -258,221 +274,19 @@ Note that the number of elements actually returned may be lower than the total n
 If the total number of elements is unknown ``total_elements`` should be set to -1.
 This allows to truncate large search result sets and still provide the user with the number of
 elements which were omitted or at least with the fact that the result set has been truncated.
-An optional description field my provide more information about a particular element.
+An optional description field may provide more information about a particular element.
 
 If there are no search results, the backend may send an empty response.
 
   {
     "type": "response",
-    "total_elements": <total number of elements or -1 [string]>,
+    "total_elements": <total number of elements or -1 [integer]>,
     "elements": [
       {
         "display": <display name [string]>,
         "file": <fully qualified file name [string]>,
         "line": <line number [integer]>,
         "desc": <optional description [string]>
-      }
-      ...
-    ]
-  }
-
-=== Context Information
-
-This command is used by the frontend to request information about a particular position in
-a file. The frontend will send the current context (section "context extraction") and the cursor
-column. If for example, the context information is to be shown as a hover at the position of the 
-mouse pointer, the context and column need to be calculated at the position of the mouse pointer,
-not the position of the text cursor.
-
-  {
-    "type": "request",
-    "command": "context_info",
-    "context": <context lines>,
-    "column": <cursor column>
-  }
-
-The backend reponds by sending the textual description to be shown to the user.
-
-  {
-    "type": "response",
-    "desc": <textual description>
-  }
-
-=== Custom Commands
-
-This command is used to retrieve a list of custom commands understood by the backend.
-These commands may be available in a specific context only. If the frontend includes context
-and column information in the request, the backend will list only commands applicable in that 
-context. If the context information is omitted, the backend will return all commands applicable
-without any specific context.
-
-Note that even for commands without context information, the frontend should repeat to request
-the command list as the list of available commands may change. For example, the command list could
-be requested everytime the user gets a chance to choose from a command menu.
-
-  {
-    "type": "request",
-    "command": "custom_commands"
-    "context": <context lines, optional>,
-    "column": <cursor column, optional>
-  }
-
-The backend responds by a list of commands which may be categorized into a tree structure.
-This information can be used to show the commands in a hierarchical menu, e.g. a context menu.
-
-  {
-    "type": "response",
-    "entries": [
-      {
-        "type": "category",
-        "name": <display name>,
-        "entries": [
-          {
-            "type": "command",
-            "name": <display name>,
-            "id": <command identifier>
-          }
-          ...
-        ]
-      }
-      ...
-    ]
-  }
-
-=== Custom Command Parameters
-
-Before a custom command can be invoked, the frontend must check with the backend if parameters
-are required. This is done by means of the command
-
-  {
-    "type": "request",
-    "command": "check_custom_command_parameters",
-    "command_id": <custom command id>
-    "context": <context lines, optional>,
-    "column": <cursor column, optional>
-    "parameters": [
-      { 
-        "name": <parameter name>,
-        "value": <parameter value>
-      }
-      ...
-    ]
-  }
-
-If the command id was returned by a "Costum Commands" request which
-included context information, the frontend should send the same context information in the new
-invocation request and all repeated requests (see below). If this information was not sent 
-in command list request (non-context sensitive command), it should neither be send in the new 
-command invocation.
-
-If a command requires parameters, the response will have the field `success` set to false and
-will include information for building a user dialog.
-
-The dialogs contain elements of certain types:
-
-* label: text presented to the user
-* text: text input field
-* table: table view/input
-* hidden: hidden field used to hold state information
-
-The frontend should keep repeating requests as long as the field ``success`` is set to ``false``.
-
-Note that the backend doesn't hold any state, so that commands can easily be canceled by just 
-not making any additional requests (and not actually invoking the command).
-
-If the response contains step information (number of steps, current step), the the frontend
-should display buttons for moving forward and backward in a wizard.
-
-When the frontend receives dialog information, it should display the dialog filled with the
-widgets as specified and with widget content set up properly (text fields preset with strings,
-rows selected in table, etc).
-
-When the user has finished the dialog, the frontend should send all input information back to
-the backend as name/value pairs. This includes:
-
-* hidden fields
-* text fields unless disabled
-* table fields unless disabled
-
-  {
-    "type": "response",
-    "success": <true|false, true if command is finshed>, 
-    "num_steps", <number of steps of this (wizard) command, optional>,
-    "current_step", <current wizard step, optional>,
-    "dialog": {
-      "title": <dialog title>,
-      "elements": [
-        {
-          "type": "lable",
-          "text": <text to display>
-        },
-        {
-          "type": "hidden",
-          "name": <parameter name>,
-          "value": <value of hidden filed [string]>
-        },
-        {
-          "type": "text",
-          "name": <parameter name>,
-          "value": <preset value>,
-          "error": <error text>
-          "description: <discription of parameter, optional>
-          "disabled:" <true|false, if set to false the input widget can't be changed>
-        },
-        {
-          "type": "table",
-          "name": <parameter name>,
-          "num_min": <min number of elements to choose, default: 1>,
-          "num_max": <max mumber of elements to choose, or * for unlimited, default: 1>,
-          "columns": [
-            {
-              "name": <column name>,
-              "description: <discription of parameter, optional>
-            }
-            ...
-          ],
-          "rows": [
-            {
-              "id": <identifier to be sent back>,
-              "values" [
-                {
-                  "display": <display name>,
-                  "file": <fully qualfied file name, optional>,
-                  "line": <line number, optional>,
-                }
-                ...
-              ]
-            }
-            ...
-          ],
-          "selected": [ <row id>, <row id>, ...],
-          "error": <error text>,
-          "description: <discription of parameter, optional>
-          "disabled:" <true|false, if set to false, no selection can be made>
-        }
-      ]
-    }
-  }
-
-=== Custom Command Invocation
-
-Custom commands are invoked using the command id returned by the "Custom Commands" request.
-Before a command can be invoked, the parameters must be figured out by means of the "Check
-Custom Command Parameters" command. Once figured out, the parameters will be sent with the 
-command invocation as a name/value list. 
-
-The context information should be sent as with the "Check Custom Command Parameters" command.
-
-  {
-    "type": "request",
-    "command": "invoke_custom_command",
-    "command_id": <custom command id>
-    "context": <context lines, optional>,
-    "column": <cursor column, optional>
-    "parameters": [
-      { 
-        "name": <parameter name>,
-        "value": <parameter value>
       }
       ...
     ]
@@ -525,6 +339,10 @@ The context lines in this case would be the following.
         Command5
 
 The current line is always the last of the context lines.
+
+Comment and annotation lines -- lines whose first non-whitespace character is "#" or "@" --
+are not part of the context and are left out. If the current line is a comment or annotation
+line, no context can be extracted and the frontend should send no request at all.
 
 See RText::Frontend::Context::extract for a concise implementation of the required algorithm.
  
