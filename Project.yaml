@@ -1,5 +1,7 @@
 name: rtext
 version: 0.12.0
+# 2.6 is the floor: RGen needs it
+rubies: ['2.6', '2.7', '3.0', '3.1', '3.2', '3.3', '3.4', '4.0']
 git: https://github.com/mthiede/rtext.git
 summary: Ruby Textual Modelling
 email: martin dot thiede at gmx de

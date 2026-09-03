@@ -17,6 +17,8 @@ RText features include:
 
 > gem install rtext
 
+RText supports Ruby 2.6 to 4.0.
+
 RText depends on the rgen and filelock gems, which are installed along with it.
 
 

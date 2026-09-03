@@ -3,7 +3,7 @@ require 'rubygems/package_task'
 require 'rake'
 require 'rdoc/task'
 
-RTextGemSpec = eval(File.read('rtext.gemspec'))
+RTextGemSpec = eval(File.read('rtext.gemspec'), binding, 'rtext.gemspec')
 
 gemfiles = Rake::FileList.new
 gemfiles.include('{lib,test}/**/*')
