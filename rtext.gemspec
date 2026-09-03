@@ -14,6 +14,16 @@ def rubies
   (@project_config['rubies'] || ['2.3']).map(&:to_s)
 end
 
+def platform_rubies
+  @project_config['platform_rubies'] || {}
+end
+
+# Ruby versions to package for a declared platform: its platform_rubies override, else the
+# global rubies. Keyed by the declared platform string (pre patch_platform).
+def rubies_for_platform(platform)
+  (platform_rubies[platform.to_s] || rubies).map(&:to_s)
+end
+
 def platforms
   @project_config['platforms'] || %w(x86_64-linux x64-mingw32)
 end
@@ -47,25 +57,26 @@ def extensions_target_path
   @project_config['extensions_target_path'] || File.join('lib', 'native')
 end
 
-# All extension artifact path list
+# All extension artifact path list. Iterates each declared platform with its own Ruby set
+# (rubies_for_platform), so a platform can ship a subset of the global rubies.
 def native_library_artifact_paths(only_platforms = nil)
   platforms_list = only_platforms.nil? ? platforms : only_platforms
   extensions.keys.flat_map do |name|
-    rubies.flat_map do |ruby|
-      platforms_list.flat_map do |platform|
-        platform = patch_platform(ruby, platform)
+    platforms_list.flat_map do |platform|
+      rubies_for_platform(platform).flat_map do |ruby|
+        slot = patch_platform(ruby, platform)
         if native_library_artifacts && native_library_artifacts[name.to_s]
           native_library_artifacts[name.to_s].map do |artifact_platform, artifacts|
-            next unless platform == artifact_platform.to_s
-            artifacts.map { |a| File.join(extensions_target_path, name.to_s, ruby, platform, a) }
+            next unless slot == artifact_platform.to_s
+            artifacts.map { |a| File.join(extensions_target_path, name.to_s, ruby, slot, a) }
           end
         elsif @project_config['native_artifacts'] && @project_config['native_artifacts'][name.to_s] # backward compatibility (e.g. esr-licensing <0.3)
           @project_config['native_artifacts'][name.to_s].map do |artifact|
-            next unless platform == platform.to_s
-            File.join(extensions_target_path, name.to_s, ruby.to_s, platform, artifact)
+            next unless slot == slot.to_s
+            File.join(extensions_target_path, name.to_s, ruby.to_s, slot, artifact)
           end
         else
-          [File.join(extensions_target_path, name.to_s, ruby.to_s, platform, name.to_s + '.so')]
+          [File.join(extensions_target_path, name.to_s, ruby.to_s, slot, name.to_s + '.so')]
         end
       end
     end
@@ -79,6 +90,10 @@ def common_native_binary_path(name, platform = nil)
 end
 
 def patch_platform(ruby, platform)
+  # `-gnu` triples are glibc aliases of the canonical Linux slots; collapse them so
+  # packaging looks in the non-`-gnu` directory where the binaries were placed.
+  platform = 'x86_64-linux' if platform == 'x86_64-linux-gnu'
+  platform = 'aarch64-linux' if platform == 'aarch64-linux-gnu'
   if platform == 'x64-mingw32' && !['1.9', '2.0', '2.1', '2.2', '2.3', '2.4', '2.5', '2.6', '2.7', '3.0'].include?(ruby)
     'x64-mingw-ucrt' # RubyInstaller uses this one with Ruby 3.1+
   elsif platform == 'x64-mingw-ucrt' && ['1.9', '2.0', '2.1', '2.2', '2.3', '2.4', '2.5', '2.6', '2.7', '3.0'].include?(ruby)
@@ -118,10 +133,27 @@ def gemspec
     include_patterns = (@project_config['include_files'] || []) + ["lib/**/*.rb", "Project.yaml"]
     include = include_patterns.reject { |i| i.include?('*') } +
         include_patterns.select { |i| i.include?('*') }.flat_map { |i| Dir.glob(i) }
-    include.concat(native_artifact_paths)
+    # Native extension artifacts are contributed here (never via include_files globs), so the set
+    # can be tailored per gem. $blt_target_platform (a command-line argument passed by
+    # `blt build-gem` in platform-fat mode) restricts this gem to a single platform: mark it with
+    # s.platform and add only that platform's binaries. When unset, add every declared platform's
+    # binaries into one universal gem (historical default).
+    target_platform = defined?($blt_target_platform) ? $blt_target_platform : nil
+    if target_platform && !target_platform.empty?
+      s.platform = target_platform
+      # Select artifacts by their actual on-disk slot (the platform directory the binary lives in),
+      # not by the declared platform: patch_platform rewrites x64-mingw32<->x64-mingw-ucrt per Ruby,
+      # so a single gem's platform must match RUBY_PLATFORM exactly. The slot is the parent dir of
+      # each native-library artifact. Common native binaries are already platform-filtered by path.
+      slot = ->(p) { File.basename(File.dirname(p)) }
+      include.concat(native_library_artifact_paths.select { |p| slot.call(p) == target_platform })
+      include.concat(common_native_binary_artifact_paths([target_platform]))
+    else
+      include.concat(native_artifact_paths)
+    end
     include << "lib/rubyencoder.lic" if encrypt_sources and encrypt_sources == "rubyencoder"
     exclude_files_expanded = exclude_files.reject { |i| i.include?('*') }
-    exclude = [exclude_files_expanded] +
+    exclude = exclude_files_expanded +
         exclude_files.select { |i| i.include?('*') }.flat_map { |i| Dir.glob(i) }
     s.files = include - exclude 
     (@project_config['dependencies'] || {}).flat_map do |_, deps|
