@@ -640,6 +640,23 @@ TestNode text: "some text"
 ), File.read(TestOutputFile)
   end
 
+  # the serializer must not leave serialized data in the writer's buffer,
+  # otherwise it may be flushed after the file has been rewritten by someone else
+  def test_file_output_is_flushed
+    testModel = TestMM::TestNode.new(:text => "some text")
+
+    file = File.new(TestOutputFile, "w")
+    begin
+      serialize(testModel, TestMM, file)
+
+      assert_equal %Q(\
+TestNode text: "some text"
+), File.read(TestOutputFile)
+    ensure
+      file.close
+    end
+  end
+
   def test_stringio_output
     testModel = TestMM::TestNode.new(:text => "some text")
 

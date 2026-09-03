@@ -26,6 +26,8 @@ class Serializer
   #    RText::Language
   #    default: don't set fragment reference
   #
+  # The writer is flushed before this method returns, if it responds to +flush+.
+  #
   def serialize(elements, writer, options={})
     @writer = writer
     @set_line_number = options[:set_line_number]
@@ -37,6 +39,7 @@ class Serializer
     else
       serialize_elements([elements])
     end
+    @writer.flush if @writer.respond_to?(:flush)
   end
 
   private
