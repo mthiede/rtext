@@ -15,6 +15,7 @@ dependencies:
     - {name: rake,               version: ['>= 13.0.0', '< 14.0'],    development: true}
     - {name: minitest,           version: ['>= 5.20.0', '< 6.0'],     development: true}
     - {name: minitest-fail-fast, version: ['>= 0.1.0', '< 0.2'],      development: true}
+include_files: ['lib/**/*']
 rdoc_options: [--main, README.rdoc, -x, test]
 extra_rdoc_files: [README.rdoc, CHANGELOG, MIT-LICENSE, RText_Users_Guide, RText_Protocol]
 encrypt_sources: false
